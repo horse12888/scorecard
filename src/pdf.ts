@@ -237,7 +237,7 @@ export async function generateIMPULSEReport(state: any, label?: string) {
   pdf.drawText("Perché questo report esiste.", PAGE.marginX, pdf.cursorY, { fontSize: 30, style: 'bold', color: IMPULSE_COLORS.dark });
   pdf.cursorY += 25;
   const p1 = "Questo report esiste per mostrarti dove il valore che hai costruito è bloccato, prima ancora di aggiungere marketing, intelligenza artificiale, nuovo capitale o nuove offerte.\n\nLo scorecard era l'input. Questo documento restituisce la lettura diagnostica.";
-  const p2 = "I business che smettono di crescere raramente lo fanno per mancanza di opportunità. Lo fanno perché il valore diventa illeggibile, o perché i sistemi operano esclusivamente attorno alla dipendenza dalla tua presenza.\n\nLeggilo con onestà. Cerca la precisione diagnostica, non la motivazione.";
+  const p2 = "I business che smettono di crescere raramente lo fanno per mancanza di opportunità. Lo fanno perché il valore diventa illeggibile, o perché i sistemi operano esclusivamente attorno alla dipendenza dalla tua presenza.\n\nUsalo come una lettura diagnostica: non per giudicare il business, ma per capire quale vincolo va affrontato prima.";
   pdf.cursorY = pdf.drawText(p1, PAGE.marginX, pdf.cursorY, { fontSize: 11, color: IMPULSE_COLORS.darkSoft, lineHeightFactor: 1.6 });
   pdf.cursorY += 10;
   pdf.drawText(p2, PAGE.marginX, pdf.cursorY, { fontSize: 11, color: IMPULSE_COLORS.darkSoft, lineHeightFactor: 1.6 });
