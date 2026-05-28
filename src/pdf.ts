@@ -256,9 +256,6 @@ class PDFBuilder {
     return yPos + estimatedHeight + 8;
   }
 }
-  }
-}
-
 // --- GENERATOR ORCHESTRATION ---
 export async function generateIMPULSEReport(state: any, label?: string) {
   const pdf = new PDFBuilder(state);
