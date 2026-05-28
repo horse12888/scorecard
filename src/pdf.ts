@@ -376,6 +376,222 @@ function fitText(text: string, maxChars: number) {
   return `${safe.slice(0, maxChars - 1).trim()}…`;
 }
 
+function getDimensionMicroCopy(dim: any) {
+  const key = String(dim?.key || dim?.label || '').toLowerCase();
+
+  if (key.includes('clarity')) {
+    return 'Il valore richiede ancora troppa spiegazione.';
+  }
+
+  if (key.includes('acquisition')) {
+    return 'Il flusso commerciale non è ancora prevedibile.';
+  }
+
+  if (key.includes('operations')) {
+    return 'Le decisioni tornano ancora al founder.';
+  }
+
+  if (key.includes('margins')) {
+    return 'Il margine non è abbastanza leggibile.';
+  }
+
+  if (key.includes('asset')) {
+    return 'Il valore non è ancora abbastanza documentato.';
+  }
+
+  if (key.includes('readiness')) {
+    return 'La narrativa esterna è già più solida.';
+  }
+
+  return 'Area diagnostica da monitorare.';
+}
+
+function getFunctionConstraints(state: any) {
+  const priorities = state.priorita || state.priorities || [];
+  const mainPriority = priorities[0]?.key || priorities[0]?.label || '';
+  const normalized = String(mainPriority).toLowerCase();
+
+  const baseRows = [
+    {
+      area: 'Marketing',
+      constraint: 'Il messaggio non è ancora abbastanza stabile.',
+      graduate: 'Un messaggio principale collegato a un canale primario.'
+    },
+    {
+      area: 'Sales',
+      constraint: 'La vendita richiede ancora troppa spiegazione.',
+      graduate: 'Una conversazione commerciale più chiara e ripetibile.'
+    },
+    {
+      area: 'Operations',
+      constraint: 'Decisioni e standard tornano ancora al founder.',
+      graduate: 'Regole decisionali, ownership e standard documentati.'
+    },
+    {
+      area: 'Finance',
+      constraint: 'Margine e qualità dei clienti non sono abbastanza separati.',
+      graduate: 'Margine leggibile per offerta, canale e cliente.'
+    },
+    {
+      area: 'Data',
+      constraint: 'Materiali, numeri e narrativa non sono ancora allineati.',
+      graduate: 'Dashboard minima e materiali commerciali coerenti.'
+    }
+  ];
+
+  if (normalized.includes('acquisition')) {
+    return [
+      {
+        area: 'Marketing',
+        constraint: 'Il canale principale non è ancora abbastanza prevedibile.',
+        graduate: 'Un canale primario con lead qualificati e tracciabili.'
+      },
+      {
+        area: 'Sales',
+        constraint: 'Le opportunità non sono ancora qualificate in modo sistematico.',
+        graduate: 'Criteri chiari per distinguere lead buoni e lead rumorosi.'
+      },
+      {
+        area: 'Delivery',
+        constraint: 'La delivery rischia di collassare se il volume aumenta.',
+        graduate: 'Standard minimi che proteggono qualità e margine.'
+      },
+      {
+        area: 'Finance',
+        constraint: 'CAC, conversione e margine non sono ancora letti insieme.',
+        graduate: 'Una lettura unificata di canale, conversione e margine.'
+      },
+      {
+        area: 'Data',
+        constraint: 'Mancano segnali semplici per capire cosa sta funzionando.',
+        graduate: 'Dashboard minima su lead, conversione e margine.'
+      }
+    ];
+  }
+
+  if (normalized.includes('operations')) {
+    return [
+      {
+        area: 'Operations',
+        constraint: 'Le eccezioni operative arrivano ancora al founder.',
+        graduate: 'Regole scritte per le decisioni ricorrenti.'
+      },
+      {
+        area: 'Team',
+        constraint: 'Le responsabilità non sono abbastanza trasferibili.',
+        graduate: 'Ownership chiara per standard, output e urgenze.'
+      },
+      {
+        area: 'Delivery',
+        constraint: 'La qualità dipende ancora troppo dal controllo diretto.',
+        graduate: 'Standard di delivery documentati e verificabili.'
+      },
+      {
+        area: 'Data',
+        constraint: 'Il reporting non separa abbastanza operatività e urgenze.',
+        graduate: 'Dashboard minima per volume, qualità e colli di bottiglia.'
+      },
+      {
+        area: 'Hiring',
+        constraint: 'Assumere ora rischia di compensare processi mancanti.',
+        graduate: 'Ruoli definiti dopo aver chiarito processi e responsabilità.'
+      }
+    ];
+  }
+
+  if (normalized.includes('margins')) {
+    return [
+      {
+        area: 'Finance',
+        constraint: 'Il fatturato è visibile, ma il margine reale è meno chiaro.',
+        graduate: 'Margine leggibile per offerta, canale e cliente.'
+      },
+      {
+        area: 'Marketing',
+        constraint: 'La spesa di acquisizione rischia di crescere prima della qualità.',
+        graduate: 'Budget collegato a CAC, conversione e margine.'
+      },
+      {
+        area: 'Sales',
+        constraint: 'Non tutti i clienti hanno lo stesso valore economico.',
+        graduate: 'Criteri per riconoscere clienti profittevoli e clienti rumorosi.'
+      },
+      {
+        area: 'Operations',
+        constraint: 'La delivery può assorbire margine senza essere vista.',
+        graduate: 'Costo operativo separato per offerta e cliente.'
+      },
+      {
+        area: 'Data',
+        constraint: 'I numeri non guidano ancora tutte le decisioni chiave.',
+        graduate: 'Dashboard minima su margine, cash flow e capacità.'
+      }
+    ];
+  }
+
+  if (normalized.includes('asset')) {
+    return [
+      {
+        area: 'Asset',
+        constraint: 'Il valore costruito non è ancora abbastanza documentato.',
+        graduate: 'Asset, IP, dati e relazioni chiave mappati.'
+      },
+      {
+        area: 'Data',
+        constraint: 'Parte del valore resta implicita o dispersa.',
+        graduate: 'Repository chiaro di sistemi, materiali e prove.'
+      },
+      {
+        area: 'Operations',
+        constraint: 'I processi creano valore, ma non sempre asset trasferibili.',
+        graduate: 'Processi documentati e riutilizzabili.'
+      },
+      {
+        area: 'Brand',
+        constraint: 'Il posizionamento non cattura tutto il valore costruito.',
+        graduate: 'Narrativa coerente con asset, risultati e differenziazione.'
+      },
+      {
+        area: 'Readiness',
+        constraint: 'Un esterno potrebbe non capire subito cosa ha valore.',
+        graduate: 'Materiali leggibili per advisor, partner o buyer.'
+      }
+    ];
+  }
+
+  if (normalized.includes('readiness')) {
+    return [
+      {
+        area: 'Readiness',
+        constraint: 'La struttura è buona, ma va mantenuta coerente nel salto.',
+        graduate: 'Narrativa, numeri e materiali allineati.'
+      },
+      {
+        area: 'Data Room',
+        constraint: 'I materiali potrebbero non essere ancora pronti per scrutiny esterno.',
+        graduate: 'Data room leggera e metriche chiave verificabili.'
+      },
+      {
+        area: 'Finance',
+        constraint: 'I numeri devono sostenere la narrativa strategica.',
+        graduate: 'Metriche principali chiare e difendibili.'
+      },
+      {
+        area: 'Team',
+        constraint: 'I prossimi ruoli chiave devono essere definiti meglio.',
+        graduate: 'Responsabilità, output e criteri di performance.'
+      },
+      {
+        area: 'Strategy',
+        constraint: 'Il prossimo salto può creare dispersione.',
+        graduate: 'Priorità chiare e iniziative laterali filtrate.'
+      }
+    ];
+  }
+
+  return baseRows;
+}
+
 function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) {
   const roadmap = state.roadmapInfo || state.stageInfo || {};
   const name = getDisplayName(state);
@@ -426,12 +642,18 @@ function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) 
     maxWidth: 82
   });
 
-  pdf.drawText(userProfile?.blocco || 'Il report identifica il vincolo principale che rallenta la prossima fase di crescita.', PAGE.marginX + 72, 126, {
-    fontSize: 10.5,
-    color: IMPULSE_COLORS.cream,
-    lineHeightFactor: 1.55,
-    maxWidth: 82
-  });
+  pdf.drawText(
+    userProfile?.blocco ||
+      'Il report identifica il vincolo principale che rallenta la prossima fase di crescita.',
+    PAGE.marginX + 72,
+    126,
+    {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.cream,
+      lineHeightFactor: 1.55,
+      maxWidth: 82
+    }
+  );
 
   const boxY = 168;
   const boxW = 48;
@@ -507,12 +729,17 @@ function drawScoreMapPage(pdf: PDFBuilder, state: any) {
 
   pdf.cursorY += 17;
 
-  pdf.drawText('Questa pagina mostra dove il business è già solido e dove crea più attrito prima del prossimo salto.', PAGE.marginX, pdf.cursorY, {
-    fontSize: 10,
-    color: IMPULSE_COLORS.gray,
-    lineHeightFactor: 1.5,
-    maxWidth: PAGE.contentWidth
-  });
+  pdf.drawText(
+    'Questa pagina mostra dove il business è già solido e dove crea più attrito prima del prossimo salto.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
 
   const leftX = PAGE.marginX;
   const rightX = PAGE.marginX + 82;
@@ -573,36 +800,69 @@ function drawRoadmapStagePage(pdf: PDFBuilder, state: any) {
 
   pdf.newPage(IMPULSE_COLORS.cream);
 
-  pdf.cursorY = 42;
+  pdf.cursorY = 38;
 
-  pdf.drawText('WHEN YOU HIT', PAGE.marginX, pdf.cursorY, {
+  pdf.drawText('IL TUO STAGE', PAGE.marginX, pdf.cursorY, {
     fontSize: 24,
     style: 'bold',
     color: IMPULSE_COLORS.dark
   });
 
-  pdf.cursorY += 18;
+  pdf.cursorY += 17;
 
   pdf.drawText(stageLabel, PAGE.marginX, pdf.cursorY, {
-    fontSize: 32,
+    fontSize: 34,
     style: 'bold',
     color: IMPULSE_COLORS.teal,
     lineHeightFactor: 1.05,
     maxWidth: PAGE.contentWidth
   });
 
-  pdf.cursorY += 25;
+  pdf.cursorY += 22;
 
-  if (roadmap.role) {
-    pdf.drawText(String(roadmap.role).toUpperCase(), PAGE.marginX, pdf.cursorY, {
-      fontSize: 8,
+  const tableY = pdf.cursorY;
+  const labelW = 45;
+  const rowH = 14;
+
+  const rows = [
+    {
+      label: 'ROLE',
+      value: roadmap.role || 'Founder'
+    },
+    {
+      label: 'CONSTRAINT',
+      value: roadmap.bottomLineConstraint || roadmap.headline || 'Vincolo non disponibile'
+    },
+    {
+      label: 'TO GRADUATE',
+      value: Array.isArray(roadmap.graduationCriteria)
+        ? roadmap.graduationCriteria.slice(0, 2).join(' · ')
+        : 'Criteri non disponibili'
+    }
+  ];
+
+  rows.forEach((row, index) => {
+    const y = tableY + index * rowH;
+
+    pdf.fillRect(PAGE.marginX, y, labelW, rowH, IMPULSE_COLORS.teal);
+    pdf.fillRect(PAGE.marginX + labelW, y, PAGE.contentWidth - labelW, rowH, IMPULSE_COLORS.white);
+
+    pdf.drawText(row.label, PAGE.marginX + 4, y + 8.7, {
+      fontSize: 6.8,
       style: 'bold',
-      color: IMPULSE_COLORS.gray,
-      charSpace: 0.7
+      color: IMPULSE_COLORS.white,
+      charSpace: 0.5
     });
 
-    pdf.cursorY += 13;
-  }
+    pdf.drawText(String(row.value), PAGE.marginX + labelW + 5, y + 8.5, {
+      fontSize: 7.4,
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: PAGE.contentWidth - labelW - 8,
+      lineHeightFactor: 1.15
+    });
+  });
+
+  pdf.cursorY = tableY + rows.length * rowH + 20;
 
   if (roadmap.headline) {
     pdf.cursorY = pdf.drawText(roadmap.headline, PAGE.marginX, pdf.cursorY, {
@@ -616,19 +876,9 @@ function drawRoadmapStagePage(pdf: PDFBuilder, state: any) {
     pdf.cursorY += 10;
   }
 
-  if (roadmap.bottomLineConstraint) {
-    pdf.cursorY = pdf.drawLuxuryCard(
-      '01. IL VINCOLO DI FONDO',
-      roadmap.bottomLineConstraint,
-      IMPULSE_COLORS.teal,
-      pdf.cursorY,
-      IMPULSE_COLORS.white
-    );
-  }
-
   if (roadmap.graduationCriteria && Array.isArray(roadmap.graduationCriteria)) {
     pdf.cursorY = pdf.drawBulletList(
-      '02. TO GRADUATE',
+      'CRITERI PER PASSARE ALLO STAGE SUCCESSIVO',
       roadmap.graduationCriteria.slice(0, 5),
       IMPULSE_COLORS.gold,
       pdf.cursorY,
@@ -638,7 +888,7 @@ function drawRoadmapStagePage(pdf: PDFBuilder, state: any) {
 
   if (roadmap.strategicReviewFocus) {
     pdf.cursorY = pdf.drawLuxuryCard(
-      '03. FOCUS DELLA STRATEGIC REVIEW',
+      'FOCUS DELLA STRATEGIC REVIEW',
       roadmap.strategicReviewFocus,
       IMPULSE_COLORS.teal,
       pdf.cursorY,
@@ -664,81 +914,95 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
 
   pdf.newPage(IMPULSE_COLORS.white);
 
-  pdf.cursorY = 42;
+  pdf.cursorY = 40;
 
-  pdf.drawText('THE 3 THINGS TO FIX FIRST', PAGE.marginX, pdf.cursorY, {
+  pdf.drawText('LE 3 PRIORITÀ OPERATIVE', PAGE.marginX, pdf.cursorY, {
     fontSize: 27,
     style: 'bold',
     color: IMPULSE_COLORS.dark,
     lineHeightFactor: 1.05
   });
 
-  pdf.cursorY += 22;
+  pdf.cursorY += 20;
 
-  pdf.drawText('Queste sono le aree che creano più attrito operativo. Risolverle prima evita di scalare confusione, costi o dipendenza dal founder.', PAGE.marginX, pdf.cursorY, {
-    fontSize: 10,
-    color: IMPULSE_COLORS.gray,
-    lineHeightFactor: 1.5,
-    maxWidth: PAGE.contentWidth
-  });
+  pdf.drawText(
+    'Queste sono le aree che creano più attrito operativo. Risolverle prima evita di scalare confusione, costi o dipendenza dal founder.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
 
-  pdf.cursorY += 24;
+  pdf.cursorY += 20;
 
   topThree.forEach((dim: any, index: number) => {
     const y = pdf.cursorY;
     const score = Number(dim.score || 0);
-    const title = `${index + 1}. ${getDimensionName(dim).toUpperCase()} · ${score.toFixed(1)} / 10`;
+    const title = `#${index + 1} ${getDimensionName(dim).toUpperCase()} · ${score.toFixed(1)} / 10`;
     const body =
       dim.vincolo ||
       dim.meaning ||
       dim.cosaIndica ||
       'Questa area richiede lavoro applicato prima di scalare.';
 
-    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 48, index === 0 ? IMPULSE_COLORS.lightBlue : IMPULSE_COLORS.cream);
-    pdf.fillRect(PAGE.marginX, y, 4, 48, index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold);
+    const bg = index === 0 ? IMPULSE_COLORS.lightBlue : IMPULSE_COLORS.cream;
+    const accent = index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold;
 
-    pdf.drawText(title, PAGE.marginX + 10, y + 11, {
+    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 55, bg);
+    pdf.fillRect(PAGE.marginX, y, 4, 55, accent);
+
+    pdf.drawText(title, PAGE.marginX + 10, y + 10, {
       fontSize: 8,
       style: 'bold',
       color: index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.dark,
       charSpace: 0.4
     });
 
-    pdf.drawText(fitText(body, 180), PAGE.marginX + 10, y + 22, {
-      fontSize: 9.2,
+    pdf.drawText(body, PAGE.marginX + 10, y + 20, {
+      fontSize: 8.7,
       color: IMPULSE_COLORS.darkSoft,
-      lineHeightFactor: 1.35,
+      lineHeightFactor: 1.25,
       maxWidth: PAGE.contentWidth - 18
     });
 
-    pdf.cursorY += 58;
+    if (dim.lavoro) {
+      pdf.drawText('DO FIRST:', PAGE.marginX + 10, y + 41, {
+        fontSize: 6.7,
+        style: 'bold',
+        color: IMPULSE_COLORS.teal,
+        charSpace: 0.4
+      });
+
+      pdf.drawText(fitText(dim.lavoro, 105), PAGE.marginX + 32, y + 41, {
+        fontSize: 6.8,
+        color: IMPULSE_COLORS.darkSoft,
+        maxWidth: 55,
+        lineHeightFactor: 1.15
+      });
+    }
+
+    if (dim.nonFare) {
+      pdf.drawText('AVOID:', PAGE.marginX + 91, y + 41, {
+        fontSize: 6.7,
+        style: 'bold',
+        color: IMPULSE_COLORS.dark,
+        charSpace: 0.4
+      });
+
+      pdf.drawText(fitText(dim.nonFare, 95), PAGE.marginX + 111, y + 41, {
+        fontSize: 6.8,
+        color: IMPULSE_COLORS.darkSoft,
+        maxWidth: 62,
+        lineHeightFactor: 1.15
+      });
+    }
+
+    pdf.cursorY += 64;
   });
-
-  if (topThree[0]?.nonFare || topThree[0]?.lavoro) {
-    const mainDim = topThree[0];
-
-    pdf.cursorY += 2;
-
-    if (mainDim.lavoro) {
-      pdf.cursorY = pdf.drawLuxuryCard(
-        'COSA FARE PRIMA',
-        mainDim.lavoro,
-        IMPULSE_COLORS.teal,
-        pdf.cursorY,
-        IMPULSE_COLORS.lightBlue
-      );
-    }
-
-    if (mainDim.nonFare && pdf.cursorY < 255) {
-      pdf.cursorY = pdf.drawLuxuryCard(
-        'COSA NON FARE ADESSO',
-        mainDim.nonFare,
-        IMPULSE_COLORS.dark,
-        pdf.cursorY,
-        IMPULSE_COLORS.cream
-      );
-    }
-  }
 }
 
 function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
@@ -748,7 +1012,7 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
 
   pdf.cursorY = 42;
 
-  pdf.drawText('YOUR DIAGNOSTIC MAP', PAGE.marginX, pdf.cursorY, {
+  pdf.drawText('MAPPA DIAGNOSTICA', PAGE.marginX, pdf.cursorY, {
     fontSize: 29,
     style: 'bold',
     color: IMPULSE_COLORS.dark
@@ -756,15 +1020,20 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
 
   pdf.cursorY += 18;
 
-  pdf.drawText('Le 6 dimensioni mostrano dove il business è forte, dove è instabile e dove il valore resta bloccato.', PAGE.marginX, pdf.cursorY, {
-    fontSize: 10,
-    color: IMPULSE_COLORS.gray,
-    lineHeightFactor: 1.5,
-    maxWidth: PAGE.contentWidth
-  });
+  pdf.drawText(
+    'Le 6 dimensioni mostrano dove il business è forte, dove è instabile e dove il valore resta bloccato.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
 
   const cardW = 72;
-  const cardH = 52;
+  const cardH = 50;
   const gapX = 10;
   const gapY = 11;
   const startX = PAGE.marginX;
@@ -777,7 +1046,12 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
     const y = startY + row * (cardH + gapY);
     const score = Number(dim.score || 0);
     const status = getScoreStatus(score);
-    const accent = score >= 7 ? IMPULSE_COLORS.teal : score >= 5 ? IMPULSE_COLORS.gold : IMPULSE_COLORS.dark;
+    const accent =
+      score >= 7
+        ? IMPULSE_COLORS.teal
+        : score >= 5
+          ? IMPULSE_COLORS.gold
+          : IMPULSE_COLORS.dark;
 
     pdf.fillRect(x, y, cardW, cardH, IMPULSE_COLORS.white);
     pdf.fillRect(x, y, 3, cardH, accent);
@@ -803,8 +1077,8 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
       charSpace: 0.4
     });
 
-    pdf.drawText(fitText(dim.vincolo || dim.cosaIndica || 'Area diagnostica da monitorare.', 95), x + 8, y + 39, {
-      fontSize: 6.8,
+    pdf.drawText(getDimensionMicroCopy(dim), x + 8, y + 39, {
+      fontSize: 7.2,
       color: IMPULSE_COLORS.darkSoft,
       lineHeightFactor: 1.25,
       maxWidth: cardW - 14
@@ -821,13 +1095,134 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
 
   pdf.cursorY += 10;
 
-  pdf.drawText('Il report non serve a descrivere ogni dettaglio del business. Serve a identificare il vincolo più costoso e a decidere cosa non scalare ancora.', PAGE.marginX, pdf.cursorY, {
-    fontSize: 11,
+  pdf.drawText(
+    'Il report non serve a descrivere ogni dettaglio del business. Serve a identificare il vincolo più costoso e a decidere cosa non scalare ancora.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 11,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark,
+      lineHeightFactor: 1.45,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+}
+
+function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
+  const rows = getFunctionConstraints(state);
+
+  pdf.newPage(IMPULSE_COLORS.white);
+
+  pdf.cursorY = 38;
+
+  pdf.drawText('DOVE SI VEDE IL VINCOLO', PAGE.marginX, pdf.cursorY, {
+    fontSize: 27,
     style: 'bold',
     color: IMPULSE_COLORS.dark,
-    lineHeightFactor: 1.45,
-    maxWidth: PAGE.contentWidth
+    lineHeightFactor: 1.05
   });
+
+  pdf.cursorY += 20;
+
+  pdf.drawText(
+    'Il vincolo principale non resta astratto. Si manifesta in funzioni specifiche del business: marketing, sales, operations, finance e dati.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 24;
+
+  const tableX = PAGE.marginX;
+  const tableY = pdf.cursorY;
+  const areaW = 32;
+  const constraintW = 64;
+  const graduateW = 58;
+  const rowH = 28;
+
+  pdf.fillRect(tableX, tableY, PAGE.contentWidth, 13, IMPULSE_COLORS.dark);
+
+  pdf.drawText('AREA', tableX + 4, tableY + 8.5, {
+    fontSize: 6.8,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.6
+  });
+
+  pdf.drawText('CONSTRAINT', tableX + areaW + 4, tableY + 8.5, {
+    fontSize: 6.8,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.6
+  });
+
+  pdf.drawText('TO GRADUATE', tableX + areaW + constraintW + 4, tableY + 8.5, {
+    fontSize: 6.8,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.6
+  });
+
+  rows.slice(0, 5).forEach((row, index) => {
+    const y = tableY + 13 + index * rowH;
+    const bg = index % 2 === 0 ? IMPULSE_COLORS.cream : IMPULSE_COLORS.white;
+
+    pdf.fillRect(tableX, y, PAGE.contentWidth, rowH, bg);
+    pdf.fillRect(tableX, y, areaW, rowH, IMPULSE_COLORS.teal);
+
+    pdf.drawText(row.area.toUpperCase(), tableX + 4, y + 11, {
+      fontSize: 7,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      maxWidth: areaW - 7,
+      lineHeightFactor: 1.15
+    });
+
+    pdf.drawText(row.constraint, tableX + areaW + 4, y + 9, {
+      fontSize: 7.3,
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: constraintW - 8,
+      lineHeightFactor: 1.28
+    });
+
+    pdf.drawText(row.graduate, tableX + areaW + constraintW + 4, y + 9, {
+      fontSize: 7.3,
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: graduateW - 8,
+      lineHeightFactor: 1.28
+    });
+  });
+
+  pdf.cursorY = tableY + 13 + rows.slice(0, 5).length * rowH + 18;
+
+  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 28, IMPULSE_COLORS.dark);
+  pdf.fillRect(PAGE.marginX, pdf.cursorY, 4, 28, IMPULSE_COLORS.gold);
+
+  pdf.drawText('BOTTOM LINE', PAGE.marginX + 10, pdf.cursorY + 10, {
+    fontSize: 7,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 0.8
+  });
+
+  pdf.drawText(
+    'Prima di scalare, il business deve rendere leggibile dove il vincolo si manifesta e quale sistema lo rimuove.',
+    PAGE.marginX + 10,
+    pdf.cursorY + 19,
+    {
+      fontSize: 8.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      maxWidth: PAGE.contentWidth - 18,
+      lineHeightFactor: 1.25
+    }
+  );
 }
 
 function drawProfilePage(pdf: PDFBuilder, state: any, userProfile: any) {
@@ -964,6 +1359,29 @@ function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) 
     }
   );
 
+  pdf.cursorY += 31;
+
+  pdf.drawText('Nella review definiamo:', PAGE.marginX, pdf.cursorY, {
+    fontSize: 9,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 0.5
+  });
+
+  pdf.cursorY += 10;
+
+  pdf.drawText(
+    '1. il primo vincolo da rimuovere\n2. la sequenza operativa delle azioni\n3. cosa non scalare ancora',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.55,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
   pdf.cursorY += 48;
 
   pdf.fillRect(PAGE.marginX, pdf.cursorY, 95, 15, IMPULSE_COLORS.gold);
@@ -993,6 +1411,7 @@ export async function generateIMPULSEReport(state: any, label?: string) {
   drawRoadmapStagePage(pdf, state);
   drawTopPrioritiesPage(pdf, state);
   drawDimensionCardsPage(pdf, state);
+  drawFunctionConstraintsPage(pdf, state);
   drawProfilePage(pdf, state, userProfile);
   drawStrategicReviewPage(pdf, state, userProfile);
 
