@@ -21,7 +21,6 @@ const PAGE = {
   contentWidth: 154
 };
 
-// --- PDF BUILDER CLASS ---
 class PDFBuilder {
   doc: jsPDF;
   cursorY: number = PAGE.marginY;
@@ -39,21 +38,33 @@ class PDFBuilder {
 
   newPage(bgColor: number[] = IMPULSE_COLORS.white, darkHeader: boolean = false) {
     if (this.pageNumber > 0) this.doc.addPage();
+
     this.pageNumber++;
     this.cursorY = PAGE.marginY;
     this.fillRect(0, 0, PAGE.width, PAGE.height, bgColor);
-    
-    // Header Grid lines
+
     if (this.pageNumber > 1) {
       this.doc.setDrawColor(...(darkHeader ? IMPULSE_COLORS.gray : IMPULSE_COLORS.grayLight));
       this.doc.setLineWidth(0.2);
       this.doc.line(PAGE.marginX, 15, PAGE.width - PAGE.marginX, 15);
-      this.drawText(`IMPULSE · REPORT NUM. ${String(this.pageNumber).padStart(2, '0')}`, PAGE.marginX, 12, { 
-        fontSize: 7, color: darkHeader ? IMPULSE_COLORS.white : IMPULSE_COLORS.gray, charSpace: 0.5 
+
+      this.drawText(`IMPULSE · REPORT NUM. ${String(this.pageNumber).padStart(2, '0')}`, PAGE.marginX, 12, {
+        fontSize: 7,
+        color: darkHeader ? IMPULSE_COLORS.white : IMPULSE_COLORS.gray,
+        charSpace: 0.5
       });
-      const userName = this.result?.name ? String(this.result.name).toUpperCase() : (this.result?.user?.name ? String(this.result.user.name).toUpperCase() : "");
-      this.drawText(userName, PAGE.width - PAGE.marginX, 12, { 
-        fontSize: 7, align: 'right', color: darkHeader ? IMPULSE_COLORS.white : IMPULSE_COLORS.gray, charSpace: 0.5 
+
+      const userName = this.result?.name
+        ? String(this.result.name).toUpperCase()
+        : this.result?.user?.name
+          ? String(this.result.user.name).toUpperCase()
+          : '';
+
+      this.drawText(userName, PAGE.width - PAGE.marginX, 12, {
+        fontSize: 7,
+        align: 'right',
+        color: darkHeader ? IMPULSE_COLORS.white : IMPULSE_COLORS.gray,
+        charSpace: 0.5
       });
     }
   }
@@ -76,10 +87,11 @@ class PDFBuilder {
     this.doc.setFontSize(fontSize);
     this.doc.setTextColor(color[0], color[1], color[2]);
 
-    const lines = this.doc.splitTextToSize(String(text), maxWidth);
+    const lines = this.doc.splitTextToSize(String(text || ''), maxWidth);
     const lineHeight = (fontSize * 0.3527) * lineHeightFactor;
-    
+
     let currentY = y;
+
     lines.forEach((line: string) => {
       this.doc.text(line, x, currentY, { align });
       currentY += lineHeight;
@@ -88,145 +100,210 @@ class PDFBuilder {
     return currentY;
   }
 
-  drawDonut(x: number, y: number, radius: number, thickness: number, percent: number, color: number[], trackColor: number[] = IMPULSE_COLORS.darkSoft) {
-    // Background ring
-    const bgR = radius;
+  drawDonut(
+    x: number,
+    y: number,
+    radius: number,
+    thickness: number,
+    percent: number,
+    color: number[],
+    trackColor: number[] = IMPULSE_COLORS.darkSoft
+  ) {
     this.doc.setLineWidth(thickness);
     this.doc.setDrawColor(trackColor[0], trackColor[1], trackColor[2]);
-    this.doc.circle(x, y, bgR, 'S');
+    this.doc.circle(x, y, radius, 'S');
 
     if (percent > 0) {
-      const p = percent / 100;
+      const p = Math.max(0, Math.min(100, percent)) / 100;
       const segments = Math.max(30, Math.floor(180 * p));
       const startA = -Math.PI / 2;
-      const endA = startA + (Math.PI * 2 * p);
-      
+      const endA = startA + Math.PI * 2 * p;
+
       const outerR = radius + thickness / 2;
       const innerR = radius - thickness / 2;
-      
+
       const points: [number, number][] = [];
-      // Outer arc
+
       for (let i = 0; i <= segments; i++) {
         const a = startA + (endA - startA) * (i / segments);
         points.push([x + outerR * Math.cos(a), y + outerR * Math.sin(a)]);
       }
-      // Inner arc (reverse)
+
       for (let i = segments; i >= 0; i--) {
         const a = startA + (endA - startA) * (i / segments);
         points.push([x + innerR * Math.cos(a), y + innerR * Math.sin(a)]);
       }
-      
+
       this.doc.setFillColor(color[0], color[1], color[2]);
-      
+
       const relPoints: [number, number][] = [];
+
       for (let i = 1; i < points.length; i++) {
-        relPoints.push([points[i][0] - points[i-1][0], points[i][1] - points[i-1][1]]);
+        relPoints.push([points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]]);
       }
-      relPoints.push([points[0][0] - points[points.length-1][0], points[0][1] - points[points.length-1][1]]);
-      
-      this.doc.lines(relPoints, points[0][0], points[0][1], [1,1], 'F', true);
+
+      relPoints.push([
+        points[0][0] - points[points.length - 1][0],
+        points[0][1] - points[points.length - 1][1]
+      ]);
+
+      this.doc.lines(relPoints, points[0][0], points[0][1], [1, 1], 'F', true);
     }
   }
 
   drawRadar(cx: number, cy: number, r: number, dimensions: any[]) {
-    const n = dimensions.length;
+    const safeDimensions = Array.isArray(dimensions) ? dimensions.filter(Boolean) : [];
+    const n = safeDimensions.length;
+
+    if (n < 3) return;
+
     const angleStep = (Math.PI * 2) / n;
     const startAngle = -Math.PI / 2;
-    
-    // Values polygon points
+
     const scorePts: [number, number][] = [];
+
     for (let i = 0; i < n; i++) {
       const a = startAngle + i * angleStep;
-      const sr = (Math.max(0, Math.min(10, dimensions[i].score)) / 10) * r;
+      const sr = (Math.max(0, Math.min(10, Number(safeDimensions[i].score || 0))) / 10) * r;
       scorePts.push([cx + sr * Math.cos(a), cy + sr * Math.sin(a)]);
     }
 
-    // Fill slightly teal
-    this.doc.setFillColor( IMPULSE_COLORS.lightBlue[0], IMPULSE_COLORS.lightBlue[1], IMPULSE_COLORS.lightBlue[2] ); 
+    this.doc.setFillColor(
+      IMPULSE_COLORS.lightBlue[0],
+      IMPULSE_COLORS.lightBlue[1],
+      IMPULSE_COLORS.lightBlue[2]
+    );
+
     this.drawPolygon(scorePts, true, false);
 
-    // Grid (draw over fill)
     this.doc.setDrawColor(220, 225, 230);
     this.doc.setLineWidth(0.15);
+
     for (let level = 2; level <= 10; level += 2) {
       const lr = (level / 10) * r;
       const pts: [number, number][] = [];
+
       for (let i = 0; i < n; i++) {
         const a = startAngle + i * angleStep;
         pts.push([cx + lr * Math.cos(a), cy + lr * Math.sin(a)]);
       }
+
       this.drawPolygon(pts, false);
     }
-    
-    // Axes
+
     this.doc.setDrawColor(200, 205, 210);
     this.doc.setLineWidth(0.2);
+
     for (let i = 0; i < n; i++) {
       const a = startAngle + i * angleStep;
       this.doc.line(cx, cy, cx + r * Math.cos(a), cy + r * Math.sin(a));
     }
-    
-    // Border
-    this.doc.setDrawColor( IMPULSE_COLORS.teal[0], IMPULSE_COLORS.teal[1], IMPULSE_COLORS.teal[2] );
+
+    this.doc.setDrawColor(
+      IMPULSE_COLORS.teal[0],
+      IMPULSE_COLORS.teal[1],
+      IMPULSE_COLORS.teal[2]
+    );
     this.doc.setLineWidth(0.8);
     this.drawPolygon(scorePts, false);
-    
-    // Dots
-    scorePts.forEach(p => {
-      this.doc.setFillColor( IMPULSE_COLORS.teal[0], IMPULSE_COLORS.teal[1], IMPULSE_COLORS.teal[2] );
+
+    scorePts.forEach((p) => {
+      this.doc.setFillColor(
+        IMPULSE_COLORS.teal[0],
+        IMPULSE_COLORS.teal[1],
+        IMPULSE_COLORS.teal[2]
+      );
       this.doc.circle(p[0], p[1], 1.8, 'F');
-      this.doc.setFillColor( 255, 255, 255 );
+
+      this.doc.setFillColor(255, 255, 255);
       this.doc.circle(p[0], p[1], 0.8, 'F');
     });
-    
-    // Labels
+
     for (let i = 0; i < n; i++) {
       const a = startAngle + i * angleStep;
-      let lx = cx + (r + 7) * Math.cos(a);
+      const lx = cx + (r + 7) * Math.cos(a);
       const ly = cy + (r + 7) * Math.sin(a);
+
       let align: 'left' | 'center' | 'right' = 'center';
       const dx = Math.cos(a);
+
       if (dx > 0.3) align = 'left';
       else if (dx < -0.3) align = 'right';
-      
-      this.drawText(dimensions[i].label.toUpperCase(), lx, ly + 1.5, { align, fontSize: 7, style: 'bold', color: IMPULSE_COLORS.darkSoft, charSpace: 0.5 });
+
+      this.drawText(String(safeDimensions[i].label || '').toUpperCase(), lx, ly + 1.5, {
+        align,
+        fontSize: 7,
+        style: 'bold',
+        color: IMPULSE_COLORS.darkSoft,
+        charSpace: 0.5
+      });
     }
   }
 
   drawPolygon(points: [number, number][], filled = false, stroked = true) {
     if (!points || points.length < 3) return;
+
     const start = points[0];
     const rel: [number, number][] = [];
+
     for (let i = 1; i < points.length; i++) {
-      rel.push([points[i][0] - points[i-1][0], points[i][1] - points[i-1][1]]);
+      rel.push([points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]]);
     }
-    rel.push([points[0][0] - points[points.length - 1][0], points[0][1] - points[points.length - 1][1]]);
+
+    rel.push([
+      points[0][0] - points[points.length - 1][0],
+      points[0][1] - points[points.length - 1][1]
+    ]);
+
     const style = filled ? (stroked ? 'DF' : 'F') : 'S';
+
     this.doc.lines(rel, start[0], start[1], [1, 1], style, true);
   }
 
-    drawLuxuryCard(title: string, body: string, accentColor: number[], yPos: number, bg: number[] = IMPULSE_COLORS.cream) {
-    const safeBody = body || "";
+  drawLuxuryCard(
+    title: string,
+    body: string,
+    accentColor: number[],
+    yPos: number,
+    bg: number[] = IMPULSE_COLORS.cream
+  ) {
+    const safeBody = body || '';
     const testLines = this.doc.splitTextToSize(safeBody, PAGE.contentWidth - 14);
-    const cardHeight = Math.max(30, 20 + (testLines.length * 5));
-    
+    const cardHeight = Math.max(30, 20 + testLines.length * 5);
+
     this.fillRect(PAGE.marginX, yPos, PAGE.contentWidth, cardHeight, bg);
     this.fillRect(PAGE.marginX, yPos, 4, cardHeight, accentColor);
-    
-    this.drawText(title.toUpperCase(), PAGE.marginX + 10, yPos + 10, { fontSize: 8, style: 'bold', color: accentColor });
-    this.drawText(safeBody, PAGE.marginX + 10, yPos + 18, { fontSize: 10.5, color: IMPULSE_COLORS.darkSoft, lineHeightFactor: 1.6, maxWidth: PAGE.contentWidth - 14 });
-    
+
+    this.drawText(String(title || '').toUpperCase(), PAGE.marginX + 10, yPos + 10, {
+      fontSize: 8,
+      style: 'bold',
+      color: accentColor
+    });
+
+    this.drawText(safeBody, PAGE.marginX + 10, yPos + 18, {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.darkSoft,
+      lineHeightFactor: 1.6,
+      maxWidth: PAGE.contentWidth - 14
+    });
+
     return yPos + cardHeight + 8;
   }
 
-  drawBulletList(title: string, items: string[], accentColor: number[], yPos: number, bg: number[] = IMPULSE_COLORS.white) {
+  drawBulletList(
+    title: string,
+    items: string[],
+    accentColor: number[],
+    yPos: number,
+    bg: number[] = IMPULSE_COLORS.white
+  ) {
     const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
-    const estimatedHeight = Math.max(34, 20 + safeItems.length * 10);
+    const estimatedHeight = Math.max(34, 22 + safeItems.length * 11);
 
     this.fillRect(PAGE.marginX, yPos, PAGE.contentWidth, estimatedHeight, bg);
     this.fillRect(PAGE.marginX, yPos, 4, estimatedHeight, accentColor);
 
-    this.drawText(title.toUpperCase(), PAGE.marginX + 10, yPos + 10, {
+    this.drawText(String(title || '').toUpperCase(), PAGE.marginX + 10, yPos + 10, {
       fontSize: 8,
       style: 'bold',
       color: accentColor,
@@ -236,7 +313,7 @@ class PDFBuilder {
     let currentY = yPos + 21;
 
     safeItems.forEach((item: string) => {
-      this.drawText("•", PAGE.marginX + 10, currentY, {
+      this.drawText('•', PAGE.marginX + 10, currentY, {
         fontSize: 10,
         style: 'bold',
         color: accentColor,
@@ -256,156 +333,283 @@ class PDFBuilder {
     return yPos + estimatedHeight + 8;
   }
 }
-// --- GENERATOR ORCHESTRATION ---
-export async function generateIMPULSEReport(state: any, label?: string) {
-  const pdf = new PDFBuilder(state);
-  
-  // 1. COVER
-  pdf.newPage(IMPULSE_COLORS.dark, true);
-  pdf.fillRect(PAGE.marginX, 80, 110, 110, IMPULSE_COLORS.teal);
-  pdf.drawText("Report", PAGE.marginX + 15, 110, { color: IMPULSE_COLORS.cream, fontSize: 14 });
-  pdf.drawText("Business\nReadiness\nReport.", PAGE.marginX + 15, 130, { color: IMPULSE_COLORS.white, fontSize: 34, style: 'bold', lineHeightFactor: 1.1 });
-  pdf.drawText("IMPULSE", PAGE.width - PAGE.marginX, 200, { color: IMPULSE_COLORS.white, fontSize: 26, style: 'bold', align: 'right' });
-  pdf.drawText(`Preparato per:\n${state.name || state.user?.name || ''}\n${new Date().toLocaleDateString('it-IT')}`, PAGE.width - PAGE.marginX, 260, { color: IMPULSE_COLORS.grayLight, fontSize: 10, align: 'right', lineHeightFactor: 1.5 });
 
-  // 2. LETTER
-  pdf.newPage(IMPULSE_COLORS.white);
-  pdf.cursorY = 50;
-  pdf.drawText("Perché questo report esiste.", PAGE.marginX, pdf.cursorY, { fontSize: 30, style: 'bold', color: IMPULSE_COLORS.dark });
-  pdf.cursorY += 25;
-  const p1 = "Questo report esiste per mostrarti dove il valore che hai costruito è bloccato, prima ancora di aggiungere marketing, intelligenza artificiale, nuovo capitale o nuove offerte.\n\nLo scorecard era l'input. Questo documento restituisce la lettura diagnostica.";
-  const p2 = "I business che smettono di crescere raramente lo fanno per mancanza di opportunità. Lo fanno perché il valore diventa illeggibile, o perché i sistemi operano esclusivamente attorno alla dipendenza dalla tua presenza.\n\nUsalo come una lettura diagnostica: non per giudicare il business, ma per capire quale vincolo va affrontato prima.";
-  pdf.cursorY = pdf.drawText(p1, PAGE.marginX, pdf.cursorY, { fontSize: 11, color: IMPULSE_COLORS.darkSoft, lineHeightFactor: 1.6 });
-  pdf.cursorY += 10;
-  pdf.drawText(p2, PAGE.marginX, pdf.cursorY, { fontSize: 11, color: IMPULSE_COLORS.darkSoft, lineHeightFactor: 1.6 });
+function getDisplayName(state: any) {
+  return state?.name || state?.user?.name || 'Founder';
+}
 
-  // 3. COME LEGGERE
-  pdf.newPage(IMPULSE_COLORS.cream);
-  pdf.cursorY = 50;
-  pdf.drawText("Come leggere la diagnosi.", PAGE.marginX, pdf.cursorY, { fontSize: 30, style: 'bold', color: IMPULSE_COLORS.dark });
-  pdf.cursorY += 30;
-  pdf.cursorY = pdf.drawLuxuryCard("01. LEGGI IL PROFILO", "Il Profilo (A, B, C o D) descrive il vincolo principale emerso. Partire da qui ti dà l'ordine di priorità su cui operare.", IMPULSE_COLORS.teal, pdf.cursorY, IMPULSE_COLORS.white);
-  pdf.cursorY = pdf.drawLuxuryCard("02. RIVEDI LE DIMENSIONI", "Le 6 dimensioni mostrano le ramificazioni del tuo profilo. Leggi con attenzione le dimensioni con il punteggio più basso, sono quelle che creano più attrito.", IMPULSE_COLORS.gold, pdf.cursorY, IMPULSE_COLORS.white);
-  pdf.cursorY = pdf.drawLuxuryCard("03. COSA NON FARE ADESSO", "Ogni capitolo indica cosa evitare adesso. Spesso l'istinto è automatizzare il caos. La diagnosi serve per fermare proprio queste iniziative premature.", IMPULSE_COLORS.dark, pdf.cursorY, IMPULSE_COLORS.white);
+function getFilenameSafe(value: string) {
+  return String(value || 'Report')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^\w\-]/g, '');
+}
 
-  // 4. OVERALL SCORE
-  pdf.newPage(IMPULSE_COLORS.dark, true);
-  pdf.cursorY = 60;
-  pdf.drawText("OVERALL IMPULSE SCORE", PAGE.width/2, pdf.cursorY, { fontSize: 10, align: 'center', style: 'bold', color: IMPULSE_COLORS.gold, charSpace: 1.5 });
-  pdf.cursorY += 45;
-  
-  // Donut behind or around the score
-  pdf.drawDonut(PAGE.width/2, pdf.cursorY - 9, 30, 4, state.overall, IMPULSE_COLORS.teal);
-  
-  pdf.drawText(`${state.overall}%`, PAGE.width/2, pdf.cursorY, { fontSize: 62, align: 'center', style: 'bold', color: IMPULSE_COLORS.white });
-  pdf.cursorY += 40;
-  
-  // Grid 3 columns
-  const w3 = PAGE.contentWidth/3;
-  [
-    { t: "FASCIA", v: String(state.fascia).toUpperCase() },
-    { t: "PROFILO", v: `PROFILO ${state.profile}` },
-    { t: "STAGE", v: state.stageLabel || state.stage || state.stageInfo?.label || state.stageInfo?.title || "STAGE NON DISPONIBILE" }
-  ].forEach((b, i) => {
-    const bx = PAGE.marginX + (w3 * i) + (w3/2);
-    pdf.drawText(b.t, bx, pdf.cursorY, { align: 'center', fontSize: 8, color: IMPULSE_COLORS.grayLight, charSpace: 0.8 });
-    pdf.drawText(b.v, bx, pdf.cursorY+10, { align: 'center', fontSize: 14, style: 'bold', color: IMPULSE_COLORS.cream });
-  });
-
-  pdf.cursorY += 40;
-  pdf.doc.setDrawColor(IMPULSE_COLORS.teal[0], IMPULSE_COLORS.teal[1], IMPULSE_COLORS.teal[2]);
-  pdf.doc.setLineWidth(0.5);
-  pdf.doc.line(PAGE.width/2 - 20, pdf.cursorY, PAGE.width/2 + 20, pdf.cursorY);
-  pdf.cursorY += 15;
-  pdf.drawText("Il tuo punteggio aggregato sulle 6 dimensioni indica la tua operatività reale, non teorica. Questo numero definisce quanto del tuo lavoro è scalabile senza rompersi.", PAGE.width/2, pdf.cursorY, { align:'center', fontSize: 11, color: IMPULSE_COLORS.grayLight, lineHeightFactor: 1.6, maxWidth: 120 });
-
-  // 5. STRENGTHS / PRIORITIES & RADAR
-  pdf.newPage(IMPULSE_COLORS.white);
-  pdf.cursorY = 50;
-  pdf.drawText("Le tue coordinate.", PAGE.marginX, pdf.cursorY, { fontSize: 30, style: 'bold', color: IMPULSE_COLORS.dark });
-  pdf.cursorY += 25;
-
-  let leftY = pdf.cursorY;
-  
-  pdf.drawText("LE TUE FORZE (ASSET ATTUALI)", PAGE.marginX, leftY, { fontSize: 10, style: 'bold', color: IMPULSE_COLORS.teal, charSpace: 0.5 });
-  leftY += 12;
-  const forze = state.forze || state.strengths || [];
-  forze.forEach((f: any) => {
-    pdf.drawText(f.label, PAGE.marginX, leftY, { fontSize: 12, style: 'bold' });
-    pdf.drawText(Number(f.score).toFixed(1), PAGE.marginX + 60, leftY, { fontSize: 14, style: 'bold', color: IMPULSE_COLORS.teal });
-    leftY += 12;
-  });
-
-  leftY += 20;
-  pdf.drawText(state.overall >= 75 ? "AREE DA RIFINIRE" : "LE TUE PRIORITÀ (VINCOLI)", PAGE.marginX, leftY, { fontSize: 10, style: 'bold', color: IMPULSE_COLORS.gold, charSpace: 0.5 });
-  leftY += 12;
-  const priorita = state.priorita || state.priorities || [];
-  priorita.forEach((p: any) => {
-    pdf.drawText(p.label, PAGE.marginX, leftY, { fontSize: 12, style: 'bold' });
-    pdf.drawText(Number(p.score).toFixed(1), PAGE.marginX + 60, leftY, { fontSize: 14, style: 'bold', color: IMPULSE_COLORS.dark });
-    leftY += 12;
-  });
-
-  // Radar Chart on the right
-  pdf.drawRadar(PAGE.width - 65, pdf.cursorY + 40, 35, state.spiderDims);
-
-    // 6. IMPULSE SCALING ROADMAP
-  pdf.newPage(IMPULSE_COLORS.cream);
-  pdf.cursorY = 45;
-
+function getStageLabel(state: any) {
   const roadmap = state.roadmapInfo || state.stageInfo || {};
-  const stageLabelText = state.roadmapStage || state.stageLabel || state.stage || roadmap.label || "STAGE NON DISPONIBILE";
 
-  pdf.drawText("Il tuo punto nella", PAGE.marginX, pdf.cursorY, {
-    fontSize: 18,
-    style: 'normal',
+  return (
+    state.roadmapStage ||
+    state.stageLabel ||
+    state.stage ||
+    roadmap.label ||
+    roadmap.title ||
+    'STAGE NON DISPONIBILE'
+  );
+}
+
+function getDimensionName(dim: any) {
+  return String(dim?.label || dim?.key || 'Dimension');
+}
+
+function getScoreStatus(score: number) {
+  if (score >= 7) return 'FORZA';
+  if (score >= 5) return 'IN SVILUPPO';
+  return 'VINCOLO';
+}
+
+function fitText(text: string, maxChars: number) {
+  const safe = String(text || '').trim();
+
+  if (safe.length <= maxChars) return safe;
+
+  return `${safe.slice(0, maxChars - 1).trim()}…`;
+}
+
+function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) {
+  const roadmap = state.roadmapInfo || state.stageInfo || {};
+  const name = getDisplayName(state);
+  const stageLabel = getStageLabel(state);
+
+  pdf.newPage(IMPULSE_COLORS.dark, true);
+
+  pdf.drawText('IMPULSE BUSINESS READINESS REPORT', PAGE.marginX, 40, {
+    fontSize: 9,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 1.2
+  });
+
+  pdf.drawText(`Preparato per ${name}`, PAGE.marginX, 52, {
+    fontSize: 9,
+    color: IMPULSE_COLORS.grayLight
+  });
+
+  pdf.drawText(new Date().toLocaleDateString('it-IT'), PAGE.width - PAGE.marginX, 52, {
+    fontSize: 9,
+    align: 'right',
+    color: IMPULSE_COLORS.grayLight
+  });
+
+  pdf.drawDonut(PAGE.marginX + 31, 103, 25, 4, Number(state.overall || 0), IMPULSE_COLORS.teal);
+
+  pdf.drawText(`${Number(state.overall || 0)}%`, PAGE.marginX + 31, 109, {
+    fontSize: 32,
+    style: 'bold',
+    align: 'center',
+    color: IMPULSE_COLORS.white
+  });
+
+  pdf.drawText('OVERALL SCORE', PAGE.marginX + 31, 131, {
+    fontSize: 7,
+    style: 'bold',
+    align: 'center',
+    color: IMPULSE_COLORS.grayLight,
+    charSpace: 0.8
+  });
+
+  pdf.drawText(userProfile?.title || 'Diagnostic Profile', PAGE.marginX + 72, 88, {
+    fontSize: 31,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    lineHeightFactor: 1.05,
+    maxWidth: 82
+  });
+
+  pdf.drawText(userProfile?.blocco || 'Il report identifica il vincolo principale che rallenta la prossima fase di crescita.', PAGE.marginX + 72, 126, {
+    fontSize: 10.5,
+    color: IMPULSE_COLORS.cream,
+    lineHeightFactor: 1.55,
+    maxWidth: 82
+  });
+
+  const boxY = 168;
+  const boxW = 48;
+  const boxGap = 5;
+
+  const boxes = [
+    { title: 'FASCIA', value: String(state.fascia || '-') },
+    { title: 'PROFILO', value: `Profilo ${state.profile || '-'}` },
+    { title: 'STAGE', value: stageLabel }
+  ];
+
+  boxes.forEach((box, index) => {
+    const x = PAGE.marginX + index * (boxW + boxGap);
+
+    pdf.fillRect(x, boxY, boxW, 31, IMPULSE_COLORS.darkSoft);
+
+    pdf.drawText(box.title, x + 5, boxY + 9, {
+      fontSize: 6.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.gold,
+      charSpace: 0.6,
+      maxWidth: boxW - 10
+    });
+
+    pdf.drawText(box.value, x + 5, boxY + 20, {
+      fontSize: 8.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.2,
+      maxWidth: boxW - 10
+    });
+  });
+
+  pdf.cursorY = 222;
+
+  pdf.drawText('MAIN CONSTRAINT', PAGE.marginX, pdf.cursorY, {
+    fontSize: 8,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 1
+  });
+
+  pdf.cursorY += 11;
+
+  const mainConstraint =
+    roadmap.bottomLineConstraint ||
+    userProfile?.manifesta ||
+    'Il vincolo principale richiede priorità operativa prima di aumentare complessità, budget o nuove iniziative.';
+
+  pdf.drawText(mainConstraint, PAGE.marginX, pdf.cursorY, {
+    fontSize: 14,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    lineHeightFactor: 1.45,
+    maxWidth: PAGE.contentWidth
+  });
+}
+
+function drawScoreMapPage(pdf: PDFBuilder, state: any) {
+  const strengths = state.forze || state.strengths || [];
+  const priorities = state.priorita || state.priorities || [];
+  const spiderDims = state.spiderDims || state.processedDims || [];
+
+  pdf.newPage(IMPULSE_COLORS.white);
+
+  pdf.cursorY = 42;
+
+  pdf.drawText('Le tue coordinate.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 30,
+    style: 'bold',
     color: IMPULSE_COLORS.dark
   });
 
-  pdf.cursorY += 12;
+  pdf.cursorY += 17;
 
-  pdf.drawText("IMPULSE Scaling Roadmap.", PAGE.marginX, pdf.cursorY, {
-    fontSize: 30,
-    style: 'bold',
-    color: IMPULSE_COLORS.dark,
-    lineHeightFactor: 1.15
+  pdf.drawText('Questa pagina mostra dove il business è già solido e dove crea più attrito prima del prossimo salto.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 10,
+    color: IMPULSE_COLORS.gray,
+    lineHeightFactor: 1.5,
+    maxWidth: PAGE.contentWidth
   });
 
-  pdf.cursorY += 24;
+  const leftX = PAGE.marginX;
+  const rightX = PAGE.marginX + 82;
+  const startY = 92;
 
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 34, IMPULSE_COLORS.dark);
-
-  pdf.drawText("ROADMAP STAGE", PAGE.marginX + 10, pdf.cursorY + 12, {
+  pdf.drawText('LE TUE FORZE', leftX, startY, {
     fontSize: 8,
-    color: IMPULSE_COLORS.gold,
-    charSpace: 1.5,
-    style: 'bold'
+    style: 'bold',
+    color: IMPULSE_COLORS.teal,
+    charSpace: 0.7
   });
 
-  pdf.drawText(stageLabelText, PAGE.marginX + 10, pdf.cursorY + 24, {
-    fontSize: 18,
-    style: 'bold',
-    color: IMPULSE_COLORS.white,
-    charSpace: 0.5
+  strengths.slice(0, 3).forEach((dim: any, index: number) => {
+    const y = startY + 16 + index * 17;
+
+    pdf.drawText(getDimensionName(dim), leftX, y, {
+      fontSize: 11,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark
+    });
+
+    pdf.drawText(Number(dim.score || 0).toFixed(1), leftX + 57, y, {
+      fontSize: 13,
+      style: 'bold',
+      color: IMPULSE_COLORS.teal
+    });
   });
+
+  pdf.drawText(state.overall >= 75 ? 'AREE DA RIFINIRE' : 'LE TUE PRIORITÀ', rightX, startY, {
+    fontSize: 8,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 0.7
+  });
+
+  priorities.slice(0, 3).forEach((dim: any, index: number) => {
+    const y = startY + 16 + index * 17;
+
+    pdf.drawText(getDimensionName(dim), rightX, y, {
+      fontSize: 11,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark
+    });
+
+    pdf.drawText(Number(dim.score || 0).toFixed(1), rightX + 57, y, {
+      fontSize: 13,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark
+    });
+  });
+
+  pdf.drawRadar(PAGE.width / 2, 215, 48, spiderDims);
+}
+
+function drawRoadmapStagePage(pdf: PDFBuilder, state: any) {
+  const roadmap = state.roadmapInfo || state.stageInfo || {};
+  const stageLabel = getStageLabel(state);
+
+  pdf.newPage(IMPULSE_COLORS.cream);
+
+  pdf.cursorY = 42;
+
+  pdf.drawText('WHEN YOU HIT', PAGE.marginX, pdf.cursorY, {
+    fontSize: 24,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark
+  });
+
+  pdf.cursorY += 18;
+
+  pdf.drawText(stageLabel, PAGE.marginX, pdf.cursorY, {
+    fontSize: 32,
+    style: 'bold',
+    color: IMPULSE_COLORS.teal,
+    lineHeightFactor: 1.05,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 25;
 
   if (roadmap.role) {
-    pdf.drawText(String(roadmap.role).toUpperCase(), PAGE.width - PAGE.marginX - 8, pdf.cursorY + 24, {
+    pdf.drawText(String(roadmap.role).toUpperCase(), PAGE.marginX, pdf.cursorY, {
       fontSize: 8,
-      align: 'right',
-      color: IMPULSE_COLORS.grayLight,
-      charSpace: 0.6
+      style: 'bold',
+      color: IMPULSE_COLORS.gray,
+      charSpace: 0.7
     });
-  }
 
-  pdf.cursorY += 48;
+    pdf.cursorY += 13;
+  }
 
   if (roadmap.headline) {
     pdf.cursorY = pdf.drawText(roadmap.headline, PAGE.marginX, pdf.cursorY, {
-      fontSize: 15,
-      color: IMPULSE_COLORS.teal,
+      fontSize: 12.5,
       style: 'bold',
-      lineHeightFactor: 1.45,
+      color: IMPULSE_COLORS.dark,
+      lineHeightFactor: 1.4,
       maxWidth: PAGE.contentWidth
     });
 
@@ -414,7 +618,7 @@ export async function generateIMPULSEReport(state: any, label?: string) {
 
   if (roadmap.bottomLineConstraint) {
     pdf.cursorY = pdf.drawLuxuryCard(
-      "01. IL VINCOLO DI FONDO",
+      '01. IL VINCOLO DI FONDO',
       roadmap.bottomLineConstraint,
       IMPULSE_COLORS.teal,
       pdf.cursorY,
@@ -422,187 +626,379 @@ export async function generateIMPULSEReport(state: any, label?: string) {
     );
   }
 
-  if (roadmap.troppoPresto) {
-    pdf.cursorY = pdf.drawLuxuryCard(
-      "02. COSA ARRIVA TROPPO PRESTO",
-      roadmap.troppoPresto,
-      IMPULSE_COLORS.darkSoft,
-      pdf.cursorY,
-      IMPULSE_COLORS.white
-    );
-  }
-
-  if (roadmap.diventareSistema) {
-    pdf.cursorY = pdf.drawLuxuryCard(
-      "03. COSA DEVE DIVENTARE SISTEMA",
-      roadmap.diventareSistema,
+  if (roadmap.graduationCriteria && Array.isArray(roadmap.graduationCriteria)) {
+    pdf.cursorY = pdf.drawBulletList(
+      '02. TO GRADUATE',
+      roadmap.graduationCriteria.slice(0, 5),
       IMPULSE_COLORS.gold,
       pdf.cursorY,
       IMPULSE_COLORS.white
-    );
-  }
-
-  // 6b. ROADMAP GRADUATION FOCUS
-  pdf.newPage(IMPULSE_COLORS.white);
-  pdf.cursorY = 48;
-
-  pdf.drawText("Graduation Focus.", PAGE.marginX, pdf.cursorY, {
-    fontSize: 30,
-    style: 'bold',
-    color: IMPULSE_COLORS.dark
-  });
-
-  pdf.cursorY += 16;
-
-  pdf.drawText(
-    "Questa sezione traduce lo stage in criteri pratici: cosa deve diventare più chiaro, più stabile o più trasferibile prima del salto successivo.",
-    PAGE.marginX,
-    pdf.cursorY,
-    {
-      fontSize: 10.5,
-      color: IMPULSE_COLORS.gray,
-      lineHeightFactor: 1.5,
-      maxWidth: PAGE.contentWidth
-    }
-  );
-
-  pdf.cursorY += 26;
-
-  if (roadmap.graduationCriteria && Array.isArray(roadmap.graduationCriteria)) {
-    pdf.cursorY = pdf.drawBulletList(
-      "Criteri per passare allo stage successivo",
-      roadmap.graduationCriteria,
-      IMPULSE_COLORS.teal,
-      pdf.cursorY,
-      IMPULSE_COLORS.cream
     );
   }
 
   if (roadmap.strategicReviewFocus) {
     pdf.cursorY = pdf.drawLuxuryCard(
-      "FOCUS DELLA STRATEGIC REVIEW",
+      '03. FOCUS DELLA STRATEGIC REVIEW',
       roadmap.strategicReviewFocus,
-      IMPULSE_COLORS.gold,
+      IMPULSE_COLORS.teal,
       pdf.cursorY,
       IMPULSE_COLORS.lightBlue
     );
   }
 
-  if (roadmap.nonFare) {
+  if (roadmap.nonFare && pdf.cursorY < 250) {
     pdf.cursorY = pdf.drawLuxuryCard(
-      "ERRORE DA EVITARE",
+      'ERRORE DA EVITARE',
       roadmap.nonFare,
       IMPULSE_COLORS.dark,
       pdf.cursorY,
-      IMPULSE_COLORS.cream
+      IMPULSE_COLORS.white
     );
   }
+}
 
-  // 7. DIMENSION PAGES (6 dimensions x 2 pages = 12 pages)
-  const processedDims = state.processedDims || [];
-  for (const dim of processedDims) {
-    const dimScore = dim.score;
-    
-    // Page A
-    pdf.newPage(IMPULSE_COLORS.white);
-    pdf.drawText(dim.label.toUpperCase(), PAGE.marginX, 50, { fontSize: 10, style: 'bold', color: IMPULSE_COLORS.gray, charSpace: 1 });
-    pdf.drawText("Diagnosi.", PAGE.marginX, 65, { fontSize: 40, style: 'bold', color: IMPULSE_COLORS.teal });
-    pdf.drawText(`SCORE: ${dimScore.toFixed(1)} / 10`, PAGE.marginX, 85, { fontSize: 16, style: 'bold', color: IMPULSE_COLORS.dark, charSpace: 0.5 });
-    pdf.doc.setDrawColor(IMPULSE_COLORS.teal[0], IMPULSE_COLORS.teal[1], IMPULSE_COLORS.teal[2]);
-    pdf.doc.setLineWidth(1);
-    pdf.doc.line(PAGE.marginX, 95, PAGE.marginX + 40, 95);
-    
-    pdf.cursorY = 110;
-    pdf.cursorY = pdf.drawLuxuryCard("COSA INDICA IL TUO SCORE", dim.cosaIndica, IMPULSE_COLORS.teal, pdf.cursorY, IMPULSE_COLORS.lightBlue);
-    pdf.cursorY = pdf.drawLuxuryCard("IL VINCOLO EMERSO", dim.vincolo, IMPULSE_COLORS.gold, pdf.cursorY, IMPULSE_COLORS.cream);
-    
-    // Page B
-    pdf.newPage(IMPULSE_COLORS.white);
-    pdf.cursorY = 50;
-    pdf.drawText(dim.label.toUpperCase() + " · PRIORITÀ", PAGE.marginX, pdf.cursorY, { fontSize: 10, style: 'bold', color: IMPULSE_COLORS.gray, charSpace: 1 });
-    pdf.cursorY += 20;
-    
-    pdf.cursorY = pdf.drawLuxuryCard("COSA NON FARE ADESSO", dim.nonFare, IMPULSE_COLORS.dark, pdf.cursorY, IMPULSE_COLORS.cream);
-    pdf.cursorY = pdf.drawLuxuryCard("COSA RICHIEDE LAVORO APPLICATO", dim.lavoro, IMPULSE_COLORS.teal, pdf.cursorY, IMPULSE_COLORS.lightBlue);
+function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
+  const priorities = state.priorita || state.priorities || [];
+  const fallbackDims = state.processedDims || [];
+  const topThree = priorities.length ? priorities.slice(0, 3) : fallbackDims.slice(0, 3);
+
+  pdf.newPage(IMPULSE_COLORS.white);
+
+  pdf.cursorY = 42;
+
+  pdf.drawText('THE 3 THINGS TO FIX FIRST', PAGE.marginX, pdf.cursorY, {
+    fontSize: 27,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark,
+    lineHeightFactor: 1.05
+  });
+
+  pdf.cursorY += 22;
+
+  pdf.drawText('Queste sono le aree che creano più attrito operativo. Risolverle prima evita di scalare confusione, costi o dipendenza dal founder.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 10,
+    color: IMPULSE_COLORS.gray,
+    lineHeightFactor: 1.5,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 24;
+
+  topThree.forEach((dim: any, index: number) => {
+    const y = pdf.cursorY;
+    const score = Number(dim.score || 0);
+    const title = `${index + 1}. ${getDimensionName(dim).toUpperCase()} · ${score.toFixed(1)} / 10`;
+    const body =
+      dim.vincolo ||
+      dim.meaning ||
+      dim.cosaIndica ||
+      'Questa area richiede lavoro applicato prima di scalare.';
+
+    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 48, index === 0 ? IMPULSE_COLORS.lightBlue : IMPULSE_COLORS.cream);
+    pdf.fillRect(PAGE.marginX, y, 4, 48, index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold);
+
+    pdf.drawText(title, PAGE.marginX + 10, y + 11, {
+      fontSize: 8,
+      style: 'bold',
+      color: index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.dark,
+      charSpace: 0.4
+    });
+
+    pdf.drawText(fitText(body, 180), PAGE.marginX + 10, y + 22, {
+      fontSize: 9.2,
+      color: IMPULSE_COLORS.darkSoft,
+      lineHeightFactor: 1.35,
+      maxWidth: PAGE.contentWidth - 18
+    });
+
+    pdf.cursorY += 58;
+  });
+
+  if (topThree[0]?.nonFare || topThree[0]?.lavoro) {
+    const mainDim = topThree[0];
+
+    pdf.cursorY += 2;
+
+    if (mainDim.lavoro) {
+      pdf.cursorY = pdf.drawLuxuryCard(
+        'COSA FARE PRIMA',
+        mainDim.lavoro,
+        IMPULSE_COLORS.teal,
+        pdf.cursorY,
+        IMPULSE_COLORS.lightBlue
+      );
+    }
+
+    if (mainDim.nonFare && pdf.cursorY < 255) {
+      pdf.cursorY = pdf.drawLuxuryCard(
+        'COSA NON FARE ADESSO',
+        mainDim.nonFare,
+        IMPULSE_COLORS.dark,
+        pdf.cursorY,
+        IMPULSE_COLORS.cream
+      );
+    }
+  }
+}
+
+function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
+  const dims = state.processedDims || [];
+
+  pdf.newPage(IMPULSE_COLORS.cream);
+
+  pdf.cursorY = 42;
+
+  pdf.drawText('YOUR DIAGNOSTIC MAP', PAGE.marginX, pdf.cursorY, {
+    fontSize: 29,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark
+  });
+
+  pdf.cursorY += 18;
+
+  pdf.drawText('Le 6 dimensioni mostrano dove il business è forte, dove è instabile e dove il valore resta bloccato.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 10,
+    color: IMPULSE_COLORS.gray,
+    lineHeightFactor: 1.5,
+    maxWidth: PAGE.contentWidth
+  });
+
+  const cardW = 72;
+  const cardH = 52;
+  const gapX = 10;
+  const gapY = 11;
+  const startX = PAGE.marginX;
+  const startY = 88;
+
+  dims.slice(0, 6).forEach((dim: any, index: number) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = startX + col * (cardW + gapX);
+    const y = startY + row * (cardH + gapY);
+    const score = Number(dim.score || 0);
+    const status = getScoreStatus(score);
+    const accent = score >= 7 ? IMPULSE_COLORS.teal : score >= 5 ? IMPULSE_COLORS.gold : IMPULSE_COLORS.dark;
+
+    pdf.fillRect(x, y, cardW, cardH, IMPULSE_COLORS.white);
+    pdf.fillRect(x, y, 3, cardH, accent);
+
+    pdf.drawText(getDimensionName(dim).toUpperCase(), x + 8, y + 10, {
+      fontSize: 7.2,
+      style: 'bold',
+      color: accent,
+      charSpace: 0.4,
+      maxWidth: cardW - 14
+    });
+
+    pdf.drawText(`${score.toFixed(1)} / 10`, x + 8, y + 22, {
+      fontSize: 16,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark
+    });
+
+    pdf.drawText(status, x + 8, y + 31, {
+      fontSize: 6.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.gray,
+      charSpace: 0.4
+    });
+
+    pdf.drawText(fitText(dim.vincolo || dim.cosaIndica || 'Area diagnostica da monitorare.', 95), x + 8, y + 39, {
+      fontSize: 6.8,
+      color: IMPULSE_COLORS.darkSoft,
+      lineHeightFactor: 1.25,
+      maxWidth: cardW - 14
+    });
+  });
+
+  pdf.cursorY = 248;
+
+  pdf.drawText('Bottom line', PAGE.marginX, pdf.cursorY, {
+    fontSize: 10,
+    style: 'bold',
+    color: IMPULSE_COLORS.teal
+  });
+
+  pdf.cursorY += 10;
+
+  pdf.drawText('Il report non serve a descrivere ogni dettaglio del business. Serve a identificare il vincolo più costoso e a decidere cosa non scalare ancora.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 11,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark,
+    lineHeightFactor: 1.45,
+    maxWidth: PAGE.contentWidth
+  });
+}
+
+function drawProfilePage(pdf: PDFBuilder, state: any, userProfile: any) {
+  pdf.newPage(IMPULSE_COLORS.dark, true);
+
+  pdf.cursorY = 45;
+
+  pdf.drawText(`PROFILO ${state.profile || ''}`, PAGE.marginX, pdf.cursorY, {
+    fontSize: 9,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 1.2
+  });
+
+  pdf.cursorY += 18;
+
+  pdf.drawText(userProfile?.title || 'Diagnostic Profile', PAGE.marginX, pdf.cursorY, {
+    fontSize: 38,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    lineHeightFactor: 1.05,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 32;
+
+  pdf.drawText(userProfile?.blocco || '', PAGE.marginX, pdf.cursorY, {
+    fontSize: 12.5,
+    style: 'italic',
+    color: IMPULSE_COLORS.cream,
+    lineHeightFactor: 1.45,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 34;
+
+  if (userProfile?.manifesta) {
+    pdf.drawText('COME SI MANIFESTA', PAGE.marginX, pdf.cursorY, {
+      fontSize: 8,
+      style: 'bold',
+      color: IMPULSE_COLORS.teal,
+      charSpace: 0.8
+    });
+
+    pdf.cursorY += 9;
+
+    pdf.cursorY = pdf.drawText(userProfile.manifesta, PAGE.marginX, pdf.cursorY, {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    });
+
+    pdf.cursorY += 13;
   }
 
-  // 8. PROFILE PAGE
-  pdf.newPage(IMPULSE_COLORS.dark, true);
-  const userProfile = getProfileData(state.profile, state.overall);
-  pdf.cursorY = 60;
-  pdf.drawText(`PROFILO ${state.profile}`, PAGE.marginX, pdf.cursorY, { fontSize: 12, style: 'bold', color: IMPULSE_COLORS.gold, charSpace: 1.5 });
-  pdf.cursorY += 20;
-  pdf.drawText(`${userProfile.title}.`, PAGE.marginX, pdf.cursorY, { fontSize: 48, style: 'bold', color: IMPULSE_COLORS.white });
-  pdf.cursorY += 25;
-  pdf.drawText(userProfile.blocco, PAGE.marginX, pdf.cursorY, { fontSize: 14, style: 'italic', color: IMPULSE_COLORS.cream, lineHeightFactor: 1.5 });
-  pdf.cursorY += 30;
-  
-  pdf.drawText("COME SI MANIFESTA:", PAGE.marginX, pdf.cursorY, { fontSize: 9, style: 'bold', color: IMPULSE_COLORS.teal, charSpace: 0.5 });
-  pdf.cursorY += 8;
-  pdf.cursorY = pdf.drawText(userProfile.manifesta, PAGE.marginX, pdf.cursorY, { fontSize: 11, color: IMPULSE_COLORS.white, lineHeightFactor: 1.6 });
-  pdf.cursorY += 15;
-  
-  pdf.drawText("IL RISCHIO SE IGNORATO:", PAGE.marginX, pdf.cursorY, { fontSize: 9, style: 'bold', color: IMPULSE_COLORS.gold, charSpace: 0.5 });
-  pdf.cursorY += 8;
-  pdf.cursorY = pdf.drawText(userProfile.rischio, PAGE.marginX, pdf.cursorY, { fontSize: 11, color: IMPULSE_COLORS.white, lineHeightFactor: 1.6 });
+  if (userProfile?.rischio) {
+    pdf.drawText('IL RISCHIO SE IGNORATO', PAGE.marginX, pdf.cursorY, {
+      fontSize: 8,
+      style: 'bold',
+      color: IMPULSE_COLORS.gold,
+      charSpace: 0.8
+    });
 
-  // 8b. STRATEGIC REVIEW CTA
-  pdf.newPage(IMPULSE_COLORS.dark, true);
-  pdf.cursorY = 80;
-  // A box with dark background, gold accent line
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 120, IMPULSE_COLORS.darkSoft);
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, 4, 120, IMPULSE_COLORS.gold);
-  
-  let ctaY = pdf.cursorY + 16;
-  pdf.drawText("DIAGNOSI APPROFONDITA", PAGE.marginX + 15, ctaY, { fontSize: 9, style: 'bold', color: IMPULSE_COLORS.gold, charSpace: 1.5 });
-  ctaY += 15;
-  pdf.drawText(`${userProfile.title}\nnella IMPULSE Strategic Review`, PAGE.marginX + 15, ctaY, { fontSize: 20, style: 'bold', color: IMPULSE_COLORS.white, lineHeightFactor: 1.3 });
-  ctaY += 28;
-  
-  const ctaDesc = "La diagnosi estesa del tuo profilo — con priorità operative specifiche e anti-azioni da evitare applicate al tuo caso — è il cuore della Strategic Review.\n\nIl report ti mostra dove guardare. La Review serve a decidere cosa fare prima.";
-  pdf.drawText(ctaDesc, PAGE.marginX + 15, ctaY, { fontSize: 10, color: IMPULSE_COLORS.grayLight, lineHeightFactor: 1.5, maxWidth: PAGE.contentWidth - 25 });
-  ctaY += 28;
-  
-  // CTA Button
-  pdf.fillRect(PAGE.marginX + 15, ctaY, 65, 12, IMPULSE_COLORS.gold);
-  pdf.drawText("CANDIDATI ALLA REVIEW", PAGE.marginX + 15 + 32.5, ctaY + 8, { align:'center', fontSize: 9, style:'bold', color: IMPULSE_COLORS.dark });
+    pdf.cursorY += 9;
 
-  // 9. PROFILE DIRECTIVES
-  pdf.newPage(IMPULSE_COLORS.dark, true);
-  pdf.cursorY = 60;
-  pdf.drawText("Le tue direttive.", PAGE.marginX, pdf.cursorY, { fontSize: 30, style: 'bold', color: IMPULSE_COLORS.white });
-  pdf.cursorY += 20;
-  
-  pdf.doc.setDrawColor(IMPULSE_COLORS.gray[0], IMPULSE_COLORS.gray[1], IMPULSE_COLORS.gray[2]);
-  pdf.doc.setLineWidth(0.5);
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 40, IMPULSE_COLORS.darkSoft);
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, 4, 40, IMPULSE_COLORS.gold);
-  pdf.drawText("LA DECISIONE CHE VIENE PRIMA", PAGE.marginX + 10, pdf.cursorY + 12, { fontSize: 9, style: 'bold', color: IMPULSE_COLORS.gold, charSpace: 0.5 });
-  pdf.drawText(userProfile.decisione, PAGE.marginX + 10, pdf.cursorY + 22, { fontSize: 12, color: IMPULSE_COLORS.white, lineHeightFactor: 1.5, maxWidth: PAGE.contentWidth - 20 });
-  
-  pdf.cursorY += 60;
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 40, IMPULSE_COLORS.darkSoft);
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, 4, 40, IMPULSE_COLORS.grayLight);
-  pdf.drawText("ERRORE DA EVITARE", PAGE.marginX + 10, pdf.cursorY + 12, { fontSize: 9, style: 'bold', color: IMPULSE_COLORS.grayLight, charSpace: 0.5 });
-  pdf.drawText(userProfile.nonFare, PAGE.marginX + 10, pdf.cursorY + 22, { fontSize: 12, color: IMPULSE_COLORS.white, lineHeightFactor: 1.5, maxWidth: PAGE.contentWidth - 20 });
+    pdf.cursorY = pdf.drawText(userProfile.rischio, PAGE.marginX, pdf.cursorY, {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    });
 
-  // 10. STRATEGIC REVIEW (Closing)
+    pdf.cursorY += 13;
+  }
+
+  if (userProfile?.decisione) {
+    pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 38, IMPULSE_COLORS.darkSoft);
+    pdf.fillRect(PAGE.marginX, pdf.cursorY, 4, 38, IMPULSE_COLORS.gold);
+
+    pdf.drawText('LA DECISIONE CHE VIENE PRIMA', PAGE.marginX + 10, pdf.cursorY + 11, {
+      fontSize: 7.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.gold,
+      charSpace: 0.7
+    });
+
+    pdf.drawText(userProfile.decisione, PAGE.marginX + 10, pdf.cursorY + 21, {
+      fontSize: 10,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.35,
+      maxWidth: PAGE.contentWidth - 18
+    });
+  }
+}
+
+function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) {
   pdf.newPage(IMPULSE_COLORS.teal, true);
-  pdf.cursorY = 80;
-  pdf.drawText("Strategic Review.", PAGE.width/2, pdf.cursorY, { align: 'center', fontSize: 36, style: 'bold', color: IMPULSE_COLORS.white });
-  pdf.cursorY += 25;
-  pdf.drawText("Il report ti mostra dove guardare. La Review serve a decidere cosa fare prima, in quale ordine, e cosa ignorare.", PAGE.width/2, pdf.cursorY, { align: 'center', fontSize: 14, style: 'italic', color: IMPULSE_COLORS.cream, maxWidth: 140, lineHeightFactor: 1.5 });
-  
-  pdf.cursorY += 40;
-  pdf.drawText("La Review è il ponte tra questa diagnosi e la tua implementazione operativa. Se riconosci i tuoi vincoli operativi descritti nel Profilo, candidati alla Strategic Review per trasformare questa diagnosi in una sequenza operativa applicata al tuo caso.", PAGE.width/2, pdf.cursorY, { align: 'center', fontSize: 11, color: IMPULSE_COLORS.white, maxWidth: 120, lineHeightFactor: 1.5 });
 
-  pdf.cursorY += 40;
-  const ctaW = 60;
-  pdf.fillRect(PAGE.width/2 - ctaW/2, pdf.cursorY, ctaW, 14, IMPULSE_COLORS.gold);
-  pdf.drawText("davidedileo.it", PAGE.width/2, pdf.cursorY + 9, { align:'center', fontSize: 11, style:'bold', color: IMPULSE_COLORS.dark });
+  pdf.cursorY = 58;
 
-  const filename = label 
-    ? `IMPULSE_Report_${label.replace(/\s+/g, '_')}.pdf`
-    : `IMPULSE_Report_${String(state.name || state.user?.name || 'Report').replace(/\s+/g, '_')}.pdf`;
+  pdf.drawText('THE REPORT SHOWS WHERE THE CONSTRAINT IS.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 27,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    lineHeightFactor: 1.08,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 38;
+
+  pdf.drawText('THE REVIEW DECIDES WHAT TO DO FIRST.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 27,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    lineHeightFactor: 1.08,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 42;
+
+  const profileTitle = userProfile?.title || 'il tuo profilo diagnostico';
+
+  pdf.drawText(
+    `La Strategic Review traduce ${profileTitle} in una sequenza operativa: cosa correggere, cosa ignorare, cosa rendere sistema e cosa non scalare ancora.`,
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 12,
+      color: IMPULSE_COLORS.cream,
+      lineHeightFactor: 1.55,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 48;
+
+  pdf.fillRect(PAGE.marginX, pdf.cursorY, 95, 15, IMPULSE_COLORS.gold);
+
+  pdf.drawText('CANDIDATI ALLA REVIEW', PAGE.marginX + 47.5, pdf.cursorY + 9.8, {
+    fontSize: 8.5,
+    style: 'bold',
+    align: 'center',
+    color: IMPULSE_COLORS.dark
+  });
+
+  pdf.cursorY += 42;
+
+  pdf.drawText('davidedileo.it', PAGE.marginX, pdf.cursorY, {
+    fontSize: 20,
+    style: 'bold',
+    color: IMPULSE_COLORS.white
+  });
+}
+
+export async function generateIMPULSEReport(state: any, label?: string) {
+  const pdf = new PDFBuilder(state);
+  const userProfile = getProfileData(state.profile, state.overall);
+
+  drawExecutiveResultPage(pdf, state, userProfile);
+  drawScoreMapPage(pdf, state);
+  drawRoadmapStagePage(pdf, state);
+  drawTopPrioritiesPage(pdf, state);
+  drawDimensionCardsPage(pdf, state);
+  drawProfilePage(pdf, state, userProfile);
+  drawStrategicReviewPage(pdf, state, userProfile);
+
+  const filename = label
+    ? `IMPULSE_Report_${getFilenameSafe(label)}.pdf`
+    : `IMPULSE_Report_${getFilenameSafe(getDisplayName(state))}.pdf`;
+
   pdf.save(filename);
 }
