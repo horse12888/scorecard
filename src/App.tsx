@@ -119,9 +119,35 @@ export default function App() {
     if (currentIdx < QUESTIONS.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
-      const finalResult = calculateScorecardResult(currentAnswers, user);
-      setResult(finalResult);
-      setStep('summary');
+     const finalResult = calculateScorecardResult(currentAnswers, user);
+const state = computeDiagnosticState(finalResult.overall, finalResult.dimensions);
+
+setResult({
+  ...finalResult,
+
+  fascia: state.fascia,
+
+  profile: state.profile,
+  profileData: state.profileData,
+
+  stage: state.stageLabel,
+  stageLabel: state.stageLabel,
+
+  roadmapStage: state.roadmapStage,
+  roadmapInfo: state.roadmapInfo,
+
+  strengths: state.forze,
+  priorities: state.priorita,
+  forze: state.forze,
+  priorita: state.priorita,
+
+  processedDims: state.processedDims,
+  stageInfo: state.stageInfo,
+
+  spiderDims: state.processedDims.map((d: any) => ({ label: d.label, score: d.score }))
+});
+
+setStep('summary');
     }
   };
 
@@ -140,9 +166,36 @@ export default function App() {
 
   const runTest = async (label: string, mockAnswers: Record<string, any>, mockUser: any) => {
     const testResult = calculateScorecardResult(mockAnswers, mockUser);
-    setResult(testResult);
-    setStep('summary');
-    await generateIMPULSEReport(testResult, label);
+const state = computeDiagnosticState(testResult.overall, testResult.dimensions);
+
+const enrichedTestResult = {
+  ...testResult,
+
+  fascia: state.fascia,
+
+  profile: state.profile,
+  profileData: state.profileData,
+
+  stage: state.stageLabel,
+  stageLabel: state.stageLabel,
+
+  roadmapStage: state.roadmapStage,
+  roadmapInfo: state.roadmapInfo,
+
+  strengths: state.forze,
+  priorities: state.priorita,
+  forze: state.forze,
+  priorita: state.priorita,
+
+  processedDims: state.processedDims,
+  stageInfo: state.stageInfo,
+
+  spiderDims: state.processedDims.map((d: any) => ({ label: d.label, score: d.score }))
+};
+
+setResult(enrichedTestResult);
+setStep('summary');
+await generateIMPULSEReport(enrichedTestResult, label);
   };
 
   const makeAnswers = (
