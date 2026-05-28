@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { generateIMPULSEReport } from './pdf';
-import { QUESTIONS, Question } from './questions';
+import { QUESTIONS } from './questions';
 import { calculateScorecardResult } from './scoring';
 import { computeDiagnosticState } from './diagnostics';
 
