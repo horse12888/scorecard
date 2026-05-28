@@ -205,17 +205,57 @@ class PDFBuilder {
     this.doc.lines(rel, start[0], start[1], [1, 1], style, true);
   }
 
-  drawLuxuryCard(title: string, body: string, accentColor: number[], yPos: number, bg: number[] = IMPULSE_COLORS.cream) {
-    const testLines = this.doc.splitTextToSize(body, PAGE.contentWidth - 14);
+    drawLuxuryCard(title: string, body: string, accentColor: number[], yPos: number, bg: number[] = IMPULSE_COLORS.cream) {
+    const safeBody = body || "";
+    const testLines = this.doc.splitTextToSize(safeBody, PAGE.contentWidth - 14);
     const cardHeight = Math.max(30, 20 + (testLines.length * 5));
     
     this.fillRect(PAGE.marginX, yPos, PAGE.contentWidth, cardHeight, bg);
     this.fillRect(PAGE.marginX, yPos, 4, cardHeight, accentColor);
     
     this.drawText(title.toUpperCase(), PAGE.marginX + 10, yPos + 10, { fontSize: 8, style: 'bold', color: accentColor });
-    this.drawText(body, PAGE.marginX + 10, yPos + 18, { fontSize: 10.5, color: IMPULSE_COLORS.darkSoft, lineHeightFactor: 1.6, maxWidth: PAGE.contentWidth - 14 });
+    this.drawText(safeBody, PAGE.marginX + 10, yPos + 18, { fontSize: 10.5, color: IMPULSE_COLORS.darkSoft, lineHeightFactor: 1.6, maxWidth: PAGE.contentWidth - 14 });
     
-    return yPos + cardHeight + 8; // return next Y
+    return yPos + cardHeight + 8;
+  }
+
+  drawBulletList(title: string, items: string[], accentColor: number[], yPos: number, bg: number[] = IMPULSE_COLORS.white) {
+    const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+    const estimatedHeight = Math.max(34, 20 + safeItems.length * 10);
+
+    this.fillRect(PAGE.marginX, yPos, PAGE.contentWidth, estimatedHeight, bg);
+    this.fillRect(PAGE.marginX, yPos, 4, estimatedHeight, accentColor);
+
+    this.drawText(title.toUpperCase(), PAGE.marginX + 10, yPos + 10, {
+      fontSize: 8,
+      style: 'bold',
+      color: accentColor,
+      charSpace: 0.5
+    });
+
+    let currentY = yPos + 21;
+
+    safeItems.forEach((item: string) => {
+      this.drawText("•", PAGE.marginX + 10, currentY, {
+        fontSize: 10,
+        style: 'bold',
+        color: accentColor,
+        maxWidth: 4
+      });
+
+      currentY = this.drawText(item, PAGE.marginX + 16, currentY, {
+        fontSize: 9.5,
+        color: IMPULSE_COLORS.darkSoft,
+        lineHeightFactor: 1.45,
+        maxWidth: PAGE.contentWidth - 24
+      });
+
+      currentY += 2;
+    });
+
+    return yPos + estimatedHeight + 8;
+  }
+}
   }
 }
 
@@ -312,24 +352,154 @@ export async function generateIMPULSEReport(state: any, label?: string) {
   // Radar Chart on the right
   pdf.drawRadar(PAGE.width - 65, pdf.cursorY + 40, 35, state.spiderDims);
 
-  // 6. GROWTH STAGE
+    // 6. IMPULSE SCALING ROADMAP
   pdf.newPage(IMPULSE_COLORS.cream);
-  pdf.cursorY = 50;
-  pdf.drawText("Il tuo Stadio Operativo.", PAGE.marginX, pdf.cursorY, { fontSize: 30, style: 'bold', color: IMPULSE_COLORS.dark });
-  pdf.cursorY += 30;
+  pdf.cursorY = 45;
 
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 30, IMPULSE_COLORS.dark);
-  pdf.drawText("STAGE:", PAGE.marginX + 10, pdf.cursorY + 12, { fontSize: 9, color: IMPULSE_COLORS.gold, charSpace: 1.5 });
-  const stageLabelText = state.stageLabel || state.stage || state.stageInfo?.label || state.stageInfo?.title || "STAGE NON DISPONIBILE";
-  pdf.drawText(stageLabelText, PAGE.marginX + 10, pdf.cursorY + 22, { fontSize: 18, style: 'bold', color: IMPULSE_COLORS.white, charSpace: 0.5 });
-  pdf.cursorY += 45;
+  const roadmap = state.roadmapInfo || state.stageInfo || {};
+  const stageLabelText = state.roadmapStage || state.stageLabel || state.stage || roadmap.label || "STAGE NON DISPONIBILE";
 
-  pdf.drawText(state.stageInfo.headline, PAGE.marginX, pdf.cursorY, { fontSize: 16, color: IMPULSE_COLORS.teal, style: 'bold', lineHeightFactor: 1.4 });
-  pdf.cursorY += 25;
+  pdf.drawText("Il tuo punto nella", PAGE.marginX, pdf.cursorY, {
+    fontSize: 18,
+    style: 'normal',
+    color: IMPULSE_COLORS.dark
+  });
 
-  pdf.cursorY = pdf.drawLuxuryCard("01. COSA ARRIVA TROPPO PRESTO", state.stageInfo.troppoPresto, IMPULSE_COLORS.darkSoft, pdf.cursorY, IMPULSE_COLORS.white);
-  pdf.cursorY = pdf.drawLuxuryCard("02. COSA DEVE DIVENTARE SISTEMA PRIMA", state.stageInfo.diventareSistema, IMPULSE_COLORS.teal, pdf.cursorY, IMPULSE_COLORS.white);
-  pdf.cursorY = pdf.drawLuxuryCard("03. COSA NON FARE ADESSO", state.stageInfo.nonFare, IMPULSE_COLORS.gold, pdf.cursorY, IMPULSE_COLORS.white);
+  pdf.cursorY += 12;
+
+  pdf.drawText("IMPULSE Scaling Roadmap.", PAGE.marginX, pdf.cursorY, {
+    fontSize: 30,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark,
+    lineHeightFactor: 1.15
+  });
+
+  pdf.cursorY += 24;
+
+  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 34, IMPULSE_COLORS.dark);
+
+  pdf.drawText("ROADMAP STAGE", PAGE.marginX + 10, pdf.cursorY + 12, {
+    fontSize: 8,
+    color: IMPULSE_COLORS.gold,
+    charSpace: 1.5,
+    style: 'bold'
+  });
+
+  pdf.drawText(stageLabelText, PAGE.marginX + 10, pdf.cursorY + 24, {
+    fontSize: 18,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.5
+  });
+
+  if (roadmap.role) {
+    pdf.drawText(String(roadmap.role).toUpperCase(), PAGE.width - PAGE.marginX - 8, pdf.cursorY + 24, {
+      fontSize: 8,
+      align: 'right',
+      color: IMPULSE_COLORS.grayLight,
+      charSpace: 0.6
+    });
+  }
+
+  pdf.cursorY += 48;
+
+  if (roadmap.headline) {
+    pdf.cursorY = pdf.drawText(roadmap.headline, PAGE.marginX, pdf.cursorY, {
+      fontSize: 15,
+      color: IMPULSE_COLORS.teal,
+      style: 'bold',
+      lineHeightFactor: 1.45,
+      maxWidth: PAGE.contentWidth
+    });
+
+    pdf.cursorY += 10;
+  }
+
+  if (roadmap.bottomLineConstraint) {
+    pdf.cursorY = pdf.drawLuxuryCard(
+      "01. IL VINCOLO DI FONDO",
+      roadmap.bottomLineConstraint,
+      IMPULSE_COLORS.teal,
+      pdf.cursorY,
+      IMPULSE_COLORS.white
+    );
+  }
+
+  if (roadmap.troppoPresto) {
+    pdf.cursorY = pdf.drawLuxuryCard(
+      "02. COSA ARRIVA TROPPO PRESTO",
+      roadmap.troppoPresto,
+      IMPULSE_COLORS.darkSoft,
+      pdf.cursorY,
+      IMPULSE_COLORS.white
+    );
+  }
+
+  if (roadmap.diventareSistema) {
+    pdf.cursorY = pdf.drawLuxuryCard(
+      "03. COSA DEVE DIVENTARE SISTEMA",
+      roadmap.diventareSistema,
+      IMPULSE_COLORS.gold,
+      pdf.cursorY,
+      IMPULSE_COLORS.white
+    );
+  }
+
+  // 6b. ROADMAP GRADUATION FOCUS
+  pdf.newPage(IMPULSE_COLORS.white);
+  pdf.cursorY = 48;
+
+  pdf.drawText("Graduation Focus.", PAGE.marginX, pdf.cursorY, {
+    fontSize: 30,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark
+  });
+
+  pdf.cursorY += 16;
+
+  pdf.drawText(
+    "Questa sezione traduce lo stage in criteri pratici: cosa deve diventare più chiaro, più stabile o più trasferibile prima del salto successivo.",
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 26;
+
+  if (roadmap.graduationCriteria && Array.isArray(roadmap.graduationCriteria)) {
+    pdf.cursorY = pdf.drawBulletList(
+      "Criteri per passare allo stage successivo",
+      roadmap.graduationCriteria,
+      IMPULSE_COLORS.teal,
+      pdf.cursorY,
+      IMPULSE_COLORS.cream
+    );
+  }
+
+  if (roadmap.strategicReviewFocus) {
+    pdf.cursorY = pdf.drawLuxuryCard(
+      "FOCUS DELLA STRATEGIC REVIEW",
+      roadmap.strategicReviewFocus,
+      IMPULSE_COLORS.gold,
+      pdf.cursorY,
+      IMPULSE_COLORS.lightBlue
+    );
+  }
+
+  if (roadmap.nonFare) {
+    pdf.cursorY = pdf.drawLuxuryCard(
+      "ERRORE DA EVITARE",
+      roadmap.nonFare,
+      IMPULSE_COLORS.dark,
+      pdf.cursorY,
+      IMPULSE_COLORS.cream
+    );
+  }
 
   // 7. DIMENSION PAGES (6 dimensions x 2 pages = 12 pages)
   const processedDims = state.processedDims || [];
