@@ -46,24 +46,35 @@ export default function App() {
             const state = computeDiagnosticState(parsed.overall, parsed.dimensions);
             
             setResult({
-              name: parsed.name,
-              company: parsed.company || '',
-              email: parsed.email || '',
-              metadata: parsed.metadata || {},
-              overall: parsed.overall,
-              fascia: state.fascia,
-              profile: state.profile,
-              stage: state.stageLabel,
-              stageLabel: state.stageLabel,
-              dimensions: parsed.dimensions,
-              strengths: state.forze,
-              priorities: state.priorita,
-              forze: state.forze,
-              priorita: state.priorita,
-              processedDims: state.processedDims,
-              stageInfo: state.stageInfo,
-              spiderDims: state.processedDims.map((d: any) => ({ label: d.label, score: d.score }))
-            });
+  name: parsed.name,
+  company: parsed.company || '',
+  email: parsed.email || '',
+  metadata: parsed.metadata || {},
+  overall: parsed.overall,
+
+  fascia: state.fascia,
+
+  profile: state.profile,
+  profileData: state.profileData,
+
+  stage: state.stageLabel,
+  stageLabel: state.stageLabel,
+
+  roadmapStage: state.roadmapStage,
+  roadmapInfo: state.roadmapInfo,
+
+  dimensions: parsed.dimensions,
+
+  strengths: state.forze,
+  priorities: state.priorita,
+  forze: state.forze,
+  priorita: state.priorita,
+
+  processedDims: state.processedDims,
+  stageInfo: state.stageInfo,
+
+  spiderDims: state.processedDims.map((d: any) => ({ label: d.label, score: d.score }))
+});
             setStep('summary');
           } else {
             console.error("Validation failed", parsed);
