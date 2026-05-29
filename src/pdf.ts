@@ -751,24 +751,62 @@ function getThreePriorities(state: any) {
 
   const fallbackDims = Array.isArray(state.processedDims) ? state.processedDims : [];
 
-  const sortedFallback = [...fallbackDims].sort((a: any, b: any) => {
-    return Number(a.score || 0) - Number(b.score || 0);
+  const truePriorities = priorities.filter((dim: any) => {
+    return Number(dim.score || 0) < 7;
   });
 
-  const topThree = [...priorities];
+  const sortedWeakDims = [...fallbackDims]
+    .filter((dim: any) => Number(dim.score || 0) < 7)
+    .sort((a: any, b: any) => Number(a.score || 0) - Number(b.score || 0));
 
-  sortedFallback.forEach((dim: any) => {
-    const alreadyIncluded = topThree.some((p: any) => {
+  const selected: any[] = [];
+
+  truePriorities.forEach((dim: any) => {
+    const alreadyIncluded = selected.some((p: any) => {
       return String(p.key || p.label) === String(dim.key || dim.label);
     });
 
-    if (!alreadyIncluded && topThree.length < 3) {
-      topThree.push(dim);
+    if (!alreadyIncluded && selected.length < 3) {
+      selected.push({
+        ...dim,
+        priorityType: 'constraint'
+      });
     }
   });
 
-  return topThree.slice(0, 3);
+  sortedWeakDims.forEach((dim: any) => {
+    const alreadyIncluded = selected.some((p: any) => {
+      return String(p.key || p.label) === String(dim.key || dim.label);
+    });
+
+    if (!alreadyIncluded && selected.length < 3) {
+      selected.push({
+        ...dim,
+        priorityType: 'constraint'
+      });
+    }
+  });
+
+  if (selected.length < 3) {
+    const sortedProtectDims = [...fallbackDims]
+      .filter((dim: any) => {
+        return !selected.some((p: any) => String(p.key || p.label) === String(dim.key || dim.label));
+      })
+      .sort((a: any, b: any) => Number(b.score || 0) - Number(a.score || 0));
+
+    sortedProtectDims.forEach((dim: any) => {
+      if (selected.length < 3) {
+        selected.push({
+          ...dim,
+          priorityType: 'protect'
+        });
+      }
+    });
+  }
+
+  return selected.slice(0, 3);
 }
+
 function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) {
   const roadmap = state.roadmapInfo || state.stageInfo || {};
   const name = getDisplayName(state);
@@ -1111,17 +1149,22 @@ function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
 function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
   const topThree = getThreePriorities(state);
   const isHighScore = Number(state.overall || 0) >= 85;
+  const hasMixedCards = topThree.some((dim: any) => dim.priorityType === 'protect') && !isHighScore;
 
   pdf.newPage(IMPULSE_COLORS.white);
 
   pdf.cursorY = 40;
 
   pdf.drawText(
-    isHighScore ? 'LE 3 AREE DA RENDERE TRASFERIBILI' : 'LE 3 PRIORITÀ OPERATIVE',
+    isHighScore
+      ? 'LE 3 AREE DA RENDERE TRASFERIBILI'
+      : hasMixedCards
+        ? 'PRIORITÀ E AREE DA PROTEGGERE'
+        : 'LE 3 PRIORITÀ OPERATIVE',
     PAGE.marginX,
     pdf.cursorY,
     {
-      fontSize: isHighScore ? 24 : 27,
+      fontSize: isHighScore ? 24 : hasMixedCards ? 25 : 27,
       style: 'bold',
       color: IMPULSE_COLORS.dark,
       lineHeightFactor: 1.05,
@@ -1134,7 +1177,9 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
   pdf.drawText(
     isHighScore
       ? 'Con uno score alto, il lavoro non è correggere debolezze evidenti. È proteggere ciò che funziona e renderlo trasferibile a team, canali, materiali e interlocutori esterni.'
-      : 'Queste sono le aree che creano più attrito operativo. Il report indica cosa va chiarito prima di aumentare complessità, budget o nuove iniziative.',
+      : hasMixedCards
+        ? 'Alcune aree richiedono lavoro immediato. Altre sono già forti e vanno protette, codificate e rese meno dipendenti dalla presenza diretta del founder.'
+        : 'Queste sono le aree che creano più attrito operativo. Il report indica cosa va chiarito prima di aumentare complessità, budget o nuove iniziative.',
     PAGE.marginX,
     pdf.cursorY,
     {
@@ -1150,27 +1195,38 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
   topThree.forEach((dim: any, index: number) => {
     const y = pdf.cursorY;
     const score = Number(dim.score || 0);
+    const isProtectCard = dim.priorityType === 'protect';
+    const titlePrefix = isProtectCard ? 'DA PROTEGGERE' : 'VINCOLO';
     const title = `#${index + 1} ${getDimensionName(dim).toUpperCase()} · ${score.toFixed(1)} / 10`;
     const body =
       dim.vincolo ||
       dim.meaning ||
       dim.cosaIndica ||
-      'Questa area richiede lavoro applicato prima di scalare.';
+      (isProtectCard
+        ? 'Questa area è già forte. Il lavoro è renderla più trasferibile e meno dipendente dal founder.'
+        : 'Questa area richiede lavoro applicato prima di scalare.');
 
     const bg = index === 0 ? IMPULSE_COLORS.lightBlue : IMPULSE_COLORS.cream;
-    const accent = index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold;
+    const accent = isProtectCard ? IMPULSE_COLORS.teal : index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold;
 
-    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 48, bg);
-    pdf.fillRect(PAGE.marginX, y, 4, 48, accent);
+    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 54, bg);
+    pdf.fillRect(PAGE.marginX, y, 4, 54, accent);
 
-    pdf.drawText(title, PAGE.marginX + 10, y + 10, {
+    pdf.drawText(title, PAGE.marginX + 10, y + 9, {
       fontSize: 8,
       style: 'bold',
-      color: index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.dark,
+      color: accent,
       charSpace: 0.4
     });
 
-    pdf.drawText(fitText(body, 155), PAGE.marginX + 10, y + 20, {
+    pdf.drawText(titlePrefix, PAGE.marginX + 10, y + 18, {
+      fontSize: 6.5,
+      style: 'bold',
+      color: isProtectCard ? IMPULSE_COLORS.teal : IMPULSE_COLORS.dark,
+      charSpace: 0.4
+    });
+
+    pdf.drawText(fitText(body, 170), PAGE.marginX + 10, y + 27, {
       fontSize: 8,
       color: IMPULSE_COLORS.darkSoft,
       lineHeightFactor: 1.2,
@@ -1178,38 +1234,43 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
     });
 
     if (dim.lavoro) {
-      pdf.drawText(isHighScore ? 'DA CODIFICARE:' : 'DA CHIARIRE:', PAGE.marginX + 10, y + 37, {
-        fontSize: 6.1,
-        style: 'bold',
-        color: IMPULSE_COLORS.teal,
-        charSpace: 0.15
-      });
+      pdf.drawText(
+        isProtectCard || isHighScore ? 'DA CODIFICARE:' : 'DA CHIARIRE:',
+        PAGE.marginX + 10,
+        y + 45,
+        {
+          fontSize: 6.1,
+          style: 'bold',
+          color: IMPULSE_COLORS.teal,
+          charSpace: 0.15
+        }
+      );
 
-      pdf.drawText(fitText(dim.lavoro, isHighScore ? 82 : 88), PAGE.marginX + 52, y + 37, {
-        fontSize: 6.6,
+      pdf.drawText(fitText(dim.lavoro, isProtectCard || isHighScore ? 72 : 78), PAGE.marginX + 52, y + 45, {
+        fontSize: 6.4,
         color: IMPULSE_COLORS.darkSoft,
         maxWidth: 37,
-        lineHeightFactor: 1.15
+        lineHeightFactor: 1.12
       });
     }
 
     if (dim.nonFare) {
-      pdf.drawText('EVITARE:', PAGE.marginX + 91, y + 37, {
-        fontSize: 6.5,
+      pdf.drawText('EVITARE:', PAGE.marginX + 91, y + 45, {
+        fontSize: 6.3,
         style: 'bold',
         color: IMPULSE_COLORS.dark,
-        charSpace: 0.3
+        charSpace: 0.2
       });
 
-      pdf.drawText(fitText(dim.nonFare, 78), PAGE.marginX + 118, y + 37, {
-        fontSize: 6.7,
+      pdf.drawText(fitText(dim.nonFare, 68), PAGE.marginX + 118, y + 45, {
+        fontSize: 6.4,
         color: IMPULSE_COLORS.darkSoft,
         maxWidth: 55,
-        lineHeightFactor: 1.15
+        lineHeightFactor: 1.12
       });
     }
 
-    pdf.cursorY += 55;
+    pdf.cursorY += 61;
   });
 }
 
@@ -1280,6 +1341,7 @@ function drawGraduationChecklistPage(pdf: PDFBuilder, state: any) {
     );
   }
 }
+
 function drawScoreMapPage(pdf: PDFBuilder, state: any) {
   const strengths = state.forze || state.strengths || [];
   const priorities = state.priorita || state.priorities || [];
