@@ -501,185 +501,185 @@ function getFunctionConstraints(state: any) {
       {
         area: 'Acquisizione',
         constraint: 'Il messaggio non isola ancora una promessa centrale.',
-        graduate: 'Una promessa chiara per un segmento prioritario.'
+        graduate: 'Va chiarito quale promessa può essere capita da un segmento prioritario.'
       },
       {
         area: 'Vendite',
         constraint: 'La vendita dipende ancora da spiegazioni lunghe o personali.',
-        graduate: 'Una conversazione ripetibile su offerta, prezzo e risultato.'
+        graduate: 'Va chiarito cosa deve rendere la conversazione più semplice e ripetibile.'
       },
       {
         area: 'Esecuzione',
         constraint: 'La delivery viene reinventata troppo spesso.',
-        graduate: 'Una consegna minima ripetibile e documentata.'
+        graduate: 'Va chiarito quale consegna minima può essere ripetuta senza ripartire da zero.'
       },
       {
         area: 'Finanza',
         constraint: 'Margine, prezzo e costo operativo non sono ancora separati.',
-        graduate: 'Una prima lettura di margine per offerta.'
+        graduate: 'Va chiarito quale offerta produce margine reale.'
       },
       {
         area: 'Dati',
         constraint: 'Mancano numeri minimi per capire cosa funziona.',
-        graduate: 'Dashboard base su lead, conversione, margine e capacità.'
+        graduate: 'Va chiarito quali numeri servono per leggere domanda, conversione e margine.'
       },
       {
         area: 'Asset',
         constraint: 'Il valore vive nell’esecuzione, non ancora in asset documentati.',
-        graduate: 'Sistemi, processi e materiali chiave mappati.'
+        graduate: 'Va chiarito quale parte del valore può essere documentata e trasferita.'
       },
       {
         area: 'Preparazione',
         constraint: 'Il business non è ancora leggibile da fuori.',
-        graduate: 'Numeri, narrativa e materiali ordinati.'
+        graduate: 'Va chiarito cosa deve capire un esterno senza spiegazioni lunghe.'
       }
     ],
     TRACTION: [
       {
         area: 'Acquisizione',
         constraint: 'La domanda esiste, ma il canale primario non è ancora isolato.',
-        graduate: 'Un canale prioritario con segnali di qualità misurabili.'
+        graduate: 'Va chiarito quale canale produce segnali di qualità.'
       },
       {
         area: 'Vendite',
         constraint: 'Le conversazioni commerciali non sono ancora abbastanza qualificabili.',
-        graduate: 'Criteri chiari per lead buoni, rumorosi e non adatti.'
+        graduate: 'Va chiarito cosa distingue un lead utile da uno rumoroso.'
       },
       {
         area: 'Esecuzione',
         constraint: 'La delivery può collassare quando aumentano le richieste.',
-        graduate: 'Standard minimi di consegna che proteggono qualità e margine.'
+        graduate: 'Va chiarito dove la delivery rischia di perdere qualità o margine.'
       },
       {
         area: 'Finanza',
         constraint: 'CAC, conversione e margine non vengono ancora letti insieme.',
-        graduate: 'Lettura unica di canale, conversione, margine e capacità.'
+        graduate: 'Va chiarita la relazione tra canale, conversione, margine e capacità.'
       },
       {
         area: 'Dati',
         constraint: 'Il sistema non mostra ancora cosa crea crescita ripetibile.',
-        graduate: 'Dashboard su fonte lead, conversione, ricavi e margine.'
+        graduate: 'Va chiarito quali numeri mostrano cosa sta funzionando.'
       },
       {
         area: 'Operazioni',
         constraint: 'Il founder resta il punto di passaggio per priorità e urgenze.',
-        graduate: 'Regole base per gestire eccezioni ricorrenti.'
+        graduate: 'Va chiarito quali eccezioni non devono più tornare al founder.'
       },
       {
         area: 'Preparazione',
         constraint: 'La storia del business è ancora troppo dipendente dal founder.',
-        graduate: 'Materiali essenziali allineati a offerta, numeri e consegna.'
+        graduate: 'Va chiarito cosa deve capire un esterno senza parlare con il founder.'
       }
     ],
     STABILIZATION: [
       {
         area: 'Acquisizione',
         constraint: 'Il messaggio funziona, ma non è ancora abbastanza sistematizzato.',
-        graduate: 'Asset commerciali replicabili per il canale principale.'
+        graduate: 'Va chiarito quale asset commerciale può essere replicato senza riscriverlo ogni volta.'
       },
       {
         area: 'Vendite',
         constraint: 'La vendita può ancora dipendere da seniority o intuizione.',
-        graduate: 'Script, qualificazione e passaggio commerciale documentati.'
+        graduate: 'Va chiarito cosa rende la vendita trasferibile ad altri operatori.'
       },
       {
         area: 'Operazioni',
         constraint: 'Le decisioni operative tornano ancora troppo spesso al founder.',
-        graduate: 'Ownership, standard e regole decisionali intermedie.'
+        graduate: 'Va chiarito quali decisioni possono seguire regole intermedie.'
       },
       {
         area: 'Esecuzione',
         constraint: 'La qualità non è ancora abbastanza indipendente dal controllo diretto.',
-        graduate: 'Procedure, checklist e controllo qualità minimo.'
+        graduate: 'Va chiarito quali standard proteggono la qualità senza controllo continuo.'
       },
       {
         area: 'Finanza',
         constraint: 'La crescita rischia di nascondere costi operativi e dispersione.',
-        graduate: 'Margine per cliente, canale e carico di consegna.'
+        graduate: 'Va chiarito dove crescita, margine e carico operativo si separano.'
       },
       {
         area: 'Dati',
         constraint: 'Il reporting non separa ancora performance, capacità e colli di bottiglia.',
-        graduate: 'Dashboard manageriale per decisioni settimanali.'
+        graduate: 'Va chiarito quali segnali servono per decidere ogni settimana.'
       },
       {
         area: 'Team',
         constraint: 'Il team esegue, ma non sempre decide nel modo corretto.',
-        graduate: 'Responsabilità, output attesi e criteri di escalation.'
+        graduate: 'Va chiarito cosa il team può decidere, quando escalare e con quali criteri.'
       }
     ],
     PRODUCTIZATION: [
       {
         area: 'Offerta',
         constraint: 'L’offerta funziona, ma non è ancora abbastanza impacchettata.',
-        graduate: 'Offerta codificata, promessa chiara e confini di consegna.'
+        graduate: 'Va chiarito cosa rende l’offerta vendibile senza ridisegnarla ogni volta.'
       },
       {
         area: 'Acquisizione',
         constraint: 'Il messaggio deve diventare un asset scalabile.',
-        graduate: 'Landing, prove, casi e materiali vendita coerenti.'
+        graduate: 'Va chiarito quali prove e materiali rendono il messaggio più trasferibile.'
       },
       {
         area: 'Vendite',
         constraint: 'La conversione dipende ancora troppo da personalizzazione e urgenza.',
-        graduate: 'Processo commerciale ripetibile e misurabile.'
+        graduate: 'Va chiarito cosa rende il processo commerciale ripetibile.'
       },
       {
         area: 'Operazioni',
         constraint: 'La complessità cresce se ogni cliente richiede eccezioni.',
-        graduate: 'Standard, pacchetti e confini operativi.'
+        graduate: 'Va chiarito quali confini operativi non possono essere superati.'
       },
       {
         area: 'Finanza',
         constraint: 'Serve distinguere crescita buona e crescita che consuma margine.',
-        graduate: 'Unit economics per segmento, offerta e canale.'
+        graduate: 'Va chiarito quali segmenti, offerte e canali meritano più risorse.'
       },
       {
         area: 'Dati',
         constraint: 'La conoscenza operativa è ancora dispersa.',
-        graduate: 'Sistema interno per conoscenza, reporting e decisioni.'
+        graduate: 'Va chiarito dove vive la conoscenza critica del business.'
       },
       {
         area: 'Preparazione',
         constraint: 'Il business deve diventare comprensibile a partner, hire o investitori.',
-        graduate: 'Data room leggera, memo narrativo e metriche difendibili.'
+        graduate: 'Va chiarito quali materiali rendono il business leggibile da fuori.'
       }
     ],
     SCALE_READINESS: [
       {
         area: 'Strategia',
         constraint: 'La crescita può creare dispersione e iniziative laterali.',
-        graduate: 'Priorità chiare, governance e criteri di allocazione.'
+        graduate: 'Va chiarito quali priorità guidano allocazione, focus e governance.'
       },
       {
         area: 'Acquisizione',
         constraint: 'I canali devono essere gestiti come portafoglio, non come esperimenti isolati.',
-        graduate: 'Portafoglio canali con economics e ownership.'
+        graduate: 'Va chiarito quali canali meritano investimento e quali vanno ridotti.'
       },
       {
         area: 'Vendite',
         constraint: 'Il sistema commerciale deve reggere volume e segmentazione.',
-        graduate: 'Sistema commerciale con pipeline, qualificazione e forecast.'
+        graduate: 'Va chiarito come leggere pipeline, qualificazione e previsione commerciale.'
       },
       {
         area: 'Operazioni',
         constraint: 'L’organizzazione deve assorbire crescita senza dipendere dal founder.',
-        graduate: 'Management layer, ownership dei processi e reporting.'
+        graduate: 'Va chiarito dove servono ownership, management layer e reporting.'
       },
       {
         area: 'Finanza',
         constraint: 'Le decisioni devono essere guidate da capitale, margine e rischio.',
-        graduate: 'Planning finanziario, logica di scenario e capital allocation.'
+        graduate: 'Va chiarito come capitale, margine e rischio guidano le scelte.'
       },
       {
         area: 'Dati',
         constraint: 'I dati devono supportare decisioni direzionali, non solo reporting.',
-        graduate: 'Dashboard direzionale e metriche di controllo.'
+        graduate: 'Va chiarito quali metriche servono al controllo direzionale.'
       },
       {
         area: 'Preparazione',
         constraint: 'Materiali e governance devono reggere scrutiny esterno.',
-        graduate: 'Data room, memo governance, KPI e narrativa dei rischi.'
+        graduate: 'Va chiarito cosa deve essere pronto per advisor, partner o investitori.'
       }
     ]
   };
@@ -976,7 +976,7 @@ function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
   pdf.cursorY += 19;
 
   pdf.drawText(
-    'Questa è la parte operativa della diagnosi: dove il vincolo si manifesta, quale sistema manca e cosa deve esistere per passare allo stage successivo.',
+    'Questa è la parte operativa della diagnosi: mostra dove il vincolo si manifesta e cosa va chiarito prima di passare allo stage successivo.',
     PAGE.marginX,
     pdf.cursorY,
     {
@@ -1012,7 +1012,7 @@ function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
     charSpace: 0.6
   });
 
-  pdf.drawText('PER PASSARE', tableX + areaW + constraintW + 4, tableY + 8, {
+  pdf.drawText('DA CHIARIRE', tableX + areaW + constraintW + 4, tableY + 8, {
     fontSize: 6.5,
     style: 'bold',
     color: IMPULSE_COLORS.white,
@@ -1062,7 +1062,7 @@ function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
   });
 
   pdf.drawText(
-    'Il valore del report non è il punteggio. È capire quale parte del sistema deve essere resa leggibile, ripetibile e trasferibile.',
+    'Il valore del report è identificare cosa blocca il passaggio di stage. Il lavoro successivo è decidere come rimuoverlo.',
     PAGE.marginX + 10,
     pdf.cursorY + 19,
     {
@@ -1094,7 +1094,7 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
   pdf.cursorY += 20;
 
   pdf.drawText(
-    'Queste sono le aree che creano più attrito operativo. Risolverle prima evita di scalare confusione, costi o dipendenza dal founder.',
+    'Queste sono le aree che creano più attrito operativo. Il report indica cosa va chiarito prima di aumentare complessità, budget o nuove iniziative.',
     PAGE.marginX,
     pdf.cursorY,
     {
@@ -1138,17 +1138,17 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
     });
 
     if (dim.lavoro) {
-      pdf.drawText('FARE PRIMA:', PAGE.marginX + 10, y + 41, {
-        fontSize: 6.5,
+      pdf.drawText('DA CHIARIRE:', PAGE.marginX + 10, y + 41, {
+        fontSize: 6.3,
         style: 'bold',
         color: IMPULSE_COLORS.teal,
-        charSpace: 0.3
+        charSpace: 0.2
       });
 
-      pdf.drawText(fitText(dim.lavoro, 98), PAGE.marginX + 42, y + 41, {
-        fontSize: 6.7,
+      pdf.drawText(fitText(dim.lavoro, 88), PAGE.marginX + 49, y + 41, {
+        fontSize: 6.6,
         color: IMPULSE_COLORS.darkSoft,
-        maxWidth: 47,
+        maxWidth: 40,
         lineHeightFactor: 1.15
       });
     }
@@ -1161,7 +1161,7 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
         charSpace: 0.3
       });
 
-      pdf.drawText(fitText(dim.nonFare, 88), PAGE.marginX + 118, y + 41, {
+      pdf.drawText(fitText(dim.nonFare, 78), PAGE.marginX + 118, y + 41, {
         fontSize: 6.7,
         color: IMPULSE_COLORS.darkSoft,
         maxWidth: 55,
@@ -1414,7 +1414,7 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
   pdf.cursorY += 10;
 
   pdf.drawText(
-    'I punteggi servono a localizzare il vincolo. Il lavoro vero è trasformare quel vincolo in sistemi, regole e materiali operativi.',
+    'I punteggi servono a localizzare il vincolo. Il lavoro successivo è trasformare quel vincolo in sistemi, regole e materiali operativi.',
     PAGE.marginX,
     pdf.cursorY,
     {
@@ -1525,8 +1525,6 @@ function drawProfilePage(pdf: PDFBuilder, state: any, userProfile: any) {
 }
 
 function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) {
-  const profileTitle = getProfileTitleItalian(userProfile?.title) || 'il tuo profilo diagnostico';
-
   pdf.newPage(IMPULSE_COLORS.teal, true);
 
   pdf.cursorY = 58;
@@ -1541,7 +1539,7 @@ function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) 
 
   pdf.cursorY += 38;
 
-  pdf.drawText('LA REVIEW DECIDE COSA FARE PRIMA.', PAGE.marginX, pdf.cursorY, {
+  pdf.drawText('LA REVIEW DEFINISCE COME PROCEDERE.', PAGE.marginX, pdf.cursorY, {
     fontSize: 25,
     style: 'bold',
     color: IMPULSE_COLORS.gold,
@@ -1552,7 +1550,7 @@ function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) 
   pdf.cursorY += 42;
 
   pdf.drawText(
-    `La Strategic Review traduce ${profileTitle} in una sequenza operativa: cosa correggere, cosa ignorare, cosa rendere sistema e cosa non scalare ancora.`,
+    'Questo report identifica cosa sta bloccando il business. La Strategic Review serve a definire come rimuoverlo, in quale ordine e con quali decisioni operative.',
     PAGE.marginX,
     pdf.cursorY,
     {
@@ -1575,7 +1573,7 @@ function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) 
   pdf.cursorY += 10;
 
   pdf.drawText(
-    '1. il primo vincolo da rimuovere\n2. la sequenza operativa delle azioni\n3. cosa non scalare ancora',
+    '1. come rimuovere il primo vincolo\n2. in quale ordine intervenire\n3. cosa non scalare ancora',
     PAGE.marginX,
     pdf.cursorY,
     {
