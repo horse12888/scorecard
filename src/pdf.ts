@@ -410,6 +410,14 @@ function getItalianRole(role: string) {
 function getProfileTitleItalian(title: string) {
   const value = String(title || '').toLowerCase();
 
+  if (value.includes('trasferibilità')) return 'Gap di trasferibilità';
+  if (value.includes('qualità della crescita')) return 'Gap di qualità della crescita';
+  if (value.includes('architettura operativa')) return 'Gap di architettura operativa';
+  if (value.includes('investor readiness')) return 'Gap di investor readiness';
+  if (value.includes('posizionamento')) return 'Gap di posizionamento';
+  if (value.includes('prevedibilità commerciale')) return 'Gap di prevedibilità commerciale';
+  if (value.includes('delega decisionale')) return 'Gap di delega decisionale';
+  if (value.includes('leggibilità esterna')) return 'Gap di leggibilità esterna';
   if (value.includes('clarity')) return 'Gap di chiarezza';
   if (value.includes('growth')) return 'Gap del motore commerciale';
   if (value.includes('operational')) return 'Gap operativo';
@@ -1103,22 +1111,31 @@ function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
 
 function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
   const topThree = getThreePriorities(state);
+  const isHighScore = Number(state.overall || 0) >= 90;
 
   pdf.newPage(IMPULSE_COLORS.white);
 
   pdf.cursorY = 40;
 
-  pdf.drawText('LE 3 PRIORITÀ OPERATIVE', PAGE.marginX, pdf.cursorY, {
-    fontSize: 27,
-    style: 'bold',
-    color: IMPULSE_COLORS.dark,
-    lineHeightFactor: 1.05
-  });
+  pdf.drawText(
+    isHighScore ? 'LE 3 AREE DA RENDERE TRASFERIBILI' : 'LE 3 PRIORITÀ OPERATIVE',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: isHighScore ? 24 : 27,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark,
+      lineHeightFactor: 1.05,
+      maxWidth: PAGE.contentWidth
+    }
+  );
 
   pdf.cursorY += 20;
 
   pdf.drawText(
-    'Queste sono le aree che creano più attrito operativo. Il report indica cosa va chiarito prima di aumentare complessità, budget o nuove iniziative.',
+    isHighScore
+      ? 'Con uno score alto, il lavoro non è correggere debolezze evidenti. È proteggere ciò che funziona e renderlo trasferibile a team, canali, materiali e interlocutori esterni.'
+      : 'Queste sono le aree che creano più attrito operativo. Il report indica cosa va chiarito prima di aumentare complessità, budget o nuove iniziative.',
     PAGE.marginX,
     pdf.cursorY,
     {
@@ -1162,17 +1179,17 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
     });
 
     if (dim.lavoro) {
-      pdf.drawText('DA CHIARIRE:', PAGE.marginX + 10, y + 37, {
-        fontSize: 6.3,
+      pdf.drawText(isHighScore ? 'DA CODIFICARE:' : 'DA CHIARIRE:', PAGE.marginX + 10, y + 37, {
+        fontSize: 6.1,
         style: 'bold',
         color: IMPULSE_COLORS.teal,
-        charSpace: 0.2
+        charSpace: 0.15
       });
 
-      pdf.drawText(fitText(dim.lavoro, 88), PAGE.marginX + 49, y + 37, {
+      pdf.drawText(fitText(dim.lavoro, isHighScore ? 82 : 88), PAGE.marginX + 52, y + 37, {
         fontSize: 6.6,
         color: IMPULSE_COLORS.darkSoft,
-        maxWidth: 40,
+        maxWidth: 37,
         lineHeightFactor: 1.15
       });
     }
@@ -1321,12 +1338,21 @@ function drawScoreMapPage(pdf: PDFBuilder, state: any) {
     });
   });
 
-  pdf.drawText(state.overall >= 75 ? 'AREE DA RIFINIRE' : 'LE TUE PRIORITÀ', rightX, startY, {
-    fontSize: 8,
-    style: 'bold',
-    color: IMPULSE_COLORS.gold,
-    charSpace: 0.7
-  });
+  pdf.drawText(
+    Number(state.overall || 0) >= 90
+      ? 'AREE DA PROTEGGERE'
+      : state.overall >= 75
+        ? 'AREE DA RIFINIRE'
+        : 'LE TUE PRIORITÀ',
+    rightX,
+    startY,
+    {
+      fontSize: 8,
+      style: 'bold',
+      color: IMPULSE_COLORS.gold,
+      charSpace: 0.7
+    }
+  );
 
   priorities.slice(0, 3).forEach((dim: any, index: number) => {
     const y = startY + 16 + index * 17;
