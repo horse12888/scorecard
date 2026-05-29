@@ -452,34 +452,34 @@ function getDimensionMicroCopy(dim: any) {
 
   const copy: Record<string, Record<string, string>> = {
     clarity: {
-      low: 'Il valore non è ancora capito in fretta.',
-      mid: 'Il valore richiede ancora troppa spiegazione.',
-      high: 'Il messaggio è già abbastanza leggibile.'
+      low: 'Valore non capito in fretta.',
+      mid: 'Serve ancora troppa spiegazione.',
+      high: 'Messaggio già leggibile.'
     },
     acquisition: {
-      low: 'Il flusso commerciale è ancora episodico.',
-      mid: 'Il flusso commerciale non è ancora prevedibile.',
-      high: 'Il motore commerciale ha già basi solide.'
+      low: 'Flusso commerciale episodico.',
+      mid: 'Flusso non ancora prevedibile.',
+      high: 'Motore commerciale solido.'
     },
     operations: {
-      low: 'La delivery dipende ancora troppo da te.',
-      mid: 'Le decisioni tornano ancora al founder.',
-      high: 'La macchina operativa è già trasferibile.'
+      low: 'Delivery ancora dipendente da te.',
+      mid: 'Decisioni ancora al founder.',
+      high: 'Macchina operativa trasferibile.'
     },
     margins: {
-      low: 'Margine, costo e valore cliente non sono chiari.',
-      mid: 'Il margine non è abbastanza leggibile.',
-      high: 'La lettura economica è già solida.'
+      low: 'Margine e costo non chiari.',
+      mid: 'Margine poco leggibile.',
+      high: 'Lettura economica solida.'
     },
     asset: {
-      low: 'Il valore vive ancora nell’esecuzione.',
-      mid: 'Il valore non è ancora abbastanza documentato.',
-      high: 'Gli asset sono già più visibili e trasferibili.'
+      low: 'Valore ancora nell’esecuzione.',
+      mid: 'Valore poco documentato.',
+      high: 'Asset più visibili e trasferibili.'
     },
     readiness: {
-      low: 'Il business non è ancora leggibile dall’esterno.',
-      mid: 'La narrativa esterna è ancora parziale.',
-      high: 'La narrativa esterna è già più solida.'
+      low: 'Business poco leggibile da fuori.',
+      mid: 'Narrativa esterna parziale.',
+      high: 'Narrativa esterna più solida.'
     }
   };
 
@@ -490,7 +490,7 @@ function getDimensionMicroCopy(dim: any) {
   if (key.includes('asset')) return copy.asset[band];
   if (key.includes('readiness')) return copy.readiness[band];
 
-  return 'Area diagnostica da monitorare.';
+  return 'Area da monitorare.';
 }
 
 function getFunctionConstraints(state: any) {
@@ -1120,8 +1120,8 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
     const bg = index === 0 ? IMPULSE_COLORS.lightBlue : IMPULSE_COLORS.cream;
     const accent = index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold;
 
-    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 55, bg);
-    pdf.fillRect(PAGE.marginX, y, 4, 55, accent);
+    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 48, bg);
+    pdf.fillRect(PAGE.marginX, y, 4, 48, accent);
 
     pdf.drawText(title, PAGE.marginX + 10, y + 10, {
       fontSize: 8,
@@ -1130,22 +1130,22 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
       charSpace: 0.4
     });
 
-    pdf.drawText(body, PAGE.marginX + 10, y + 20, {
-      fontSize: 8.7,
+    pdf.drawText(fitText(body, 155), PAGE.marginX + 10, y + 20, {
+      fontSize: 8,
       color: IMPULSE_COLORS.darkSoft,
-      lineHeightFactor: 1.25,
+      lineHeightFactor: 1.2,
       maxWidth: PAGE.contentWidth - 18
     });
 
     if (dim.lavoro) {
-      pdf.drawText('DA CHIARIRE:', PAGE.marginX + 10, y + 41, {
+      pdf.drawText('DA CHIARIRE:', PAGE.marginX + 10, y + 37, {
         fontSize: 6.3,
         style: 'bold',
         color: IMPULSE_COLORS.teal,
         charSpace: 0.2
       });
 
-      pdf.drawText(fitText(dim.lavoro, 88), PAGE.marginX + 49, y + 41, {
+      pdf.drawText(fitText(dim.lavoro, 88), PAGE.marginX + 49, y + 37, {
         fontSize: 6.6,
         color: IMPULSE_COLORS.darkSoft,
         maxWidth: 40,
@@ -1154,14 +1154,14 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
     }
 
     if (dim.nonFare) {
-      pdf.drawText('EVITARE:', PAGE.marginX + 91, y + 41, {
+      pdf.drawText('EVITARE:', PAGE.marginX + 91, y + 37, {
         fontSize: 6.5,
         style: 'bold',
         color: IMPULSE_COLORS.dark,
         charSpace: 0.3
       });
 
-      pdf.drawText(fitText(dim.nonFare, 78), PAGE.marginX + 118, y + 41, {
+      pdf.drawText(fitText(dim.nonFare, 78), PAGE.marginX + 118, y + 37, {
         fontSize: 6.7,
         color: IMPULSE_COLORS.darkSoft,
         maxWidth: 55,
@@ -1169,7 +1169,7 @@ function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
       });
     }
 
-    pdf.cursorY += 64;
+    pdf.cursorY += 55;
   });
 }
 
@@ -1351,9 +1351,9 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
   );
 
   const cardW = 72;
-  const cardH = 50;
+  const cardH = 47;
   const gapX = 10;
-  const gapY = 11;
+  const gapY = 8;
   const startX = PAGE.marginX;
   const startY = 88;
 
@@ -1395,15 +1395,15 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
       charSpace: 0.4
     });
 
-    pdf.drawText(getDimensionMicroCopy(dim), x + 8, y + 39, {
-      fontSize: 7.2,
+    pdf.drawText(fitText(getDimensionMicroCopy(dim), 48), x + 8, y + 39, {
+      fontSize: 6.8,
       color: IMPULSE_COLORS.darkSoft,
-      lineHeightFactor: 1.25,
+      lineHeightFactor: 1.15,
       maxWidth: cardW - 14
     });
   });
 
-  pdf.cursorY = 248;
+  pdf.cursorY = 238;
 
   pdf.drawText('Punto chiave', PAGE.marginX, pdf.cursorY, {
     fontSize: 10,
