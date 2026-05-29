@@ -159,7 +159,6 @@ class PDFBuilder {
 
     const angleStep = (Math.PI * 2) / n;
     const startAngle = -Math.PI / 2;
-
     const scorePts: [number, number][] = [];
 
     for (let i = 0; i < n; i++) {
@@ -230,7 +229,7 @@ class PDFBuilder {
       if (dx > 0.3) align = 'left';
       else if (dx < -0.3) align = 'right';
 
-      this.drawText(String(safeDimensions[i].label || '').toUpperCase(), lx, ly + 1.5, {
+      this.drawText(getDimensionName(safeDimensions[i]).toUpperCase(), lx, ly + 1.5, {
         align,
         fontSize: 7,
         style: 'bold',
@@ -345,7 +344,7 @@ function getFilenameSafe(value: string) {
     .replace(/[^\w\-]/g, '');
 }
 
-function getStageLabel(state: any) {
+function getRawStageLabel(state: any) {
   const roadmap = state.roadmapInfo || state.stageInfo || {};
 
   return (
@@ -358,8 +357,78 @@ function getStageLabel(state: any) {
   );
 }
 
+function getNormalizedStage(state: any) {
+  const stage = String(getRawStageLabel(state) || '').toUpperCase();
+
+  if (stage.includes('SCALE')) return 'SCALE_READINESS';
+  if (stage.includes('PRODUCT')) return 'PRODUCTIZATION';
+  if (stage.includes('STABIL')) return 'STABILIZATION';
+  if (stage.includes('TRACTION')) return 'TRACTION';
+  return 'FOUNDATION';
+}
+
+function getStageLabel(state: any) {
+  const stage = getNormalizedStage(state);
+
+  const labels: Record<string, string> = {
+    FOUNDATION: 'FONDAZIONE',
+    TRACTION: 'TRAZIONE',
+    STABILIZATION: 'STABILIZZAZIONE',
+    PRODUCTIZATION: 'PRODOTTIZZAZIONE',
+    SCALE_READINESS: 'PRONTO PER LA SCALA'
+  };
+
+  return labels[stage] || 'FASE NON DISPONIBILE';
+}
+
+function getItalianRole(role: string) {
+  const value = String(role || '').toLowerCase();
+
+  if (value.includes('operator') && value.includes('designer')) {
+    return 'Founder come operatore e progettista';
+  }
+
+  if (value.includes('builder')) {
+    return 'Founder come costruttore';
+  }
+
+  if (value.includes('operator')) {
+    return 'Founder come operatore';
+  }
+
+  if (value.includes('architect')) {
+    return 'Founder come architetto del sistema';
+  }
+
+  if (value.includes('allocator')) {
+    return 'Founder come allocatore';
+  }
+
+  return role || 'Founder';
+}
+
+function getProfileTitleItalian(title: string) {
+  const value = String(title || '').toLowerCase();
+
+  if (value.includes('clarity')) return 'Gap di chiarezza';
+  if (value.includes('growth')) return 'Gap del motore commerciale';
+  if (value.includes('operational')) return 'Gap operativo';
+  if (value.includes('readiness')) return 'Gap di preparazione esterna';
+
+  return title || 'Profilo diagnostico';
+}
+
 function getDimensionName(dim: any) {
-  return String(dim?.label || dim?.key || 'Dimension');
+  const raw = String(dim?.label || dim?.key || 'Dimension').toLowerCase();
+
+  if (raw.includes('clarity')) return 'Chiarezza';
+  if (raw.includes('acquisition')) return 'Acquisizione';
+  if (raw.includes('operations')) return 'Operazioni';
+  if (raw.includes('margins')) return 'Margini';
+  if (raw.includes('asset')) return 'Asset';
+  if (raw.includes('readiness')) return 'Preparazione';
+
+  return String(dim?.label || dim?.key || 'Dimensione');
 }
 
 function getScoreStatus(score: number) {
@@ -378,224 +447,300 @@ function fitText(text: string, maxChars: number) {
 
 function getDimensionMicroCopy(dim: any) {
   const key = String(dim?.key || dim?.label || '').toLowerCase();
+  const score = Number(dim?.score || 0);
+  const band = score >= 7 ? 'high' : score >= 5 ? 'mid' : 'low';
 
-  if (key.includes('clarity')) {
-    return 'Il valore richiede ancora troppa spiegazione.';
-  }
+  const copy: Record<string, Record<string, string>> = {
+    clarity: {
+      low: 'Il valore non è ancora capito in fretta.',
+      mid: 'Il valore richiede ancora troppa spiegazione.',
+      high: 'Il messaggio è già abbastanza leggibile.'
+    },
+    acquisition: {
+      low: 'Il flusso commerciale è ancora episodico.',
+      mid: 'Il flusso commerciale non è ancora prevedibile.',
+      high: 'Il motore commerciale ha già basi solide.'
+    },
+    operations: {
+      low: 'La delivery dipende ancora troppo da te.',
+      mid: 'Le decisioni tornano ancora al founder.',
+      high: 'La macchina operativa è già trasferibile.'
+    },
+    margins: {
+      low: 'Margine, costo e valore cliente non sono chiari.',
+      mid: 'Il margine non è abbastanza leggibile.',
+      high: 'La lettura economica è già solida.'
+    },
+    asset: {
+      low: 'Il valore vive ancora nell’esecuzione.',
+      mid: 'Il valore non è ancora abbastanza documentato.',
+      high: 'Gli asset sono già più visibili e trasferibili.'
+    },
+    readiness: {
+      low: 'Il business non è ancora leggibile dall’esterno.',
+      mid: 'La narrativa esterna è ancora parziale.',
+      high: 'La narrativa esterna è già più solida.'
+    }
+  };
 
-  if (key.includes('acquisition')) {
-    return 'Il flusso commerciale non è ancora prevedibile.';
-  }
-
-  if (key.includes('operations')) {
-    return 'Le decisioni tornano ancora al founder.';
-  }
-
-  if (key.includes('margins')) {
-    return 'Il margine non è abbastanza leggibile.';
-  }
-
-  if (key.includes('asset')) {
-    return 'Il valore non è ancora abbastanza documentato.';
-  }
-
-  if (key.includes('readiness')) {
-    return 'La narrativa esterna è già più solida.';
-  }
+  if (key.includes('clarity')) return copy.clarity[band];
+  if (key.includes('acquisition')) return copy.acquisition[band];
+  if (key.includes('operations')) return copy.operations[band];
+  if (key.includes('margins')) return copy.margins[band];
+  if (key.includes('asset')) return copy.asset[band];
+  if (key.includes('readiness')) return copy.readiness[band];
 
   return 'Area diagnostica da monitorare.';
 }
 
 function getFunctionConstraints(state: any) {
-  const priorities = state.priorita || state.priorities || [];
-  const mainPriority = priorities[0]?.key || priorities[0]?.label || '';
-  const normalized = String(mainPriority).toLowerCase();
+  const stage = getNormalizedStage(state);
 
-  const baseRows = [
-    {
-      area: 'Marketing',
-      constraint: 'Il messaggio non è ancora abbastanza stabile.',
-      graduate: 'Un messaggio principale collegato a un canale primario.'
-    },
-    {
-      area: 'Sales',
-      constraint: 'La vendita richiede ancora troppa spiegazione.',
-      graduate: 'Una conversazione commerciale più chiara e ripetibile.'
-    },
-    {
-      area: 'Operations',
-      constraint: 'Decisioni e standard tornano ancora al founder.',
-      graduate: 'Regole decisionali, ownership e standard documentati.'
-    },
-    {
-      area: 'Finance',
-      constraint: 'Margine e qualità dei clienti non sono abbastanza separati.',
-      graduate: 'Margine leggibile per offerta, canale e cliente.'
-    },
-    {
-      area: 'Data',
-      constraint: 'Materiali, numeri e narrativa non sono ancora allineati.',
-      graduate: 'Dashboard minima e materiali commerciali coerenti.'
-    }
-  ];
-
-  if (normalized.includes('acquisition')) {
-    return [
+  const playbook: Record<string, Array<{ area: string; constraint: string; graduate: string }>> = {
+    FOUNDATION: [
       {
-        area: 'Marketing',
-        constraint: 'Il canale principale non è ancora abbastanza prevedibile.',
-        graduate: 'Un canale primario con lead qualificati e tracciabili.'
+        area: 'Acquisizione',
+        constraint: 'Il messaggio non isola ancora una promessa centrale.',
+        graduate: 'Una promessa chiara per un segmento prioritario.'
       },
       {
-        area: 'Sales',
-        constraint: 'Le opportunità non sono ancora qualificate in modo sistematico.',
-        graduate: 'Criteri chiari per distinguere lead buoni e lead rumorosi.'
+        area: 'Vendite',
+        constraint: 'La vendita dipende ancora da spiegazioni lunghe o personali.',
+        graduate: 'Una conversazione ripetibile su offerta, prezzo e risultato.'
       },
       {
-        area: 'Delivery',
-        constraint: 'La delivery rischia di collassare se il volume aumenta.',
-        graduate: 'Standard minimi che proteggono qualità e margine.'
+        area: 'Esecuzione',
+        constraint: 'La delivery viene reinventata troppo spesso.',
+        graduate: 'Una consegna minima ripetibile e documentata.'
       },
       {
-        area: 'Finance',
-        constraint: 'CAC, conversione e margine non sono ancora letti insieme.',
-        graduate: 'Una lettura unificata di canale, conversione e margine.'
+        area: 'Finanza',
+        constraint: 'Margine, prezzo e costo operativo non sono ancora separati.',
+        graduate: 'Una prima lettura di margine per offerta.'
       },
       {
-        area: 'Data',
-        constraint: 'Mancano segnali semplici per capire cosa sta funzionando.',
-        graduate: 'Dashboard minima su lead, conversione e margine.'
-      }
-    ];
-  }
-
-  if (normalized.includes('operations')) {
-    return [
-      {
-        area: 'Operations',
-        constraint: 'Le eccezioni operative arrivano ancora al founder.',
-        graduate: 'Regole scritte per le decisioni ricorrenti.'
+        area: 'Dati',
+        constraint: 'Mancano numeri minimi per capire cosa funziona.',
+        graduate: 'Dashboard base su lead, conversione, margine e capacità.'
       },
-      {
-        area: 'Team',
-        constraint: 'Le responsabilità non sono abbastanza trasferibili.',
-        graduate: 'Ownership chiara per standard, output e urgenze.'
-      },
-      {
-        area: 'Delivery',
-        constraint: 'La qualità dipende ancora troppo dal controllo diretto.',
-        graduate: 'Standard di delivery documentati e verificabili.'
-      },
-      {
-        area: 'Data',
-        constraint: 'Il reporting non separa abbastanza operatività e urgenze.',
-        graduate: 'Dashboard minima per volume, qualità e colli di bottiglia.'
-      },
-      {
-        area: 'Hiring',
-        constraint: 'Assumere ora rischia di compensare processi mancanti.',
-        graduate: 'Ruoli definiti dopo aver chiarito processi e responsabilità.'
-      }
-    ];
-  }
-
-  if (normalized.includes('margins')) {
-    return [
-      {
-        area: 'Finance',
-        constraint: 'Il fatturato è visibile, ma il margine reale è meno chiaro.',
-        graduate: 'Margine leggibile per offerta, canale e cliente.'
-      },
-      {
-        area: 'Marketing',
-        constraint: 'La spesa di acquisizione rischia di crescere prima della qualità.',
-        graduate: 'Budget collegato a CAC, conversione e margine.'
-      },
-      {
-        area: 'Sales',
-        constraint: 'Non tutti i clienti hanno lo stesso valore economico.',
-        graduate: 'Criteri per riconoscere clienti profittevoli e clienti rumorosi.'
-      },
-      {
-        area: 'Operations',
-        constraint: 'La delivery può assorbire margine senza essere vista.',
-        graduate: 'Costo operativo separato per offerta e cliente.'
-      },
-      {
-        area: 'Data',
-        constraint: 'I numeri non guidano ancora tutte le decisioni chiave.',
-        graduate: 'Dashboard minima su margine, cash flow e capacità.'
-      }
-    ];
-  }
-
-  if (normalized.includes('asset')) {
-    return [
       {
         area: 'Asset',
-        constraint: 'Il valore costruito non è ancora abbastanza documentato.',
-        graduate: 'Asset, IP, dati e relazioni chiave mappati.'
+        constraint: 'Il valore vive nell’esecuzione, non ancora in asset documentati.',
+        graduate: 'Sistemi, processi e materiali chiave mappati.'
       },
       {
-        area: 'Data',
-        constraint: 'Parte del valore resta implicita o dispersa.',
-        graduate: 'Repository chiaro di sistemi, materiali e prove.'
-      },
-      {
-        area: 'Operations',
-        constraint: 'I processi creano valore, ma non sempre asset trasferibili.',
-        graduate: 'Processi documentati e riutilizzabili.'
-      },
-      {
-        area: 'Brand',
-        constraint: 'Il posizionamento non cattura tutto il valore costruito.',
-        graduate: 'Narrativa coerente con asset, risultati e differenziazione.'
-      },
-      {
-        area: 'Readiness',
-        constraint: 'Un esterno potrebbe non capire subito cosa ha valore.',
-        graduate: 'Materiali leggibili per advisor, partner o buyer.'
+        area: 'Preparazione',
+        constraint: 'Il business non è ancora leggibile da fuori.',
+        graduate: 'Numeri, narrativa e materiali ordinati.'
       }
-    ];
-  }
-
-  if (normalized.includes('readiness')) {
-    return [
+    ],
+    TRACTION: [
       {
-        area: 'Readiness',
-        constraint: 'La struttura è buona, ma va mantenuta coerente nel salto.',
-        graduate: 'Narrativa, numeri e materiali allineati.'
+        area: 'Acquisizione',
+        constraint: 'La domanda esiste, ma il canale primario non è ancora isolato.',
+        graduate: 'Un canale prioritario con segnali di qualità misurabili.'
       },
       {
-        area: 'Data Room',
-        constraint: 'I materiali potrebbero non essere ancora pronti per scrutiny esterno.',
-        graduate: 'Data room leggera e metriche chiave verificabili.'
+        area: 'Vendite',
+        constraint: 'Le conversazioni commerciali non sono ancora abbastanza qualificabili.',
+        graduate: 'Criteri chiari per lead buoni, rumorosi e non adatti.'
       },
       {
-        area: 'Finance',
-        constraint: 'I numeri devono sostenere la narrativa strategica.',
-        graduate: 'Metriche principali chiare e difendibili.'
+        area: 'Esecuzione',
+        constraint: 'La delivery può collassare quando aumentano le richieste.',
+        graduate: 'Standard minimi di consegna che proteggono qualità e margine.'
+      },
+      {
+        area: 'Finanza',
+        constraint: 'CAC, conversione e margine non vengono ancora letti insieme.',
+        graduate: 'Lettura unica di canale, conversione, margine e capacità.'
+      },
+      {
+        area: 'Dati',
+        constraint: 'Il sistema non mostra ancora cosa crea crescita ripetibile.',
+        graduate: 'Dashboard su fonte lead, conversione, ricavi e margine.'
+      },
+      {
+        area: 'Operazioni',
+        constraint: 'Il founder resta il punto di passaggio per priorità e urgenze.',
+        graduate: 'Regole base per gestire eccezioni ricorrenti.'
+      },
+      {
+        area: 'Preparazione',
+        constraint: 'La storia del business è ancora troppo dipendente dal founder.',
+        graduate: 'Materiali essenziali allineati a offerta, numeri e consegna.'
+      }
+    ],
+    STABILIZATION: [
+      {
+        area: 'Acquisizione',
+        constraint: 'Il messaggio funziona, ma non è ancora abbastanza sistematizzato.',
+        graduate: 'Asset commerciali replicabili per il canale principale.'
+      },
+      {
+        area: 'Vendite',
+        constraint: 'La vendita può ancora dipendere da seniority o intuizione.',
+        graduate: 'Script, qualificazione e passaggio commerciale documentati.'
+      },
+      {
+        area: 'Operazioni',
+        constraint: 'Le decisioni operative tornano ancora troppo spesso al founder.',
+        graduate: 'Ownership, standard e regole decisionali intermedie.'
+      },
+      {
+        area: 'Esecuzione',
+        constraint: 'La qualità non è ancora abbastanza indipendente dal controllo diretto.',
+        graduate: 'Procedure, checklist e controllo qualità minimo.'
+      },
+      {
+        area: 'Finanza',
+        constraint: 'La crescita rischia di nascondere costi operativi e dispersione.',
+        graduate: 'Margine per cliente, canale e carico di consegna.'
+      },
+      {
+        area: 'Dati',
+        constraint: 'Il reporting non separa ancora performance, capacità e colli di bottiglia.',
+        graduate: 'Dashboard manageriale per decisioni settimanali.'
       },
       {
         area: 'Team',
-        constraint: 'I prossimi ruoli chiave devono essere definiti meglio.',
-        graduate: 'Responsabilità, output e criteri di performance.'
+        constraint: 'Il team esegue, ma non sempre decide nel modo corretto.',
+        graduate: 'Responsabilità, output attesi e criteri di escalation.'
+      }
+    ],
+    PRODUCTIZATION: [
+      {
+        area: 'Offerta',
+        constraint: 'L’offerta funziona, ma non è ancora abbastanza impacchettata.',
+        graduate: 'Offerta codificata, promessa chiara e confini di consegna.'
       },
       {
-        area: 'Strategy',
-        constraint: 'Il prossimo salto può creare dispersione.',
-        graduate: 'Priorità chiare e iniziative laterali filtrate.'
+        area: 'Acquisizione',
+        constraint: 'Il messaggio deve diventare un asset scalabile.',
+        graduate: 'Landing, prove, casi e materiali vendita coerenti.'
+      },
+      {
+        area: 'Vendite',
+        constraint: 'La conversione dipende ancora troppo da personalizzazione e urgenza.',
+        graduate: 'Processo commerciale ripetibile e misurabile.'
+      },
+      {
+        area: 'Operazioni',
+        constraint: 'La complessità cresce se ogni cliente richiede eccezioni.',
+        graduate: 'Standard, pacchetti e confini operativi.'
+      },
+      {
+        area: 'Finanza',
+        constraint: 'Serve distinguere crescita buona e crescita che consuma margine.',
+        graduate: 'Unit economics per segmento, offerta e canale.'
+      },
+      {
+        area: 'Dati',
+        constraint: 'La conoscenza operativa è ancora dispersa.',
+        graduate: 'Sistema interno per conoscenza, reporting e decisioni.'
+      },
+      {
+        area: 'Preparazione',
+        constraint: 'Il business deve diventare comprensibile a partner, hire o investitori.',
+        graduate: 'Data room leggera, memo narrativo e metriche difendibili.'
       }
-    ];
+    ],
+    SCALE_READINESS: [
+      {
+        area: 'Strategia',
+        constraint: 'La crescita può creare dispersione e iniziative laterali.',
+        graduate: 'Priorità chiare, governance e criteri di allocazione.'
+      },
+      {
+        area: 'Acquisizione',
+        constraint: 'I canali devono essere gestiti come portafoglio, non come esperimenti isolati.',
+        graduate: 'Portafoglio canali con economics e ownership.'
+      },
+      {
+        area: 'Vendite',
+        constraint: 'Il sistema commerciale deve reggere volume e segmentazione.',
+        graduate: 'Sistema commerciale con pipeline, qualificazione e forecast.'
+      },
+      {
+        area: 'Operazioni',
+        constraint: 'L’organizzazione deve assorbire crescita senza dipendere dal founder.',
+        graduate: 'Management layer, ownership dei processi e reporting.'
+      },
+      {
+        area: 'Finanza',
+        constraint: 'Le decisioni devono essere guidate da capitale, margine e rischio.',
+        graduate: 'Planning finanziario, logica di scenario e capital allocation.'
+      },
+      {
+        area: 'Dati',
+        constraint: 'I dati devono supportare decisioni direzionali, non solo reporting.',
+        graduate: 'Dashboard direzionale e metriche di controllo.'
+      },
+      {
+        area: 'Preparazione',
+        constraint: 'Materiali e governance devono reggere scrutiny esterno.',
+        graduate: 'Data room, memo governance, KPI e narrativa dei rischi.'
+      }
+    ]
+  };
+
+  return playbook[stage] || playbook.FOUNDATION;
+}
+
+function getGraduationChecklist(state: any) {
+  const roadmap = state.roadmapInfo || state.stageInfo || {};
+  const stage = getNormalizedStage(state);
+
+  if (Array.isArray(roadmap.graduationCriteria) && roadmap.graduationCriteria.length > 0) {
+    return roadmap.graduationCriteria.slice(0, 7);
   }
 
-  return baseRows;
+  const fallback: Record<string, string[]> = {
+    FOUNDATION: [
+      'Una offerta centrale chiara',
+      'Un cliente ideale prioritario',
+      'Una delivery ripetibile',
+      'Una prima lettura di margine',
+      'Un messaggio commerciale comprensibile senza spiegazioni lunghe'
+    ],
+    TRACTION: [
+      'Un canale primario identificato',
+      'Una metrica di conversione leggibile',
+      'Una separazione tra lead buono e lead rumoroso',
+      'Una delivery che non collassa al crescere delle richieste',
+      'Una lettura chiara del margine per offerta o canale'
+    ],
+    STABILIZATION: [
+      'Processi principali documentati',
+      'Decisioni ricorrenti codificate',
+      'Responsabilità operative assegnate',
+      'Dashboard o reporting minimo attivo',
+      'Eccezioni ridotte e gestite senza passare sempre dal founder'
+    ],
+    PRODUCTIZATION: [
+      'Offerta principale codificata',
+      'Confini di delivery chiari',
+      'Unit economics per offerta e segmento',
+      'Sales process ripetibile',
+      'Materiali commerciali e operativi coerenti'
+    ],
+    SCALE_READINESS: [
+      'Management layer attivo',
+      'Metriche direzionali affidabili',
+      'Governance operativa più chiara',
+      'Data room leggera pronta',
+      'Criteri di allocazione capitale e priorità definiti'
+    ]
+  };
+
+  return fallback[stage] || fallback.FOUNDATION;
 }
 
 function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) {
   const roadmap = state.roadmapInfo || state.stageInfo || {};
   const name = getDisplayName(state);
   const stageLabel = getStageLabel(state);
+  const profileTitle = getProfileTitleItalian(userProfile?.title);
 
   pdf.newPage(IMPULSE_COLORS.dark, true);
 
@@ -626,15 +771,15 @@ function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) 
     color: IMPULSE_COLORS.white
   });
 
-  pdf.drawText('OVERALL SCORE', PAGE.marginX + 31, 131, {
-    fontSize: 7,
+  pdf.drawText('PUNTEGGIO COMPLESSIVO', PAGE.marginX + 31, 131, {
+    fontSize: 5.8,
     style: 'bold',
     align: 'center',
     color: IMPULSE_COLORS.grayLight,
-    charSpace: 0.8
+    charSpace: 0.4
   });
 
-  pdf.drawText(userProfile?.title || 'Diagnostic Profile', PAGE.marginX + 72, 88, {
+  pdf.drawText(profileTitle, PAGE.marginX + 72, 88, {
     fontSize: 31,
     style: 'bold',
     color: IMPULSE_COLORS.white,
@@ -662,7 +807,7 @@ function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) 
   const boxes = [
     { title: 'FASCIA', value: String(state.fascia || '-') },
     { title: 'PROFILO', value: `Profilo ${state.profile || '-'}` },
-    { title: 'STAGE', value: stageLabel }
+    { title: 'FASE', value: stageLabel }
   ];
 
   boxes.forEach((box, index) => {
@@ -689,7 +834,7 @@ function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) 
 
   pdf.cursorY = 222;
 
-  pdf.drawText('MAIN CONSTRAINT', PAGE.marginX, pdf.cursorY, {
+  pdf.drawText('VINCOLO PRINCIPALE', PAGE.marginX, pdf.cursorY, {
     fontSize: 8,
     style: 'bold',
     color: IMPULSE_COLORS.gold,
@@ -710,6 +855,390 @@ function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) 
     lineHeightFactor: 1.45,
     maxWidth: PAGE.contentWidth
   });
+}
+
+function drawRoadmapStagePage(pdf: PDFBuilder, state: any) {
+  const roadmap = state.roadmapInfo || state.stageInfo || {};
+  const stageLabel = getStageLabel(state);
+  const role = getItalianRole(roadmap.role || 'Founder');
+
+  pdf.newPage(IMPULSE_COLORS.cream);
+
+  pdf.cursorY = 38;
+
+  pdf.drawText('LA TUA FASE', PAGE.marginX, pdf.cursorY, {
+    fontSize: 24,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark
+  });
+
+  pdf.cursorY += 17;
+
+  pdf.drawText(stageLabel, PAGE.marginX, pdf.cursorY, {
+    fontSize: 34,
+    style: 'bold',
+    color: IMPULSE_COLORS.teal,
+    lineHeightFactor: 1.05,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 22;
+
+  const tableY = pdf.cursorY;
+  const labelW = 45;
+  const rowH = 14;
+
+  const rows = [
+    {
+      label: 'RUOLO',
+      value: role
+    },
+    {
+      label: 'VINCOLO',
+      value: roadmap.bottomLineConstraint || roadmap.headline || 'Vincolo non disponibile'
+    },
+    {
+      label: 'PASSAGGIO',
+      value: getGraduationChecklist(state).slice(0, 2).join(' · ')
+    }
+  ];
+
+  rows.forEach((row, index) => {
+    const y = tableY + index * rowH;
+
+    pdf.fillRect(PAGE.marginX, y, labelW, rowH, IMPULSE_COLORS.teal);
+    pdf.fillRect(PAGE.marginX + labelW, y, PAGE.contentWidth - labelW, rowH, IMPULSE_COLORS.white);
+
+    pdf.drawText(row.label, PAGE.marginX + 4, y + 8.7, {
+      fontSize: 6.8,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      charSpace: 0.5
+    });
+
+    pdf.drawText(String(row.value), PAGE.marginX + labelW + 5, y + 8.5, {
+      fontSize: 7.4,
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: PAGE.contentWidth - labelW - 8,
+      lineHeightFactor: 1.15
+    });
+  });
+
+  pdf.cursorY = tableY + rows.length * rowH + 20;
+
+  if (roadmap.headline) {
+    pdf.cursorY = pdf.drawText(roadmap.headline, PAGE.marginX, pdf.cursorY, {
+      fontSize: 12.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark,
+      lineHeightFactor: 1.4,
+      maxWidth: PAGE.contentWidth
+    });
+
+    pdf.cursorY += 10;
+  }
+
+  if (roadmap.strategicReviewFocus) {
+    pdf.cursorY = pdf.drawLuxuryCard(
+      'FOCUS DELLA STRATEGIC REVIEW',
+      roadmap.strategicReviewFocus,
+      IMPULSE_COLORS.teal,
+      pdf.cursorY,
+      IMPULSE_COLORS.lightBlue
+    );
+  }
+
+  if (roadmap.nonFare && pdf.cursorY < 250) {
+    pdf.cursorY = pdf.drawLuxuryCard(
+      'ERRORE DA EVITARE',
+      roadmap.nonFare,
+      IMPULSE_COLORS.dark,
+      pdf.cursorY,
+      IMPULSE_COLORS.white
+    );
+  }
+}
+
+function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
+  const rows = getFunctionConstraints(state);
+
+  pdf.newPage(IMPULSE_COLORS.white);
+
+  pdf.cursorY = 36;
+
+  pdf.drawText('MAPPA OPERATIVA DEI VINCOLI', PAGE.marginX, pdf.cursorY, {
+    fontSize: 26,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark,
+    lineHeightFactor: 1.05
+  });
+
+  pdf.cursorY += 19;
+
+  pdf.drawText(
+    'Questa è la parte operativa della diagnosi: dove il vincolo si manifesta, quale sistema manca e cosa deve esistere per passare allo stage successivo.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 9.6,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.45,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 23;
+
+  const tableX = PAGE.marginX;
+  const tableY = pdf.cursorY;
+  const areaW = 31;
+  const constraintW = 64;
+  const graduateW = 59;
+  const rowH = 24;
+
+  pdf.fillRect(tableX, tableY, PAGE.contentWidth, 12, IMPULSE_COLORS.dark);
+
+  pdf.drawText('AREA', tableX + 4, tableY + 8, {
+    fontSize: 6.5,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.6
+  });
+
+  pdf.drawText('VINCOLO', tableX + areaW + 4, tableY + 8, {
+    fontSize: 6.5,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.6
+  });
+
+  pdf.drawText('PER PASSARE', tableX + areaW + constraintW + 4, tableY + 8, {
+    fontSize: 6.5,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.6
+  });
+
+  rows.slice(0, 7).forEach((row, index) => {
+    const y = tableY + 12 + index * rowH;
+    const bg = index % 2 === 0 ? IMPULSE_COLORS.cream : IMPULSE_COLORS.white;
+
+    pdf.fillRect(tableX, y, PAGE.contentWidth, rowH, bg);
+    pdf.fillRect(tableX, y, areaW, rowH, IMPULSE_COLORS.teal);
+
+    pdf.drawText(row.area.toUpperCase(), tableX + 4, y + 10, {
+      fontSize: 6.6,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      maxWidth: areaW - 7,
+      lineHeightFactor: 1.12
+    });
+
+    pdf.drawText(row.constraint, tableX + areaW + 4, y + 8, {
+      fontSize: 6.8,
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: constraintW - 8,
+      lineHeightFactor: 1.18
+    });
+
+    pdf.drawText(row.graduate, tableX + areaW + constraintW + 4, y + 8, {
+      fontSize: 6.8,
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: graduateW - 8,
+      lineHeightFactor: 1.18
+    });
+  });
+
+  pdf.cursorY = tableY + 12 + rows.slice(0, 7).length * rowH + 12;
+
+  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 28, IMPULSE_COLORS.dark);
+  pdf.fillRect(PAGE.marginX, pdf.cursorY, 4, 28, IMPULSE_COLORS.gold);
+
+  pdf.drawText('PUNTO CHIAVE', PAGE.marginX + 10, pdf.cursorY + 10, {
+    fontSize: 7,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 0.8
+  });
+
+  pdf.drawText(
+    'Il valore del report non è il punteggio. È capire quale parte del sistema deve essere resa leggibile, ripetibile e trasferibile.',
+    PAGE.marginX + 10,
+    pdf.cursorY + 19,
+    {
+      fontSize: 8.3,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      maxWidth: PAGE.contentWidth - 18,
+      lineHeightFactor: 1.2
+    }
+  );
+}
+
+function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
+  const priorities = state.priorita || state.priorities || [];
+  const fallbackDims = state.processedDims || [];
+  const topThree = priorities.length ? priorities.slice(0, 3) : fallbackDims.slice(0, 3);
+
+  pdf.newPage(IMPULSE_COLORS.white);
+
+  pdf.cursorY = 40;
+
+  pdf.drawText('LE 3 PRIORITÀ OPERATIVE', PAGE.marginX, pdf.cursorY, {
+    fontSize: 27,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark,
+    lineHeightFactor: 1.05
+  });
+
+  pdf.cursorY += 20;
+
+  pdf.drawText(
+    'Queste sono le aree che creano più attrito operativo. Risolverle prima evita di scalare confusione, costi o dipendenza dal founder.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 20;
+
+  topThree.forEach((dim: any, index: number) => {
+    const y = pdf.cursorY;
+    const score = Number(dim.score || 0);
+    const title = `#${index + 1} ${getDimensionName(dim).toUpperCase()} · ${score.toFixed(1)} / 10`;
+    const body =
+      dim.vincolo ||
+      dim.meaning ||
+      dim.cosaIndica ||
+      'Questa area richiede lavoro applicato prima di scalare.';
+
+    const bg = index === 0 ? IMPULSE_COLORS.lightBlue : IMPULSE_COLORS.cream;
+    const accent = index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold;
+
+    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 55, bg);
+    pdf.fillRect(PAGE.marginX, y, 4, 55, accent);
+
+    pdf.drawText(title, PAGE.marginX + 10, y + 10, {
+      fontSize: 8,
+      style: 'bold',
+      color: index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.dark,
+      charSpace: 0.4
+    });
+
+    pdf.drawText(body, PAGE.marginX + 10, y + 20, {
+      fontSize: 8.7,
+      color: IMPULSE_COLORS.darkSoft,
+      lineHeightFactor: 1.25,
+      maxWidth: PAGE.contentWidth - 18
+    });
+
+    if (dim.lavoro) {
+      pdf.drawText('FARE PRIMA:', PAGE.marginX + 10, y + 41, {
+        fontSize: 6.5,
+        style: 'bold',
+        color: IMPULSE_COLORS.teal,
+        charSpace: 0.3
+      });
+
+      pdf.drawText(fitText(dim.lavoro, 98), PAGE.marginX + 42, y + 41, {
+        fontSize: 6.7,
+        color: IMPULSE_COLORS.darkSoft,
+        maxWidth: 47,
+        lineHeightFactor: 1.15
+      });
+    }
+
+    if (dim.nonFare) {
+      pdf.drawText('EVITARE:', PAGE.marginX + 91, y + 41, {
+        fontSize: 6.5,
+        style: 'bold',
+        color: IMPULSE_COLORS.dark,
+        charSpace: 0.3
+      });
+
+      pdf.drawText(fitText(dim.nonFare, 88), PAGE.marginX + 118, y + 41, {
+        fontSize: 6.7,
+        color: IMPULSE_COLORS.darkSoft,
+        maxWidth: 55,
+        lineHeightFactor: 1.15
+      });
+    }
+
+    pdf.cursorY += 64;
+  });
+}
+
+function drawGraduationChecklistPage(pdf: PDFBuilder, state: any) {
+  const checklist = getGraduationChecklist(state);
+  const roadmap = state.roadmapInfo || state.stageInfo || {};
+
+  pdf.newPage(IMPULSE_COLORS.cream);
+
+  pdf.cursorY = 40;
+
+  pdf.drawText('CHECKLIST PER IL PROSSIMO STAGE', PAGE.marginX, pdf.cursorY, {
+    fontSize: 25,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark,
+    lineHeightFactor: 1.05
+  });
+
+  pdf.cursorY += 20;
+
+  pdf.drawText(
+    'Questi sono i criteri pratici che devono diventare più chiari, stabili o trasferibili prima del salto successivo.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 24;
+
+  checklist.slice(0, 7).forEach((item: string, index: number) => {
+    const y = pdf.cursorY;
+
+    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 18, IMPULSE_COLORS.white);
+    pdf.fillRect(PAGE.marginX, y, 18, 18, index < 2 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold);
+
+    pdf.drawText(String(index + 1).padStart(2, '0'), PAGE.marginX + 9, y + 11.5, {
+      fontSize: 7.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      align: 'center'
+    });
+
+    pdf.drawText(item, PAGE.marginX + 25, y + 11.5, {
+      fontSize: 9.3,
+      style: 'bold',
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: PAGE.contentWidth - 32,
+      lineHeightFactor: 1.15
+    });
+
+    pdf.cursorY += 22;
+  });
+
+  if (roadmap.nonFare && pdf.cursorY < 245) {
+    pdf.cursorY += 4;
+
+    pdf.cursorY = pdf.drawLuxuryCard(
+      'COSA NON SCALARE ANCORA',
+      roadmap.nonFare,
+      IMPULSE_COLORS.dark,
+      pdf.cursorY,
+      IMPULSE_COLORS.white
+    );
+  }
 }
 
 function drawScoreMapPage(pdf: PDFBuilder, state: any) {
@@ -794,217 +1323,6 @@ function drawScoreMapPage(pdf: PDFBuilder, state: any) {
   pdf.drawRadar(PAGE.width / 2, 215, 48, spiderDims);
 }
 
-function drawRoadmapStagePage(pdf: PDFBuilder, state: any) {
-  const roadmap = state.roadmapInfo || state.stageInfo || {};
-  const stageLabel = getStageLabel(state);
-
-  pdf.newPage(IMPULSE_COLORS.cream);
-
-  pdf.cursorY = 38;
-
-  pdf.drawText('IL TUO STAGE', PAGE.marginX, pdf.cursorY, {
-    fontSize: 24,
-    style: 'bold',
-    color: IMPULSE_COLORS.dark
-  });
-
-  pdf.cursorY += 17;
-
-  pdf.drawText(stageLabel, PAGE.marginX, pdf.cursorY, {
-    fontSize: 34,
-    style: 'bold',
-    color: IMPULSE_COLORS.teal,
-    lineHeightFactor: 1.05,
-    maxWidth: PAGE.contentWidth
-  });
-
-  pdf.cursorY += 22;
-
-  const tableY = pdf.cursorY;
-  const labelW = 45;
-  const rowH = 14;
-
-  const rows = [
-    {
-      label: 'ROLE',
-      value: roadmap.role || 'Founder'
-    },
-    {
-      label: 'CONSTRAINT',
-      value: roadmap.bottomLineConstraint || roadmap.headline || 'Vincolo non disponibile'
-    },
-    {
-      label: 'TO GRADUATE',
-      value: Array.isArray(roadmap.graduationCriteria)
-        ? roadmap.graduationCriteria.slice(0, 2).join(' · ')
-        : 'Criteri non disponibili'
-    }
-  ];
-
-  rows.forEach((row, index) => {
-    const y = tableY + index * rowH;
-
-    pdf.fillRect(PAGE.marginX, y, labelW, rowH, IMPULSE_COLORS.teal);
-    pdf.fillRect(PAGE.marginX + labelW, y, PAGE.contentWidth - labelW, rowH, IMPULSE_COLORS.white);
-
-    pdf.drawText(row.label, PAGE.marginX + 4, y + 8.7, {
-      fontSize: 6.8,
-      style: 'bold',
-      color: IMPULSE_COLORS.white,
-      charSpace: 0.5
-    });
-
-    pdf.drawText(String(row.value), PAGE.marginX + labelW + 5, y + 8.5, {
-      fontSize: 7.4,
-      color: IMPULSE_COLORS.darkSoft,
-      maxWidth: PAGE.contentWidth - labelW - 8,
-      lineHeightFactor: 1.15
-    });
-  });
-
-  pdf.cursorY = tableY + rows.length * rowH + 20;
-
-  if (roadmap.headline) {
-    pdf.cursorY = pdf.drawText(roadmap.headline, PAGE.marginX, pdf.cursorY, {
-      fontSize: 12.5,
-      style: 'bold',
-      color: IMPULSE_COLORS.dark,
-      lineHeightFactor: 1.4,
-      maxWidth: PAGE.contentWidth
-    });
-
-    pdf.cursorY += 10;
-  }
-
-  if (roadmap.graduationCriteria && Array.isArray(roadmap.graduationCriteria)) {
-    pdf.cursorY = pdf.drawBulletList(
-      'CRITERI PER PASSARE ALLO STAGE SUCCESSIVO',
-      roadmap.graduationCriteria.slice(0, 5),
-      IMPULSE_COLORS.gold,
-      pdf.cursorY,
-      IMPULSE_COLORS.white
-    );
-  }
-
-  if (roadmap.strategicReviewFocus) {
-    pdf.cursorY = pdf.drawLuxuryCard(
-      'FOCUS DELLA STRATEGIC REVIEW',
-      roadmap.strategicReviewFocus,
-      IMPULSE_COLORS.teal,
-      pdf.cursorY,
-      IMPULSE_COLORS.lightBlue
-    );
-  }
-
-  if (roadmap.nonFare && pdf.cursorY < 250) {
-    pdf.cursorY = pdf.drawLuxuryCard(
-      'ERRORE DA EVITARE',
-      roadmap.nonFare,
-      IMPULSE_COLORS.dark,
-      pdf.cursorY,
-      IMPULSE_COLORS.white
-    );
-  }
-}
-
-function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
-  const priorities = state.priorita || state.priorities || [];
-  const fallbackDims = state.processedDims || [];
-  const topThree = priorities.length ? priorities.slice(0, 3) : fallbackDims.slice(0, 3);
-
-  pdf.newPage(IMPULSE_COLORS.white);
-
-  pdf.cursorY = 40;
-
-  pdf.drawText('LE 3 PRIORITÀ OPERATIVE', PAGE.marginX, pdf.cursorY, {
-    fontSize: 27,
-    style: 'bold',
-    color: IMPULSE_COLORS.dark,
-    lineHeightFactor: 1.05
-  });
-
-  pdf.cursorY += 20;
-
-  pdf.drawText(
-    'Queste sono le aree che creano più attrito operativo. Risolverle prima evita di scalare confusione, costi o dipendenza dal founder.',
-    PAGE.marginX,
-    pdf.cursorY,
-    {
-      fontSize: 10,
-      color: IMPULSE_COLORS.gray,
-      lineHeightFactor: 1.5,
-      maxWidth: PAGE.contentWidth
-    }
-  );
-
-  pdf.cursorY += 20;
-
-  topThree.forEach((dim: any, index: number) => {
-    const y = pdf.cursorY;
-    const score = Number(dim.score || 0);
-    const title = `#${index + 1} ${getDimensionName(dim).toUpperCase()} · ${score.toFixed(1)} / 10`;
-    const body =
-      dim.vincolo ||
-      dim.meaning ||
-      dim.cosaIndica ||
-      'Questa area richiede lavoro applicato prima di scalare.';
-
-    const bg = index === 0 ? IMPULSE_COLORS.lightBlue : IMPULSE_COLORS.cream;
-    const accent = index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold;
-
-    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 55, bg);
-    pdf.fillRect(PAGE.marginX, y, 4, 55, accent);
-
-    pdf.drawText(title, PAGE.marginX + 10, y + 10, {
-      fontSize: 8,
-      style: 'bold',
-      color: index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.dark,
-      charSpace: 0.4
-    });
-
-    pdf.drawText(body, PAGE.marginX + 10, y + 20, {
-      fontSize: 8.7,
-      color: IMPULSE_COLORS.darkSoft,
-      lineHeightFactor: 1.25,
-      maxWidth: PAGE.contentWidth - 18
-    });
-
-    if (dim.lavoro) {
-      pdf.drawText('DO FIRST:', PAGE.marginX + 10, y + 41, {
-        fontSize: 6.7,
-        style: 'bold',
-        color: IMPULSE_COLORS.teal,
-        charSpace: 0.4
-      });
-
-      pdf.drawText(fitText(dim.lavoro, 105), PAGE.marginX + 32, y + 41, {
-        fontSize: 6.8,
-        color: IMPULSE_COLORS.darkSoft,
-        maxWidth: 55,
-        lineHeightFactor: 1.15
-      });
-    }
-
-    if (dim.nonFare) {
-      pdf.drawText('AVOID:', PAGE.marginX + 91, y + 41, {
-        fontSize: 6.7,
-        style: 'bold',
-        color: IMPULSE_COLORS.dark,
-        charSpace: 0.4
-      });
-
-      pdf.drawText(fitText(dim.nonFare, 95), PAGE.marginX + 111, y + 41, {
-        fontSize: 6.8,
-        color: IMPULSE_COLORS.darkSoft,
-        maxWidth: 62,
-        lineHeightFactor: 1.15
-      });
-    }
-
-    pdf.cursorY += 64;
-  });
-}
-
 function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
   const dims = state.processedDims || [];
 
@@ -1087,7 +1405,7 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
 
   pdf.cursorY = 248;
 
-  pdf.drawText('Bottom line', PAGE.marginX, pdf.cursorY, {
+  pdf.drawText('Punto chiave', PAGE.marginX, pdf.cursorY, {
     fontSize: 10,
     style: 'bold',
     color: IMPULSE_COLORS.teal
@@ -1096,7 +1414,7 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
   pdf.cursorY += 10;
 
   pdf.drawText(
-    'Il report non serve a descrivere ogni dettaglio del business. Serve a identificare il vincolo più costoso e a decidere cosa non scalare ancora.',
+    'I punteggi servono a localizzare il vincolo. Il lavoro vero è trasformare quel vincolo in sistemi, regole e materiali operativi.',
     PAGE.marginX,
     pdf.cursorY,
     {
@@ -1109,123 +1427,9 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
   );
 }
 
-function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
-  const rows = getFunctionConstraints(state);
-
-  pdf.newPage(IMPULSE_COLORS.white);
-
-  pdf.cursorY = 38;
-
-  pdf.drawText('DOVE SI VEDE IL VINCOLO', PAGE.marginX, pdf.cursorY, {
-    fontSize: 27,
-    style: 'bold',
-    color: IMPULSE_COLORS.dark,
-    lineHeightFactor: 1.05
-  });
-
-  pdf.cursorY += 20;
-
-  pdf.drawText(
-    'Il vincolo principale non resta astratto. Si manifesta in funzioni specifiche del business: marketing, sales, operations, finance e dati.',
-    PAGE.marginX,
-    pdf.cursorY,
-    {
-      fontSize: 10,
-      color: IMPULSE_COLORS.gray,
-      lineHeightFactor: 1.5,
-      maxWidth: PAGE.contentWidth
-    }
-  );
-
-  pdf.cursorY += 24;
-
-  const tableX = PAGE.marginX;
-  const tableY = pdf.cursorY;
-  const areaW = 32;
-  const constraintW = 64;
-  const graduateW = 58;
-  const rowH = 28;
-
-  pdf.fillRect(tableX, tableY, PAGE.contentWidth, 13, IMPULSE_COLORS.dark);
-
-  pdf.drawText('AREA', tableX + 4, tableY + 8.5, {
-    fontSize: 6.8,
-    style: 'bold',
-    color: IMPULSE_COLORS.white,
-    charSpace: 0.6
-  });
-
-  pdf.drawText('CONSTRAINT', tableX + areaW + 4, tableY + 8.5, {
-    fontSize: 6.8,
-    style: 'bold',
-    color: IMPULSE_COLORS.white,
-    charSpace: 0.6
-  });
-
-  pdf.drawText('TO GRADUATE', tableX + areaW + constraintW + 4, tableY + 8.5, {
-    fontSize: 6.8,
-    style: 'bold',
-    color: IMPULSE_COLORS.white,
-    charSpace: 0.6
-  });
-
-  rows.slice(0, 5).forEach((row, index) => {
-    const y = tableY + 13 + index * rowH;
-    const bg = index % 2 === 0 ? IMPULSE_COLORS.cream : IMPULSE_COLORS.white;
-
-    pdf.fillRect(tableX, y, PAGE.contentWidth, rowH, bg);
-    pdf.fillRect(tableX, y, areaW, rowH, IMPULSE_COLORS.teal);
-
-    pdf.drawText(row.area.toUpperCase(), tableX + 4, y + 11, {
-      fontSize: 7,
-      style: 'bold',
-      color: IMPULSE_COLORS.white,
-      maxWidth: areaW - 7,
-      lineHeightFactor: 1.15
-    });
-
-    pdf.drawText(row.constraint, tableX + areaW + 4, y + 9, {
-      fontSize: 7.3,
-      color: IMPULSE_COLORS.darkSoft,
-      maxWidth: constraintW - 8,
-      lineHeightFactor: 1.28
-    });
-
-    pdf.drawText(row.graduate, tableX + areaW + constraintW + 4, y + 9, {
-      fontSize: 7.3,
-      color: IMPULSE_COLORS.darkSoft,
-      maxWidth: graduateW - 8,
-      lineHeightFactor: 1.28
-    });
-  });
-
-  pdf.cursorY = tableY + 13 + rows.slice(0, 5).length * rowH + 18;
-
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 28, IMPULSE_COLORS.dark);
-  pdf.fillRect(PAGE.marginX, pdf.cursorY, 4, 28, IMPULSE_COLORS.gold);
-
-  pdf.drawText('BOTTOM LINE', PAGE.marginX + 10, pdf.cursorY + 10, {
-    fontSize: 7,
-    style: 'bold',
-    color: IMPULSE_COLORS.gold,
-    charSpace: 0.8
-  });
-
-  pdf.drawText(
-    'Prima di scalare, il business deve rendere leggibile dove il vincolo si manifesta e quale sistema lo rimuove.',
-    PAGE.marginX + 10,
-    pdf.cursorY + 19,
-    {
-      fontSize: 8.5,
-      style: 'bold',
-      color: IMPULSE_COLORS.white,
-      maxWidth: PAGE.contentWidth - 18,
-      lineHeightFactor: 1.25
-    }
-  );
-}
-
 function drawProfilePage(pdf: PDFBuilder, state: any, userProfile: any) {
+  const profileTitle = getProfileTitleItalian(userProfile?.title);
+
   pdf.newPage(IMPULSE_COLORS.dark, true);
 
   pdf.cursorY = 45;
@@ -1239,7 +1443,7 @@ function drawProfilePage(pdf: PDFBuilder, state: any, userProfile: any) {
 
   pdf.cursorY += 18;
 
-  pdf.drawText(userProfile?.title || 'Diagnostic Profile', PAGE.marginX, pdf.cursorY, {
+  pdf.drawText(profileTitle, PAGE.marginX, pdf.cursorY, {
     fontSize: 38,
     style: 'bold',
     color: IMPULSE_COLORS.white,
@@ -1321,12 +1525,14 @@ function drawProfilePage(pdf: PDFBuilder, state: any, userProfile: any) {
 }
 
 function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) {
+  const profileTitle = getProfileTitleItalian(userProfile?.title) || 'il tuo profilo diagnostico';
+
   pdf.newPage(IMPULSE_COLORS.teal, true);
 
   pdf.cursorY = 58;
 
-  pdf.drawText('THE REPORT SHOWS WHERE THE CONSTRAINT IS.', PAGE.marginX, pdf.cursorY, {
-    fontSize: 27,
+  pdf.drawText('IL REPORT MOSTRA DOVE SI TROVA IL VINCOLO.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 25,
     style: 'bold',
     color: IMPULSE_COLORS.white,
     lineHeightFactor: 1.08,
@@ -1335,8 +1541,8 @@ function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) 
 
   pdf.cursorY += 38;
 
-  pdf.drawText('THE REVIEW DECIDES WHAT TO DO FIRST.', PAGE.marginX, pdf.cursorY, {
-    fontSize: 27,
+  pdf.drawText('LA REVIEW DECIDE COSA FARE PRIMA.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 25,
     style: 'bold',
     color: IMPULSE_COLORS.gold,
     lineHeightFactor: 1.08,
@@ -1344,8 +1550,6 @@ function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) 
   });
 
   pdf.cursorY += 42;
-
-  const profileTitle = userProfile?.title || 'il tuo profilo diagnostico';
 
   pdf.drawText(
     `La Strategic Review traduce ${profileTitle} in una sequenza operativa: cosa correggere, cosa ignorare, cosa rendere sistema e cosa non scalare ancora.`,
@@ -1407,11 +1611,12 @@ export async function generateIMPULSEReport(state: any, label?: string) {
   const userProfile = getProfileData(state.profile, state.overall);
 
   drawExecutiveResultPage(pdf, state, userProfile);
-  drawScoreMapPage(pdf, state);
   drawRoadmapStagePage(pdf, state);
-  drawTopPrioritiesPage(pdf, state);
-  drawDimensionCardsPage(pdf, state);
   drawFunctionConstraintsPage(pdf, state);
+  drawTopPrioritiesPage(pdf, state);
+  drawGraduationChecklistPage(pdf, state);
+  drawScoreMapPage(pdf, state);
+  drawDimensionCardsPage(pdf, state);
   drawProfilePage(pdf, state, userProfile);
   drawStrategicReviewPage(pdf, state, userProfile);
 
