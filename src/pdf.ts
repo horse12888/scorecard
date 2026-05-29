@@ -725,15 +725,41 @@ function getGraduationChecklist(state: any) {
       'Materiali commerciali e operativi coerenti'
     ],
     SCALE_READINESS: [
-      'Management layer attivo',
-      'Metriche direzionali affidabili',
-      'Governance operativa più chiara',
-      'Data room leggera pronta',
-      'Criteri di allocazione capitale e priorità definiti'
+      'Metriche finanziarie coerenti',
+      'Narrativa strategica chiara',
+      'Asset e sistemi documentati',
+      'Responsabilità manageriali leggibili',
+      'Materiali pronti per partner, investitori, board o operazioni straordinarie'
     ]
   };
 
   return fallback[stage] || fallback.FOUNDATION;
+}
+
+function getThreePriorities(state: any) {
+  const priorities = Array.isArray(state.priorita || state.priorities)
+    ? [...(state.priorita || state.priorities)]
+    : [];
+
+  const fallbackDims = Array.isArray(state.processedDims) ? state.processedDims : [];
+
+  const sortedFallback = [...fallbackDims].sort((a: any, b: any) => {
+    return Number(a.score || 0) - Number(b.score || 0);
+  });
+
+  const topThree = [...priorities];
+
+  sortedFallback.forEach((dim: any) => {
+    const alreadyIncluded = topThree.some((p: any) => {
+      return String(p.key || p.label) === String(dim.key || dim.label);
+    });
+
+    if (!alreadyIncluded && topThree.length < 3) {
+      topThree.push(dim);
+    }
+  });
+
+  return topThree.slice(0, 3);
 }
 
 function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) {
@@ -1076,9 +1102,7 @@ function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
 }
 
 function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
-  const priorities = state.priorita || state.priorities || [];
-  const fallbackDims = state.processedDims || [];
-  const topThree = priorities.length ? priorities.slice(0, 3) : fallbackDims.slice(0, 3);
+  const topThree = getThreePriorities(state);
 
   pdf.newPage(IMPULSE_COLORS.white);
 
@@ -1402,29 +1426,6 @@ function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
       maxWidth: cardW - 14
     });
   });
-
-  pdf.cursorY = 238;
-
-  pdf.drawText('Punto chiave', PAGE.marginX, pdf.cursorY, {
-    fontSize: 10,
-    style: 'bold',
-    color: IMPULSE_COLORS.teal
-  });
-
-  pdf.cursorY += 10;
-
-  pdf.drawText(
-    'I punteggi servono a localizzare il vincolo. Il lavoro successivo è trasformare quel vincolo in sistemi, regole e materiali operativi.',
-    PAGE.marginX,
-    pdf.cursorY,
-    {
-      fontSize: 11,
-      style: 'bold',
-      color: IMPULSE_COLORS.dark,
-      lineHeightFactor: 1.45,
-      maxWidth: PAGE.contentWidth
-    }
-  );
 }
 
 function drawProfilePage(pdf: PDFBuilder, state: any, userProfile: any) {
