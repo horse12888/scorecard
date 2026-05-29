@@ -769,3 +769,883 @@ function getThreePriorities(state: any) {
 
   return topThree.slice(0, 3);
 }
+function drawExecutiveResultPage(pdf: PDFBuilder, state: any, userProfile: any) {
+  const roadmap = state.roadmapInfo || state.stageInfo || {};
+  const name = getDisplayName(state);
+  const stageLabel = getStageLabel(state);
+  const profileTitle = getProfileTitleItalian(userProfile?.title);
+
+  pdf.newPage(IMPULSE_COLORS.dark, true);
+
+  pdf.drawText('IMPULSE BUSINESS READINESS REPORT', PAGE.marginX, 40, {
+    fontSize: 9,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 1.2
+  });
+
+  pdf.drawText(`Preparato per ${name}`, PAGE.marginX, 52, {
+    fontSize: 9,
+    color: IMPULSE_COLORS.grayLight
+  });
+
+  pdf.drawText(new Date().toLocaleDateString('it-IT'), PAGE.width - PAGE.marginX, 52, {
+    fontSize: 9,
+    align: 'right',
+    color: IMPULSE_COLORS.grayLight
+  });
+
+  pdf.drawDonut(PAGE.marginX + 31, 103, 25, 4, Number(state.overall || 0), IMPULSE_COLORS.teal);
+
+  pdf.drawText(`${Number(state.overall || 0)}%`, PAGE.marginX + 31, 109, {
+    fontSize: 32,
+    style: 'bold',
+    align: 'center',
+    color: IMPULSE_COLORS.white
+  });
+
+  pdf.drawText('PUNTEGGIO COMPLESSIVO', PAGE.marginX + 31, 131, {
+    fontSize: 5.8,
+    style: 'bold',
+    align: 'center',
+    color: IMPULSE_COLORS.grayLight,
+    charSpace: 0.4
+  });
+
+  pdf.drawText(profileTitle, PAGE.marginX + 72, 88, {
+    fontSize: 31,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    lineHeightFactor: 1.05,
+    maxWidth: 82
+  });
+
+  pdf.drawText(
+    userProfile?.blocco ||
+      'Il report identifica il vincolo principale che rallenta la prossima fase di crescita.',
+    PAGE.marginX + 72,
+    126,
+    {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.cream,
+      lineHeightFactor: 1.55,
+      maxWidth: 82
+    }
+  );
+
+  const boxY = 168;
+  const boxW = 48;
+  const boxGap = 5;
+
+  const boxes = [
+    { title: 'FASCIA', value: String(state.fascia || '-') },
+    { title: 'PROFILO', value: `Profilo ${state.profile || '-'}` },
+    { title: 'FASE', value: stageLabel }
+  ];
+
+  boxes.forEach((box, index) => {
+    const x = PAGE.marginX + index * (boxW + boxGap);
+
+    pdf.fillRect(x, boxY, boxW, 31, IMPULSE_COLORS.darkSoft);
+
+    pdf.drawText(box.title, x + 5, boxY + 9, {
+      fontSize: 6.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.gold,
+      charSpace: 0.6,
+      maxWidth: boxW - 10
+    });
+
+    pdf.drawText(box.value, x + 5, boxY + 20, {
+      fontSize: 8.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.2,
+      maxWidth: boxW - 10
+    });
+  });
+
+  pdf.cursorY = 222;
+
+  pdf.drawText('VINCOLO PRINCIPALE', PAGE.marginX, pdf.cursorY, {
+    fontSize: 8,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 1
+  });
+
+  pdf.cursorY += 11;
+
+  const mainConstraint =
+    roadmap.bottomLineConstraint ||
+    userProfile?.manifesta ||
+    'Il vincolo principale richiede priorità operativa prima di aumentare complessità, budget o nuove iniziative.';
+
+  pdf.drawText(mainConstraint, PAGE.marginX, pdf.cursorY, {
+    fontSize: 14,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    lineHeightFactor: 1.45,
+    maxWidth: PAGE.contentWidth
+  });
+}
+
+function drawRoadmapStagePage(pdf: PDFBuilder, state: any) {
+  const roadmap = state.roadmapInfo || state.stageInfo || {};
+  const stageLabel = getStageLabel(state);
+  const role = getItalianRole(roadmap.role || 'Founder');
+
+  pdf.newPage(IMPULSE_COLORS.cream);
+
+  pdf.cursorY = 38;
+
+  pdf.drawText('LA TUA FASE', PAGE.marginX, pdf.cursorY, {
+    fontSize: 24,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark
+  });
+
+  pdf.cursorY += 17;
+
+  pdf.drawText(stageLabel, PAGE.marginX, pdf.cursorY, {
+    fontSize: 34,
+    style: 'bold',
+    color: IMPULSE_COLORS.teal,
+    lineHeightFactor: 1.05,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 22;
+
+  const tableY = pdf.cursorY;
+  const labelW = 45;
+  const rowH = 14;
+
+  const rows = [
+    {
+      label: 'RUOLO',
+      value: role
+    },
+    {
+      label: 'VINCOLO',
+      value: roadmap.bottomLineConstraint || roadmap.headline || 'Vincolo non disponibile'
+    },
+    {
+      label: 'PASSAGGIO',
+      value: getGraduationChecklist(state).slice(0, 2).join(' · ')
+    }
+  ];
+
+  rows.forEach((row, index) => {
+    const y = tableY + index * rowH;
+
+    pdf.fillRect(PAGE.marginX, y, labelW, rowH, IMPULSE_COLORS.teal);
+    pdf.fillRect(PAGE.marginX + labelW, y, PAGE.contentWidth - labelW, rowH, IMPULSE_COLORS.white);
+
+    pdf.drawText(row.label, PAGE.marginX + 4, y + 8.7, {
+      fontSize: 6.8,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      charSpace: 0.5
+    });
+
+    pdf.drawText(String(row.value), PAGE.marginX + labelW + 5, y + 8.5, {
+      fontSize: 7.4,
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: PAGE.contentWidth - labelW - 8,
+      lineHeightFactor: 1.15
+    });
+  });
+
+  pdf.cursorY = tableY + rows.length * rowH + 20;
+
+  if (roadmap.headline) {
+    pdf.cursorY = pdf.drawText(roadmap.headline, PAGE.marginX, pdf.cursorY, {
+      fontSize: 12.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark,
+      lineHeightFactor: 1.4,
+      maxWidth: PAGE.contentWidth
+    });
+
+    pdf.cursorY += 10;
+  }
+
+  if (roadmap.strategicReviewFocus) {
+    pdf.cursorY = pdf.drawLuxuryCard(
+      'FOCUS DELLA STRATEGIC REVIEW',
+      roadmap.strategicReviewFocus,
+      IMPULSE_COLORS.teal,
+      pdf.cursorY,
+      IMPULSE_COLORS.lightBlue
+    );
+  }
+
+  if (roadmap.nonFare && pdf.cursorY < 250) {
+    pdf.cursorY = pdf.drawLuxuryCard(
+      'ERRORE DA EVITARE',
+      roadmap.nonFare,
+      IMPULSE_COLORS.dark,
+      pdf.cursorY,
+      IMPULSE_COLORS.white
+    );
+  }
+}
+
+function drawFunctionConstraintsPage(pdf: PDFBuilder, state: any) {
+  const rows = getFunctionConstraints(state);
+
+  pdf.newPage(IMPULSE_COLORS.white);
+
+  pdf.cursorY = 36;
+
+  pdf.drawText('MAPPA OPERATIVA DEI VINCOLI', PAGE.marginX, pdf.cursorY, {
+    fontSize: 26,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark,
+    lineHeightFactor: 1.05
+  });
+
+  pdf.cursorY += 19;
+
+  pdf.drawText(
+    'Questa è la parte operativa della diagnosi: mostra dove il vincolo si manifesta e cosa va chiarito prima di passare allo stage successivo.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 9.6,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.45,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 23;
+
+  const tableX = PAGE.marginX;
+  const tableY = pdf.cursorY;
+  const areaW = 31;
+  const constraintW = 64;
+  const graduateW = 59;
+  const rowH = 24;
+
+  pdf.fillRect(tableX, tableY, PAGE.contentWidth, 12, IMPULSE_COLORS.dark);
+
+  pdf.drawText('AREA', tableX + 4, tableY + 8, {
+    fontSize: 6.5,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.6
+  });
+
+  pdf.drawText('VINCOLO', tableX + areaW + 4, tableY + 8, {
+    fontSize: 6.5,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.6
+  });
+
+  pdf.drawText('DA CHIARIRE', tableX + areaW + constraintW + 4, tableY + 8, {
+    fontSize: 6.5,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    charSpace: 0.6
+  });
+
+  rows.slice(0, 7).forEach((row, index) => {
+    const y = tableY + 12 + index * rowH;
+    const bg = index % 2 === 0 ? IMPULSE_COLORS.cream : IMPULSE_COLORS.white;
+
+    pdf.fillRect(tableX, y, PAGE.contentWidth, rowH, bg);
+    pdf.fillRect(tableX, y, areaW, rowH, IMPULSE_COLORS.teal);
+
+    pdf.drawText(row.area.toUpperCase(), tableX + 4, y + 10, {
+      fontSize: 6.6,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      maxWidth: areaW - 7,
+      lineHeightFactor: 1.12
+    });
+
+    pdf.drawText(row.constraint, tableX + areaW + 4, y + 8, {
+      fontSize: 6.8,
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: constraintW - 8,
+      lineHeightFactor: 1.18
+    });
+
+    pdf.drawText(row.graduate, tableX + areaW + constraintW + 4, y + 8, {
+      fontSize: 6.8,
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: graduateW - 8,
+      lineHeightFactor: 1.18
+    });
+  });
+
+  pdf.cursorY = tableY + 12 + rows.slice(0, 7).length * rowH + 12;
+
+  pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 28, IMPULSE_COLORS.dark);
+  pdf.fillRect(PAGE.marginX, pdf.cursorY, 4, 28, IMPULSE_COLORS.gold);
+
+  pdf.drawText('PUNTO CHIAVE', PAGE.marginX + 10, pdf.cursorY + 10, {
+    fontSize: 7,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 0.8
+  });
+
+  pdf.drawText(
+    'Il valore del report è identificare cosa blocca il passaggio di stage. Il lavoro successivo è decidere come rimuoverlo.',
+    PAGE.marginX + 10,
+    pdf.cursorY + 19,
+    {
+      fontSize: 8.3,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      maxWidth: PAGE.contentWidth - 18,
+      lineHeightFactor: 1.2
+    }
+  );
+}
+
+function drawTopPrioritiesPage(pdf: PDFBuilder, state: any) {
+  const topThree = getThreePriorities(state);
+  const isHighScore = Number(state.overall || 0) >= 85;
+
+  pdf.newPage(IMPULSE_COLORS.white);
+
+  pdf.cursorY = 40;
+
+  pdf.drawText(
+    isHighScore ? 'LE 3 AREE DA RENDERE TRASFERIBILI' : 'LE 3 PRIORITÀ OPERATIVE',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: isHighScore ? 24 : 27,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark,
+      lineHeightFactor: 1.05,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 20;
+
+  pdf.drawText(
+    isHighScore
+      ? 'Con uno score alto, il lavoro non è correggere debolezze evidenti. È proteggere ciò che funziona e renderlo trasferibile a team, canali, materiali e interlocutori esterni.'
+      : 'Queste sono le aree che creano più attrito operativo. Il report indica cosa va chiarito prima di aumentare complessità, budget o nuove iniziative.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 20;
+
+  topThree.forEach((dim: any, index: number) => {
+    const y = pdf.cursorY;
+    const score = Number(dim.score || 0);
+    const title = `#${index + 1} ${getDimensionName(dim).toUpperCase()} · ${score.toFixed(1)} / 10`;
+    const body =
+      dim.vincolo ||
+      dim.meaning ||
+      dim.cosaIndica ||
+      'Questa area richiede lavoro applicato prima di scalare.';
+
+    const bg = index === 0 ? IMPULSE_COLORS.lightBlue : IMPULSE_COLORS.cream;
+    const accent = index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold;
+
+    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 48, bg);
+    pdf.fillRect(PAGE.marginX, y, 4, 48, accent);
+
+    pdf.drawText(title, PAGE.marginX + 10, y + 10, {
+      fontSize: 8,
+      style: 'bold',
+      color: index === 0 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.dark,
+      charSpace: 0.4
+    });
+
+    pdf.drawText(fitText(body, 155), PAGE.marginX + 10, y + 20, {
+      fontSize: 8,
+      color: IMPULSE_COLORS.darkSoft,
+      lineHeightFactor: 1.2,
+      maxWidth: PAGE.contentWidth - 18
+    });
+
+    if (dim.lavoro) {
+      pdf.drawText(isHighScore ? 'DA CODIFICARE:' : 'DA CHIARIRE:', PAGE.marginX + 10, y + 37, {
+        fontSize: 6.1,
+        style: 'bold',
+        color: IMPULSE_COLORS.teal,
+        charSpace: 0.15
+      });
+
+      pdf.drawText(fitText(dim.lavoro, isHighScore ? 82 : 88), PAGE.marginX + 52, y + 37, {
+        fontSize: 6.6,
+        color: IMPULSE_COLORS.darkSoft,
+        maxWidth: 37,
+        lineHeightFactor: 1.15
+      });
+    }
+
+    if (dim.nonFare) {
+      pdf.drawText('EVITARE:', PAGE.marginX + 91, y + 37, {
+        fontSize: 6.5,
+        style: 'bold',
+        color: IMPULSE_COLORS.dark,
+        charSpace: 0.3
+      });
+
+      pdf.drawText(fitText(dim.nonFare, 78), PAGE.marginX + 118, y + 37, {
+        fontSize: 6.7,
+        color: IMPULSE_COLORS.darkSoft,
+        maxWidth: 55,
+        lineHeightFactor: 1.15
+      });
+    }
+
+    pdf.cursorY += 55;
+  });
+}
+
+function drawGraduationChecklistPage(pdf: PDFBuilder, state: any) {
+  const checklist = getGraduationChecklist(state);
+  const roadmap = state.roadmapInfo || state.stageInfo || {};
+
+  pdf.newPage(IMPULSE_COLORS.cream);
+
+  pdf.cursorY = 40;
+
+  pdf.drawText('CHECKLIST PER IL PROSSIMO STAGE', PAGE.marginX, pdf.cursorY, {
+    fontSize: 25,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark,
+    lineHeightFactor: 1.05
+  });
+
+  pdf.cursorY += 20;
+
+  pdf.drawText(
+    'Questi sono i criteri pratici che devono diventare più chiari, stabili o trasferibili prima del salto successivo.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 24;
+
+  checklist.slice(0, 7).forEach((item: string, index: number) => {
+    const y = pdf.cursorY;
+
+    pdf.fillRect(PAGE.marginX, y, PAGE.contentWidth, 18, IMPULSE_COLORS.white);
+    pdf.fillRect(PAGE.marginX, y, 18, 18, index < 2 ? IMPULSE_COLORS.teal : IMPULSE_COLORS.gold);
+
+    pdf.drawText(String(index + 1).padStart(2, '0'), PAGE.marginX + 9, y + 11.5, {
+      fontSize: 7.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      align: 'center'
+    });
+
+    pdf.drawText(item, PAGE.marginX + 25, y + 11.5, {
+      fontSize: 9.3,
+      style: 'bold',
+      color: IMPULSE_COLORS.darkSoft,
+      maxWidth: PAGE.contentWidth - 32,
+      lineHeightFactor: 1.15
+    });
+
+    pdf.cursorY += 22;
+  });
+
+  if (roadmap.nonFare && pdf.cursorY < 245) {
+    pdf.cursorY += 4;
+
+    pdf.cursorY = pdf.drawLuxuryCard(
+      'COSA NON SCALARE ANCORA',
+      roadmap.nonFare,
+      IMPULSE_COLORS.dark,
+      pdf.cursorY,
+      IMPULSE_COLORS.white
+    );
+  }
+}
+function drawScoreMapPage(pdf: PDFBuilder, state: any) {
+  const strengths = state.forze || state.strengths || [];
+  const priorities = state.priorita || state.priorities || [];
+  const spiderDims = state.spiderDims || state.processedDims || [];
+
+  pdf.newPage(IMPULSE_COLORS.white);
+
+  pdf.cursorY = 42;
+
+  pdf.drawText('Le tue coordinate.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 30,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark
+  });
+
+  pdf.cursorY += 17;
+
+  pdf.drawText(
+    'Questa pagina mostra dove il business è già solido e dove crea più attrito prima del prossimo salto.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  const leftX = PAGE.marginX;
+  const rightX = PAGE.marginX + 82;
+  const startY = 92;
+
+  pdf.drawText('LE TUE FORZE', leftX, startY, {
+    fontSize: 8,
+    style: 'bold',
+    color: IMPULSE_COLORS.teal,
+    charSpace: 0.7
+  });
+
+  strengths.slice(0, 3).forEach((dim: any, index: number) => {
+    const y = startY + 16 + index * 17;
+
+    pdf.drawText(getDimensionName(dim), leftX, y, {
+      fontSize: 11,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark
+    });
+
+    pdf.drawText(Number(dim.score || 0).toFixed(1), leftX + 57, y, {
+      fontSize: 13,
+      style: 'bold',
+      color: IMPULSE_COLORS.teal
+    });
+  });
+
+  pdf.drawText(
+    Number(state.overall || 0) >= 85
+      ? 'AREE DA PROTEGGERE'
+      : state.overall >= 75
+        ? 'AREE DA RIFINIRE'
+        : 'LE TUE PRIORITÀ',
+    rightX,
+    startY,
+    {
+      fontSize: 8,
+      style: 'bold',
+      color: IMPULSE_COLORS.gold,
+      charSpace: 0.7
+    }
+  );
+
+  priorities.slice(0, 3).forEach((dim: any, index: number) => {
+    const y = startY + 16 + index * 17;
+
+    pdf.drawText(getDimensionName(dim), rightX, y, {
+      fontSize: 11,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark
+    });
+
+    pdf.drawText(Number(dim.score || 0).toFixed(1), rightX + 57, y, {
+      fontSize: 13,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark
+    });
+  });
+
+  pdf.drawRadar(PAGE.width / 2, 215, 48, spiderDims);
+}
+
+function drawDimensionCardsPage(pdf: PDFBuilder, state: any) {
+  const dims = state.processedDims || [];
+
+  pdf.newPage(IMPULSE_COLORS.cream);
+
+  pdf.cursorY = 42;
+
+  pdf.drawText('MAPPA DIAGNOSTICA', PAGE.marginX, pdf.cursorY, {
+    fontSize: 29,
+    style: 'bold',
+    color: IMPULSE_COLORS.dark
+  });
+
+  pdf.cursorY += 18;
+
+  pdf.drawText(
+    'Le 6 dimensioni mostrano dove il business è forte, dove è instabile e dove il valore resta bloccato.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10,
+      color: IMPULSE_COLORS.gray,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  const cardW = 72;
+  const cardH = 47;
+  const gapX = 10;
+  const gapY = 8;
+  const startX = PAGE.marginX;
+  const startY = 88;
+
+  dims.slice(0, 6).forEach((dim: any, index: number) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = startX + col * (cardW + gapX);
+    const y = startY + row * (cardH + gapY);
+    const score = Number(dim.score || 0);
+    const status = getScoreStatus(score);
+    const accent =
+      score >= 7
+        ? IMPULSE_COLORS.teal
+        : score >= 5
+          ? IMPULSE_COLORS.gold
+          : IMPULSE_COLORS.dark;
+
+    pdf.fillRect(x, y, cardW, cardH, IMPULSE_COLORS.white);
+    pdf.fillRect(x, y, 3, cardH, accent);
+
+    pdf.drawText(getDimensionName(dim).toUpperCase(), x + 8, y + 10, {
+      fontSize: 7.2,
+      style: 'bold',
+      color: accent,
+      charSpace: 0.4,
+      maxWidth: cardW - 14
+    });
+
+    pdf.drawText(`${score.toFixed(1)} / 10`, x + 8, y + 22, {
+      fontSize: 16,
+      style: 'bold',
+      color: IMPULSE_COLORS.dark
+    });
+
+    pdf.drawText(status, x + 8, y + 31, {
+      fontSize: 6.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.gray,
+      charSpace: 0.4
+    });
+
+    pdf.drawText(fitText(getDimensionMicroCopy(dim), 48), x + 8, y + 39, {
+      fontSize: 6.8,
+      color: IMPULSE_COLORS.darkSoft,
+      lineHeightFactor: 1.15,
+      maxWidth: cardW - 14
+    });
+  });
+}
+
+function drawProfilePage(pdf: PDFBuilder, state: any, userProfile: any) {
+  const profileTitle = getProfileTitleItalian(userProfile?.title);
+
+  pdf.newPage(IMPULSE_COLORS.dark, true);
+
+  pdf.cursorY = 45;
+
+  pdf.drawText(`PROFILO ${state.profile || ''}`, PAGE.marginX, pdf.cursorY, {
+    fontSize: 9,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 1.2
+  });
+
+  pdf.cursorY += 18;
+
+  pdf.drawText(profileTitle, PAGE.marginX, pdf.cursorY, {
+    fontSize: 38,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    lineHeightFactor: 1.05,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 32;
+
+  pdf.drawText(userProfile?.blocco || '', PAGE.marginX, pdf.cursorY, {
+    fontSize: 12.5,
+    style: 'italic',
+    color: IMPULSE_COLORS.cream,
+    lineHeightFactor: 1.45,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 34;
+
+  if (userProfile?.manifesta) {
+    pdf.drawText('COME SI MANIFESTA', PAGE.marginX, pdf.cursorY, {
+      fontSize: 8,
+      style: 'bold',
+      color: IMPULSE_COLORS.teal,
+      charSpace: 0.8
+    });
+
+    pdf.cursorY += 9;
+
+    pdf.cursorY = pdf.drawText(userProfile.manifesta, PAGE.marginX, pdf.cursorY, {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    });
+
+    pdf.cursorY += 13;
+  }
+
+  if (userProfile?.rischio) {
+    pdf.drawText('IL RISCHIO SE IGNORATO', PAGE.marginX, pdf.cursorY, {
+      fontSize: 8,
+      style: 'bold',
+      color: IMPULSE_COLORS.gold,
+      charSpace: 0.8
+    });
+
+    pdf.cursorY += 9;
+
+    pdf.cursorY = pdf.drawText(userProfile.rischio, PAGE.marginX, pdf.cursorY, {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.5,
+      maxWidth: PAGE.contentWidth
+    });
+
+    pdf.cursorY += 13;
+  }
+
+  if (userProfile?.decisione) {
+    pdf.fillRect(PAGE.marginX, pdf.cursorY, PAGE.contentWidth, 38, IMPULSE_COLORS.darkSoft);
+    pdf.fillRect(PAGE.marginX, pdf.cursorY, 4, 38, IMPULSE_COLORS.gold);
+
+    pdf.drawText('LA DECISIONE CHE VIENE PRIMA', PAGE.marginX + 10, pdf.cursorY + 11, {
+      fontSize: 7.5,
+      style: 'bold',
+      color: IMPULSE_COLORS.gold,
+      charSpace: 0.7
+    });
+
+    pdf.drawText(userProfile.decisione, PAGE.marginX + 10, pdf.cursorY + 21, {
+      fontSize: 10,
+      style: 'bold',
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.35,
+      maxWidth: PAGE.contentWidth - 18
+    });
+  }
+}
+
+function drawStrategicReviewPage(pdf: PDFBuilder, state: any, userProfile: any) {
+  pdf.newPage(IMPULSE_COLORS.teal, true);
+
+  pdf.cursorY = 58;
+
+  pdf.drawText('IL REPORT MOSTRA DOVE SI TROVA IL VINCOLO.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 25,
+    style: 'bold',
+    color: IMPULSE_COLORS.white,
+    lineHeightFactor: 1.08,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 38;
+
+  pdf.drawText('LA REVIEW DEFINISCE COME PROCEDERE.', PAGE.marginX, pdf.cursorY, {
+    fontSize: 25,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    lineHeightFactor: 1.08,
+    maxWidth: PAGE.contentWidth
+  });
+
+  pdf.cursorY += 42;
+
+  pdf.drawText(
+    'Questo report identifica cosa sta bloccando il business. La Strategic Review serve a definire come rimuoverlo, in quale ordine e con quali decisioni operative.',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 12,
+      color: IMPULSE_COLORS.cream,
+      lineHeightFactor: 1.55,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 31;
+
+  pdf.drawText('Nella review definiamo:', PAGE.marginX, pdf.cursorY, {
+    fontSize: 9,
+    style: 'bold',
+    color: IMPULSE_COLORS.gold,
+    charSpace: 0.5
+  });
+
+  pdf.cursorY += 10;
+
+  pdf.drawText(
+    '1. come rimuovere il primo vincolo\n2. in quale ordine intervenire\n3. cosa non scalare ancora',
+    PAGE.marginX,
+    pdf.cursorY,
+    {
+      fontSize: 10.5,
+      color: IMPULSE_COLORS.white,
+      lineHeightFactor: 1.55,
+      maxWidth: PAGE.contentWidth
+    }
+  );
+
+  pdf.cursorY += 48;
+
+  pdf.fillRect(PAGE.marginX, pdf.cursorY, 95, 15, IMPULSE_COLORS.gold);
+
+  pdf.drawText('CANDIDATI ALLA REVIEW', PAGE.marginX + 47.5, pdf.cursorY + 9.8, {
+    fontSize: 8.5,
+    style: 'bold',
+    align: 'center',
+    color: IMPULSE_COLORS.dark
+  });
+
+  pdf.cursorY += 42;
+
+  pdf.drawText('davidedileo.it', PAGE.marginX, pdf.cursorY, {
+    fontSize: 20,
+    style: 'bold',
+    color: IMPULSE_COLORS.white
+  });
+}
+
+export async function generateIMPULSEReport(state: any, label?: string) {
+  const pdf = new PDFBuilder(state);
+  const userProfile = getProfileData(state.profile, state.overall);
+
+  drawExecutiveResultPage(pdf, state, userProfile);
+  drawRoadmapStagePage(pdf, state);
+  drawFunctionConstraintsPage(pdf, state);
+  drawTopPrioritiesPage(pdf, state);
+  drawGraduationChecklistPage(pdf, state);
+  drawScoreMapPage(pdf, state);
+  drawDimensionCardsPage(pdf, state);
+  drawProfilePage(pdf, state, userProfile);
+  drawStrategicReviewPage(pdf, state, userProfile);
+
+  const filename = label
+    ? `IMPULSE_Report_${getFilenameSafe(label)}.pdf`
+    : `IMPULSE_Report_${getFilenameSafe(getDisplayName(state))}.pdf`;
+
+  pdf.save(filename);
+}
