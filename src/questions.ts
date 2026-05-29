@@ -13,7 +13,7 @@ export interface Question {
 
 export const QUESTIONS: Question[] = [
   { id: "Q1", type: "single", section: "profile", text: "Quale descrizione ti rappresenta meglio?", options: ["Proprietario di un business operativo","Founder o co-founder","Operator / COO / manager senior","Proprietario di asset operativi (immobili, IP, brand)","Sto valutando un nuovo progetto"] },
-  { id: "Q2", type: "single", section: "profile", text: "Fatturato annuo del business", options: ["Sotto €100k","€100k–€500k","€500k–€1M","€1M–€3M","€3M–€10M","Oltre €10M","Preferisco non dirlo"] },
+  { id: "Q2", type: "single", section: "profile", text: "Fatturato annuo del business", options: ["Sotto €100k","€100k–€500k","€500k–€1M","€1M–€3M","€3M–€10M","Oltre €10M"] },
   
   // CLARITY
   { id: "Q3", dimension: 'clarity', type: "yesno", section: "clarity", text: "Puoi spiegare cosa fa il tuo business in una frase che un dodicenne capirebbe?", weight: 1, reverse: false },
