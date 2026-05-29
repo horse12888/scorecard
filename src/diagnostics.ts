@@ -144,11 +144,28 @@ export const PROFILES: Record<string, any> = {
     nonFare: "Non rifare il sito per renderlo bello e non aumentare budget prima di aver chiarito la singola offerta centrale.",
     decisione: "Semplificare l'offerta a un solo asse principale leggibile universalmente e senza dipendere da una tua spiegazione privata.",
     foundational: {
+      title: "Clarity Gap",
       blocco: "Il primo vincolo è rendere il valore comprensibile. Prima ancora di amplificare il business, serve chiarire offerta, cliente ideale, promessa e prezzo.",
       manifesta: "Il mercato non ha ancora un modo semplice per capire cosa compra, perché dovrebbe comprarlo e perché dovrebbe farlo ora.",
       rischio: "Aumentare visibilità o advertising in questa fase può generare attenzione ma non conversione utile.",
       nonFare: "Non aumentare contenuti, campagne o rebranding prima di aver chiarito l'offerta centrale.",
       decisione: "Ridurre la complessità commerciale a una promessa chiara, una buyer persona prioritaria e una struttura di prezzo difendibile."
+    },
+    mature: {
+      title: "Gap di posizionamento",
+      blocco: "La chiarezza esiste, ma non è ancora abbastanza stabile tra canali, materiali e conversazioni commerciali.",
+      manifesta: "Il valore viene compreso, ma può cambiare forma a seconda di chi lo spiega, del canale usato o del tipo di interlocutore.",
+      rischio: "Aumentare volume su un posizionamento parzialmente instabile crea lead misti, aspettative non allineate e cicli commerciali più lenti.",
+      nonFare: "Non aumentare campagne, contenuti o nuovi canali finché il messaggio principale non è stabile e trasferibile.",
+      decisione: "Rendere coerenti offerta, promessa, pricing, materiali e conversazione commerciale prima di amplificare."
+    },
+    scale: {
+      title: "Gap di trasferibilità",
+      blocco: "La chiarezza esiste. Il vincolo è renderla indipendente dalla tua presenza diretta.",
+      manifesta: "Team, canali, materiali e interlocutori esterni devono riuscire a leggere e comunicare il valore nello stesso modo, senza dipendere dalla tua spiegazione personale.",
+      rischio: "Se la chiarezza resta troppo concentrata nel founder, la scala crea distorsione: messaggi diversi, promesse diverse, aspettative diverse.",
+      nonFare: "Non lasciare che la chiarezza viva solo nelle tue conversazioni dirette o nei tuoi interventi correttivi.",
+      decisione: "Trasformare la chiarezza in sistema: materiali, narrativa, sales assets, criteri commerciali e standard di comunicazione."
     }
   },
   B: {
@@ -159,11 +176,28 @@ export const PROFILES: Record<string, any> = {
     nonFare: "Non testare tre nuovi canali in contemporanea. Non delegare interamente il sales finché non è leggibile cosa funziona oggi.",
     decisione: "Isolare l'unico canale che ha già portato clienti profittevoli e trasformarlo in un processo tracciabile e chirurgico.",
     foundational: {
+      title: "Growth Engine Gap",
       blocco: "Il primo vincolo è commerciale: il business non ha ancora un motore di domanda leggibile o validato.",
       manifesta: "Le opportunità arrivano in modo episodico o personale. Non è ancora chiaro quale offerta, canale e conversazione generino domanda ripetibile.",
       rischio: "Scalare ora significa aumentare rumore, non prevedibilità. Senza un primo loop commerciale, marketing e sales restano tentativi.",
       nonFare: "Non aprire nuovi canali e non delegare sales prima di capire quale meccanismo può generare domanda profittevole.",
       decisione: "Isolare un primo loop: una offerta, un segmento, un canale, una metrica economica leggibile."
+    },
+    mature: {
+      title: "Gap di prevedibilità commerciale",
+      blocco: "Il business genera domanda, ma la qualità del flusso commerciale deve diventare più leggibile.",
+      manifesta: "Esistono canali e clienti, ma non è ancora abbastanza chiaro quali segnali producono clienti migliori, margine migliore o minore carico operativo.",
+      rischio: "Crescere senza distinguere qualità della domanda, conversione e margine produce volume rumoroso.",
+      nonFare: "Non aumentare budget o team commerciale prima di distinguere chiaramente canale, qualità lead, conversione e margine.",
+      decisione: "Separare crescita utile e crescita rumorosa attraverso una lettura più precisa del motore commerciale."
+    },
+    scale: {
+      title: "Gap di qualità della crescita",
+      blocco: "La crescita esiste. Il vincolo è proteggere qualità, margine e prevedibilità mentre aumenti volume e complessità.",
+      manifesta: "Il business può generare domanda, ma il salto successivo richiede distinzione più precisa tra canali, segmenti, clienti e margine.",
+      rischio: "La scala può aumentare ricavi ma peggiorare qualità, capacità operativa e margine se il motore commerciale non viene governato.",
+      nonFare: "Non confondere volume con crescita migliore.",
+      decisione: "Rendere il growth engine più selettivo: canali, qualificazione, segmenti, margine e capacità devono muoversi insieme."
     }
   },
   C: {
@@ -174,11 +208,28 @@ export const PROFILES: Record<string, any> = {
     nonFare: "Non assumere altre risorse junior e non implementare software complessi sperando che organizzino processi non scritti.",
     decisione: "Scrivere le regole ricorrenti e trasferire non l'esecuzione manuale, ma il contesto decisionale ai diretti responsabili.",
     foundational: {
+      title: "Operational Gap",
       blocco: "Il vincolo operativo è ancora di base: il business non ha stabilizzato abbastanza regole, standard e responsabilità.",
       manifesta: "Molte attività dipendono ancora da memoria personale, urgenza, controllo diretto o correzioni continue.",
       rischio: "Aumentare clienti o complessità operativa può rompere la qualità prima ancora di creare scala.",
       nonFare: "Non assumere o aggiungere software prima di aver scritto le regole operative minime.",
       decisione: "Trasformare le attività ricorrenti in standard semplici, visibili e ripetibili."
+    },
+    mature: {
+      title: "Gap di delega decisionale",
+      blocco: "Il business funziona, ma alcune decisioni, eccezioni e standard tornano ancora troppo spesso al founder.",
+      manifesta: "Il team può eseguire, ma il contesto decisionale resta concentrato. Le persone sanno cosa fare, ma non sempre quando decidere, quando fermarsi e quando escalare.",
+      rischio: "Il founder resta il sistema operativo invisibile dell'azienda. Questo limita velocità, ownership e capacità di crescita.",
+      nonFare: "Non aggiungere persone o strumenti per compensare decisioni non codificate.",
+      decisione: "Rendere trasferibili criteri decisionali, ownership, standard qualitativi ed escalation."
+    },
+    scale: {
+      title: "Gap di architettura operativa",
+      blocco: "Il sistema operativo esiste. Il vincolo è proteggerlo mentre aumentano volume, team, canali e complessità.",
+      manifesta: "La struttura regge, ma nuove iniziative possono creare eccezioni, sovraccarico manageriale o perdita di standard.",
+      rischio: "La scala rompe ciò che funzionava se processi, ownership e reporting non vengono rafforzati prima dell'aumento di complessità.",
+      nonFare: "Non aggiungere complessità senza proteggere i processi e le responsabilità che già funzionano.",
+      decisione: "Rafforzare governance operativa, ownership, dashboard e criteri decisionali per assorbire il prossimo salto."
     }
   },
   D: {
@@ -189,11 +240,28 @@ export const PROFILES: Record<string, any> = {
     nonFare: "Non intavolare partnership strategiche, operazioni di capitale o di acquisizione finché reportistica e struttura legale non sono cristalline.",
     decisione: "Rendere la struttura di business completamente ispezionabile e chiara nei dati. L'identità finanziaria deve parlare da sola.",
     foundational: {
+      title: "Readiness Gap",
       blocco: "Il business non è ancora abbastanza leggibile per essere valutato bene da chi lo osserva dall'esterno.",
       manifesta: "Numeri, struttura, materiali e narrativa non sono ancora ordinati in una forma che un interlocutore esterno possa leggere senza traduzione.",
       rischio: "Esporsi troppo presto a partner, investitori o figure senior crea asimmetria: il valore può essere sottovalutato o frainteso.",
       nonFare: "Non cercare capitale, partnership o senior hire prima di ordinare metriche, struttura e narrativa.",
       decisione: "Preparare una lettura esterna minima: numeri chiave, logica economica, struttura, rischi e materiali."
+    },
+    mature: {
+      title: "Gap di leggibilità esterna",
+      blocco: "Il business ha sostanza, ma la lettura esterna non è ancora abbastanza ordinata.",
+      manifesta: "Alcuni numeri, materiali o passaggi strategici richiedono ancora spiegazione orale. Il valore c'è, ma non sempre si vede subito.",
+      rischio: "Un interlocutore esterno può sottovalutare il business o leggere male rischio, margine, asset e potenziale.",
+      nonFare: "Non entrare in conversazioni strategiche importanti con materiali disallineati o incompleti.",
+      decisione: "Rendere numeri, narrativa, struttura e asset leggibili senza traduzione continua del founder."
+    },
+    scale: {
+      title: "Gap di investor readiness",
+      blocco: "Il business è forte. Il vincolo è renderlo pienamente leggibile, difendibile e auditabile da interlocutori esterni sofisticati.",
+      manifesta: "Il valore deve essere comunicabile attraverso materiali, metriche, asset, responsabilità e narrativa coerente. Non basta che il business funzioni: deve essere leggibile a distanza.",
+      rischio: "In operazioni strategiche, capitale, partnership o board review, materiali incompleti riducono leva negoziale e credibilità.",
+      nonFare: "Non presentare il business con numeri, narrativa, asset o governance non allineati.",
+      decisione: "Preparare una lettura esterna solida: metriche, data room leggera, asset, rischi, narrativa strategica e struttura operativa."
     }
   }
 };
@@ -343,18 +411,26 @@ export const IMPULSE_SCALING_ROADMAP: Record<string, any> = {
 
 export const STAGE_DATA = IMPULSE_SCALING_ROADMAP;
 
-export function getProfileData(profileId: string, overall: number) {
-  const baseProfile = PROFILES[profileId];
-  if (!baseProfile) return PROFILES.B;
+function getProfileMaturityKey(overall: number) {
+  if (overall < 40) return 'foundational';
+  if (overall >= 85) return 'scale';
+  if (overall >= 60) return 'mature';
+  return 'base';
+}
 
-  if (overall < 40 && baseProfile.foundational) {
+export function getProfileData(profileId: string, overall: number) {
+  const baseProfile = PROFILES[profileId] || PROFILES.B;
+  const maturityKey = getProfileMaturityKey(Number(overall || 0));
+
+  if (maturityKey !== 'base' && baseProfile[maturityKey]) {
     return {
       ...baseProfile,
-      blocco: baseProfile.foundational.blocco,
-      manifesta: baseProfile.foundational.manifesta,
-      rischio: baseProfile.foundational.rischio,
-      nonFare: baseProfile.foundational.nonFare,
-      decisione: baseProfile.foundational.decisione
+      title: baseProfile[maturityKey].title || baseProfile.title,
+      blocco: baseProfile[maturityKey].blocco || baseProfile.blocco,
+      manifesta: baseProfile[maturityKey].manifesta || baseProfile.manifesta,
+      rischio: baseProfile[maturityKey].rischio || baseProfile.rischio,
+      nonFare: baseProfile[maturityKey].nonFare || baseProfile.nonFare,
+      decisione: baseProfile[maturityKey].decisione || baseProfile.decisione
     };
   }
 
