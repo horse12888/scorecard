@@ -1,14 +1,46 @@
 import React from "react";
 import { pdf } from "@react-pdf/renderer";
 import { ImpulsePdfDocument } from "./pdf/ImpulsePdfDocument";
+import { computeDiagnosticState } from "./diagnostics";
 
 function safeFileName(value: string) {
-  return String(value || "impulse-report")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/gi, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "impulse-report";
+  return (
+    String(value || "impulse-report")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "impulse-report"
+  );
+}
+
+function enrichResultForPdf(result: any) {
+  if (!result) return result;
+
+  const hasFunctionConstraints =
+    Array.isArray(result.functionConstraints) &&
+    result.functionConstraints.length > 0;
+
+  if (hasFunctionConstraints) {
+    return result;
+  }
+
+  if (!result.dimensions || typeof result.overall !== "number") {
+    return result;
+  }
+
+  const diagnostic = computeDiagnosticState(result.overall, result.dimensions);
+
+  return {
+    ...result,
+    ...diagnostic,
+    dimensions: result.dimensions,
+    name: result.name,
+    company: result.company,
+    email: result.email,
+    metadata: result.metadata,
+    overall: result.overall
+  };
 }
 
 export async function generateIMPULSEReport(result: any, label?: string) {
@@ -16,10 +48,21 @@ export async function generateIMPULSEReport(result: any, label?: string) {
     throw new Error("Missing result for IMPULSE PDF generation.");
   }
 
-  const doc = React.createElement(ImpulsePdfDocument, { result });
+  const enrichedResult = enrichResultForPdf(result);
+
+  const doc = React.createElement(ImpulsePdfDocument, {
+    result: enrichedResult
+  });
+
   const blob = await pdf(doc).toBlob();
 
-  const namePart = safeFileName(result.name || result.company || label || "impulse-report");
+  const namePart = safeFileName(
+    enrichedResult.name ||
+      enrichedResult.company ||
+      label ||
+      "impulse-report"
+  );
+
   const fileName = `IMPULSE_Report_${namePart}.pdf`;
 
   const url = URL.createObjectURL(blob);
