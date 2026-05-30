@@ -474,13 +474,13 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
                 </View>
 
                 <Text style={styles.blockLabel}>COSA INDICA</Text>
-                <Text style={styles.longText}>{item.implication}</Text>
+                <Text style={styles.functionText}>{item.implication}</Text>
 
                 <Text style={styles.blockLabel}>DA CHIARIRE</Text>
-                <Text style={styles.longText}>{item.work}</Text>
+                <Text style={styles.functionText}>{item.work}</Text>
 
                 <Text style={styles.blockLabel}>EVITARE</Text>
-                <Text style={styles.longText}>{item.avoid}</Text>
+                <Text style={styles.functionText}>{item.avoid}</Text>
               </View>
             ))}
           </View>
@@ -701,8 +701,8 @@ const styles = StyleSheet.create({
     color: "#27708F",
     fontWeight: 700,
     letterSpacing: 1,
-    marginTop: 10,
-    marginBottom: 5,
+    marginTop: 8,
+    marginBottom: 4,
     textTransform: "uppercase"
   },
   blockText: {
@@ -900,30 +900,35 @@ const styles = StyleSheet.create({
     fontWeight: 700
   },
   functionList: {
-    gap: 12
+    gap: 8
   },
   functionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 17,
-    marginBottom: 10
+    borderRadius: 16,
+    padding: 13,
+    marginBottom: 7
   },
   functionHeader: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 8
+    gap: 10,
+    marginBottom: 6
   },
   functionRank: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#27708F",
     fontWeight: 700,
-    width: 34
+    width: 32
   },
   functionTitle: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 700,
     color: "#151515"
+  },
+  functionText: {
+    fontSize: 9.2,
+    lineHeight: 1.32,
+    color: "#3D4348"
   },
   profileDetailCard: {
     backgroundColor: "#FFFFFF",
