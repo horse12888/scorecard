@@ -340,7 +340,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <SectionTitle
           kicker="LE 3 PRIORITÀ OPERATIVE"
           title="Cosa va chiarito prima"
-          body="Queste sono le aree che creano più attrito operativo. Se il contenuto è lungo, il PDF lo distribuisce sulla pagina successiva senza tagliarlo."
+          body="Queste sono le aree che oggi creano più attrito operativo. Prima di aumentare volume, complessità o investimento, vanno rese più chiare, trasferibili e leggibili."
         />
 
         <View style={styles.priorityList}>
@@ -378,7 +378,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <SectionTitle
           kicker="MAPPA DIAGNOSTICA"
           title="Le 6 dimensioni"
-          body="Questa pagina mostra dove il business è forte, dove è instabile e dove il valore resta bloccato."
+          body="Questa pagina mostra la relazione tra le aree del business. Le dimensioni più basse indicano dove il valore resta bloccato prima ancora di cercare più clienti, più automazione o più capitale."
         />
 
         <View style={styles.dimensionGrid}>
@@ -397,6 +397,13 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               </Text>
             </View>
           ))}
+        </View>
+
+        <View style={styles.insightBox}>
+          <Text style={styles.insightTitle}>LETTURA OPERATIVA</Text>
+          <Text style={styles.insightText}>
+            Il punto non è solo migliorare il punteggio di ogni area. Il salto avviene quando offerta, acquisizione, delivery, margini, asset e leggibilità esterna iniziano a funzionare come un sistema unico.
+          </Text>
         </View>
       </Page>
 
@@ -437,11 +444,6 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               ? `La dimensione che oggi limita di più lo stage è ${dimensionNames[displayedBindingKey] || displayedBindingKey}.`
               : "Il vincolo principale emerge dalla combinazione delle dimensioni più deboli."}
           </Text>
-          {typeof result.stagingScore === "number" ? (
-            <Text style={styles.noteText}>
-              Staging score interno: {result.stagingScore} su 100.
-            </Text>
-          ) : null}
         </View>
       </Page>
 
@@ -471,11 +473,14 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         </View>
 
         <View style={styles.ctaBox}>
+          <Text style={styles.ctaLabel}>STRATEGIC REVIEW</Text>
           <Text style={styles.ctaTitle}>
-            {firstName ? `${firstName}, il report mostra dove si trova il vincolo.` : "Il report mostra dove si trova il vincolo."}
+            {firstName
+              ? `${firstName}, trasforma la diagnosi in ordine operativo.`
+              : "Trasforma la diagnosi in ordine operativo."}
           </Text>
           <Text style={styles.ctaBody}>
-            La Strategic Review serve a definire come rimuoverlo, in quale ordine intervenire e cosa evitare di scalare ancora.
+            Il report ha isolato il vincolo che oggi limita il prossimo salto del business. La Strategic Review serve a trasformare questa diagnosi in un piano operativo: cosa correggere prima, cosa non scalare ancora, quali decisioni prendere e quali priorità mettere in ordine nei prossimi 30-60 giorni.
           </Text>
           <Text style={styles.ctaUrl}>davidedileo.it</Text>
         </View>
@@ -790,6 +795,24 @@ const styles = StyleSheet.create({
     lineHeight: 1.35,
     color: "#5F6368"
   },
+  insightBox: {
+    backgroundColor: "#EAF5FA",
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 12
+  },
+  insightTitle: {
+    fontSize: 9,
+    color: "#27708F",
+    fontWeight: 700,
+    letterSpacing: 1,
+    marginBottom: 7
+  },
+  insightText: {
+    fontSize: 10.5,
+    lineHeight: 1.45,
+    color: "#3D4348"
+  },
   barTrack: {
     height: 7,
     backgroundColor: "#EDF1F4",
@@ -840,6 +863,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     marginTop: 10
+  },
+  ctaLabel: {
+    fontSize: 8,
+    color: "#FFFFFF",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    fontWeight: 700,
+    marginBottom: 8
   },
   ctaTitle: {
     fontSize: 24,
