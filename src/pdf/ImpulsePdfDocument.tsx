@@ -4,8 +4,11 @@ import {
   Page,
   Text,
   View,
-  StyleSheet
+  StyleSheet,
+  Font
 } from "@react-pdf/renderer";
+
+Font.registerHyphenationCallback((word) => [word]);
 
 type DimensionKey =
   | "clarity"
@@ -104,6 +107,11 @@ function getStageInfo(result: PdfResult) {
   return result.roadmapInfo || result.stageInfo || {};
 }
 
+function getDimensionLabel(item: any) {
+  const key = item?.key as DimensionKey;
+  return dimensionNames[key] || item?.label || key || "";
+}
+
 function getPriorities(result: PdfResult) {
   const items = result.priorita || result.priorities || [];
 
@@ -184,9 +192,11 @@ function Bar({ score }: { score: number }) {
 
 function Header({ page, name }: { page: string; name?: string }) {
   return (
-    <View style={styles.header}>
+    <View style={styles.header} fixed>
       <Text style={styles.headerText}>IMPULSE REPORT</Text>
-      <Text style={styles.headerText}>PAGINA {page} {safeText(name).toUpperCase()}</Text>
+      <Text style={styles.headerText}>
+        PAGINA {page} {safeText(name).toUpperCase()}
+      </Text>
     </View>
   );
 }
@@ -221,6 +231,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const priorities = getPriorities(result);
   const strengths = getStrengths(result);
   const dims = getProcessedDims(result);
+  const bindingKey = result.bindingConstraint as DimensionKey | undefined;
+  const fallbackBindingKey = priorities[0]?.key as DimensionKey | undefined;
+  const displayedBindingKey = bindingKey || fallbackBindingKey;
 
   return (
     <Document
@@ -241,7 +254,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <View style={styles.coverGrid}>
           <View style={styles.scoreBox}>
             <Text style={styles.bigScore}>{score}%</Text>
-            <Text style={styles.scoreCaption}>PUNTEGGIO COMPLESSIVO</Text>
+            <Text style={styles.scoreCaption}>SCORE COMPLESSIVO</Text>
           </View>
 
           <View style={styles.profileBox}>
@@ -290,7 +303,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             </View>
             <View style={styles.col}>
               <Text style={styles.blockLabel}>FOCUS</Text>
-              <Text style={styles.blockText}>{stageInfo.strategicReviewFocus || "Chiarire il vincolo principale e la sequenza operativa."}</Text>
+              <Text style={styles.blockText}>
+                {stageInfo.strategicReviewFocus || "Chiarire il vincolo principale e la sequenza operativa."}
+              </Text>
             </View>
           </View>
 
@@ -314,7 +329,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <View style={styles.warningBox}>
           <Text style={styles.warningTitle}>COSA NON SCALARE ANCORA</Text>
-          <Text style={styles.warningText}>{stageInfo.nonFare || stageInfo.troppoPresto || "Non aumentare complessità prima di aver reso chiaro il vincolo operativo principale."}</Text>
+          <Text style={styles.warningText}>
+            {stageInfo.nonFare || stageInfo.troppoPresto || "Non aumentare complessità prima di aver reso chiaro il vincolo operativo principale."}
+          </Text>
         </View>
       </Page>
 
@@ -323,28 +340,34 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <SectionTitle
           kicker="LE 3 PRIORITÀ OPERATIVE"
           title="Cosa va chiarito prima"
-          body="Queste sono le aree che creano più attrito operativo. Il testo non viene tagliato: se serve, il contenuto va a capo dentro la pagina."
+          body="Queste sono le aree che creano più attrito operativo. Se il contenuto è lungo, il PDF lo distribuisce sulla pagina successiva senza tagliarlo."
         />
 
         <View style={styles.priorityList}>
           {priorities.map((item: any, index: number) => (
-            <View key={item.key || index} style={styles.priorityCard} wrap={false}>
+            <View key={item.key || index} style={styles.priorityCard}>
               <View style={styles.priorityHeader}>
                 <Text style={styles.priorityRank}>#{index + 1}</Text>
                 <View style={styles.priorityTitleBlock}>
-                  <Text style={styles.priorityTitle}>{item.label || dimensionNames[item.key as DimensionKey] || item.key}</Text>
+                  <Text style={styles.priorityTitle}>{getDimensionLabel(item)}</Text>
                   <Text style={styles.priorityScore}>{Number(item.score || 0).toFixed(1)} / 10</Text>
                 </View>
               </View>
 
               <Text style={styles.blockLabel}>VINCOLO</Text>
-              <Text style={styles.longText}>{item.vincolo || item.cosaIndica || dimensionShortCopy[item.key as DimensionKey] || ""}</Text>
+              <Text style={styles.longText}>
+                {item.vincolo || item.cosaIndica || dimensionShortCopy[item.key as DimensionKey] || ""}
+              </Text>
 
               <Text style={styles.blockLabel}>DA CHIARIRE</Text>
-              <Text style={styles.longText}>{item.lavoro || "Rendere più chiari numeri, responsabilità, criteri e sequenza operativa."}</Text>
+              <Text style={styles.longText}>
+                {item.lavoro || "Rendere più chiari numeri, responsabilità, criteri e sequenza operativa."}
+              </Text>
 
               <Text style={styles.blockLabel}>EVITARE</Text>
-              <Text style={styles.longText}>{item.nonFare || "Non aumentare complessità prima di avere una lettura più stabile di questa area."}</Text>
+              <Text style={styles.longText}>
+                {item.nonFare || "Non aumentare complessità prima di avere una lettura più stabile di questa area."}
+              </Text>
             </View>
           ))}
         </View>
@@ -362,12 +385,16 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           {dims.map((dim: any) => (
             <View key={dim.key} style={styles.dimensionCard}>
               <View style={styles.dimensionHeader}>
-                <Text style={styles.dimensionTitle}>{dim.label || dimensionNames[dim.key as DimensionKey]}</Text>
+                <Text style={styles.dimensionTitle}>{getDimensionLabel(dim)}</Text>
                 <Text style={styles.dimensionScore}>{Number(dim.score || 0).toFixed(1)} / 10</Text>
               </View>
               <Bar score={Number(dim.score || 0)} />
-              <Text style={styles.dimensionStatus}>{getBracketLabel(dim.bracket) || getScoreLabel(Number(dim.score || 0))}</Text>
-              <Text style={styles.dimensionText}>{dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}</Text>
+              <Text style={styles.dimensionStatus}>
+                {getBracketLabel(dim.bracket) || getScoreLabel(Number(dim.score || 0))}
+              </Text>
+              <Text style={styles.dimensionText}>
+                {dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}
+              </Text>
             </View>
           ))}
         </View>
@@ -386,7 +413,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             <Text style={styles.cardTitle}>Le tue forze</Text>
             {strengths.map((item: any, index: number) => (
               <View key={item.key || index} style={styles.scoreRow}>
-                <Text style={styles.scoreRowName}>{item.label || dimensionNames[item.key as DimensionKey] || item.key}</Text>
+                <Text style={styles.scoreRowName}>{getDimensionLabel(item)}</Text>
                 <Text style={styles.scoreRowValue}>{Number(item.score || 0).toFixed(1)}</Text>
               </View>
             ))}
@@ -396,7 +423,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             <Text style={styles.cardTitle}>Le tue priorità</Text>
             {priorities.map((item: any, index: number) => (
               <View key={item.key || index} style={styles.scoreRow}>
-                <Text style={styles.scoreRowName}>{item.label || dimensionNames[item.key as DimensionKey] || item.key}</Text>
+                <Text style={styles.scoreRowName}>{getDimensionLabel(item)}</Text>
                 <Text style={styles.scoreRowValue}>{Number(item.score || 0).toFixed(1)}</Text>
               </View>
             ))}
@@ -406,9 +433,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <View style={styles.noteBox}>
           <Text style={styles.noteTitle}>VINCOLO BINDING</Text>
           <Text style={styles.noteText}>
-            {result.bindingConstraint
-              ? `La dimensione che oggi limita di più lo stage è ${dimensionNames[result.bindingConstraint as DimensionKey] || result.bindingConstraint}.`
-              : "Il vincolo binding non è disponibile nel payload."}
+            {displayedBindingKey
+              ? `La dimensione che oggi limita di più lo stage è ${dimensionNames[displayedBindingKey] || displayedBindingKey}.`
+              : "Il vincolo principale emerge dalla combinazione delle dimensioni più deboli."}
           </Text>
           {typeof result.stagingScore === "number" ? (
             <Text style={styles.noteText}>
@@ -428,13 +455,19 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <View style={styles.profileDetailCard}>
           <Text style={styles.blockLabel}>COME SI MANIFESTA</Text>
-          <Text style={styles.longText}>{result.profileData?.manifesta || "Il vincolo si manifesta quando il business deve essere capito, delegato o valutato senza la presenza costante del founder."}</Text>
+          <Text style={styles.longText}>
+            {result.profileData?.manifesta || "Il vincolo si manifesta quando il business deve essere capito, delegato o valutato senza la presenza costante del founder."}
+          </Text>
 
           <Text style={styles.blockLabel}>RISCHIO SE IGNORATO</Text>
-          <Text style={styles.longText}>{result.profileData?.rischio || "Il rischio è aumentare volume, complessità o esposizione esterna senza aver prima chiarito il sistema."}</Text>
+          <Text style={styles.longText}>
+            {result.profileData?.rischio || "Il rischio è aumentare volume, complessità o esposizione esterna senza aver prima chiarito il sistema."}
+          </Text>
 
           <Text style={styles.blockLabel}>LA DECISIONE CHE VIENE PRIMA</Text>
-          <Text style={styles.longText}>{result.profileData?.decisione || "Rendere più chiari numeri, responsabilità, offerta e vincolo operativo principale."}</Text>
+          <Text style={styles.longText}>
+            {result.profileData?.decisione || "Rendere più chiari numeri, responsabilità, offerta e vincolo operativo principale."}
+          </Text>
         </View>
 
         <View style={styles.ctaBox}>
@@ -471,7 +504,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 8,
     color: "#5F6368",
-    letterSpacing: 1.4,
+    letterSpacing: 1.1,
     textTransform: "uppercase"
   },
   coverHero: {
@@ -481,7 +514,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#123C69",
     fontWeight: 700,
-    letterSpacing: 1.1,
+    letterSpacing: 1,
     marginBottom: 8
   },
   preparedFor: {
@@ -494,28 +527,28 @@ const styles = StyleSheet.create({
     marginBottom: 20
   },
   scoreBox: {
-    width: "34%",
+    width: "36%",
     minHeight: 170,
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    padding: 20,
+    padding: 18,
     justifyContent: "center",
     alignItems: "center"
   },
   bigScore: {
-    fontSize: 56,
+    fontSize: 54,
     color: "#27708F",
     fontWeight: 700
   },
   scoreCaption: {
     fontSize: 8,
     color: "#5F6368",
-    letterSpacing: 1.2,
+    letterSpacing: 0.6,
     textAlign: "center",
     marginTop: 8
   },
   profileBox: {
-    width: "66%",
+    width: "64%",
     minHeight: 170,
     backgroundColor: "#EAF5FA",
     borderRadius: 20,
@@ -524,7 +557,7 @@ const styles = StyleSheet.create({
   kicker: {
     fontSize: 8,
     color: "#27708F",
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
     fontWeight: 700,
     marginBottom: 8
@@ -555,7 +588,7 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 8,
     color: "#5F6368",
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
     marginBottom: 5
   },
   summaryValue: {
@@ -573,7 +606,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: "#27708F",
     fontWeight: 700,
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
     marginBottom: 8
   },
   noteText: {
@@ -615,7 +648,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: "#27708F",
     fontWeight: 700,
-    letterSpacing: 1.2,
+    letterSpacing: 1,
     marginTop: 10,
     marginBottom: 5,
     textTransform: "uppercase"
@@ -673,7 +706,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: "#B42318",
     fontWeight: 700,
-    letterSpacing: 1.2,
+    letterSpacing: 1,
     marginBottom: 6
   },
   warningText: {
@@ -748,7 +781,7 @@ const styles = StyleSheet.create({
   dimensionStatus: {
     fontSize: 8,
     color: "#5F6368",
-    letterSpacing: 1.1,
+    letterSpacing: 1,
     marginTop: 8,
     marginBottom: 6
   },
