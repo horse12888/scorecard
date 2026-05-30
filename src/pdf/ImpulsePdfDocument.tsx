@@ -5,7 +5,8 @@ import {
   Text,
   View,
   StyleSheet,
-  Font
+  Font,
+  Link
 } from "@react-pdf/renderer";
 
 Font.registerHyphenationCallback((word) => [word]);
@@ -19,6 +20,7 @@ type DimensionKey =
   | "readiness";
 
 type PdfResult = {
+  leadId?: string;
   name?: string;
   company?: string;
   email?: string;
@@ -243,6 +245,12 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const fallbackBindingKey = priorities[0]?.key as DimensionKey | undefined;
   const displayedBindingKey = bindingKey || fallbackBindingKey;
   const functionConstraints = result.functionConstraints || [];
+
+  const strategicReviewBaseUrl = "https://davidedileo.it/strategic-review";
+  const resolvedLeadId = result.leadId || result.metadata?.leadId || "";
+  const strategicReviewUrl = resolvedLeadId
+    ? `${strategicReviewBaseUrl}?leadId=${encodeURIComponent(resolvedLeadId)}`
+    : strategicReviewBaseUrl;
 
   return (
     <Document
@@ -529,7 +537,12 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={styles.ctaBody}>
             Il report ha isolato il vincolo che oggi limita il prossimo salto del business. La Strategic Review serve a trasformare questa diagnosi in un piano operativo: cosa correggere prima, cosa non scalare ancora, quali decisioni prendere e quali priorità mettere in ordine nei prossimi 30-60 giorni.
           </Text>
-          <Text style={styles.ctaUrl}>davidedileo.it</Text>
+          <Link src={strategicReviewUrl} style={styles.ctaButton}>
+            Prenota la Strategic Review
+          </Link>
+          {resolvedLeadId ? (
+            <Text style={styles.ctaSmallText}>Report ID: {resolvedLeadId}</Text>
+          ) : null}
         </View>
       </Page>
     </Document>
@@ -967,5 +980,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#FFFFFF",
     fontWeight: 700
+  },
+  ctaButton: {
+    fontSize: 13,
+    color: "#FFFFFF",
+    fontWeight: 700,
+    textDecoration: "none",
+    backgroundColor: "#27708F",
+    borderRadius: 12,
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingHorizontal: 14,
+    alignSelf: "flex-start",
+    marginTop: 2
+  },
+  ctaSmallText: {
+    fontSize: 8,
+    color: "#DCEAF0",
+    marginTop: 8
   }
 });
