@@ -437,20 +437,26 @@ export function getProfileData(profileId: string, overall: number) {
   return { ...baseProfile };
 }
 
+export function stageFromScore(overall: number): string {
+  const s = Number(overall) || 0;
+  if (s < 40) return "FOUNDATION";
+  if (s < 60) return "TRACTION";
+  if (s < 75) return "STABILIZATION";
+  if (s < 85) return "PRODUCTIZATION";
+  return "SCALE READINESS";
+}
+
+export function fasciaFromScore(overall: number): string {
+  const s = Number(overall) || 0;
+  if (s < 40) return "FOUNDATIONAL";
+  if (s < 60) return "BUILDING";
+  if (s < 85) return "AWARE";
+  return "READY";
+}
+
 export function computeDiagnosticState(overall: number, rawDimensions: Record<string, { score: number, yes: number }>) {
-  let fascia = "AWARE";
-  let stageLabel = "TRACTION";
-
-  if (overall < 40) { fascia = "FOUNDATIONAL"; }
-  else if (overall < 60) { fascia = "BUILDING"; }
-  else if (overall < 80) { fascia = "AWARE"; }
-  else { fascia = "READY"; }
-
-  if (overall < 40) { stageLabel = "FOUNDATION"; }
-  else if (overall < 60) { stageLabel = "TRACTION"; }
-  else if (overall < 75) { stageLabel = "STABILIZATION"; }
-  else if (overall < 85) { stageLabel = "PRODUCTIZATION"; }
-  else { stageLabel = "SCALE READINESS"; }
+  const fascia = fasciaFromScore(overall);
+  const stageLabel = stageFromScore(overall);
 
   const roadmapInfo = IMPULSE_SCALING_ROADMAP[stageLabel as keyof typeof IMPULSE_SCALING_ROADMAP];
   const stageInfo = roadmapInfo;
