@@ -31,6 +31,7 @@ type PdfResult = {
   stageLabel?: string;
   roadmapInfo?: any;
   stageInfo?: any;
+  functionConstraints?: any[];
   dimensions: Record<DimensionKey, { score: number; yes: number }>;
   processedDims?: any[];
   priorities?: any[];
@@ -66,11 +67,18 @@ function safeText(value: any, fallback = "") {
 
 function normalizeStage(stage: string) {
   const map: Record<string, string> = {
-    FOUNDATION: "FOUNDATION",
-    TRACTION: "TRAZIONE",
-    STABILIZATION: "STABILIZZAZIONE",
-    PRODUCTIZATION: "PRODUCTIZATION",
-    "SCALE READINESS": "SCALE READINESS"
+    FOUNDATION: "Foundation",
+    TRACTION: "Market Traction",
+    MARKET_TRACTION: "Market Traction",
+    "MARKET TRACTION": "Market Traction",
+    STABILIZATION: "Operating Stability",
+    OPERATING_STABILITY: "Operating Stability",
+    "OPERATING STABILITY": "Operating Stability",
+    PRODUCTIZATION: "Value Architecture",
+    VALUE_ARCHITECTURE: "Value Architecture",
+    "VALUE ARCHITECTURE": "Value Architecture",
+    "SCALE READINESS": "Scale Readiness",
+    SCALE_READINESS: "Scale Readiness"
   };
 
   return map[stage] || stage || "";
@@ -234,6 +242,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const bindingKey = result.bindingConstraint as DimensionKey | undefined;
   const fallbackBindingKey = priorities[0]?.key as DimensionKey | undefined;
   const displayedBindingKey = bindingKey || fallbackBindingKey;
+  const functionConstraints = result.functionConstraints || [];
 
   return (
     <Document
@@ -449,6 +458,44 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
       <Page size="A4" style={styles.page}>
         <Header page="06" name={name} />
+        <SectionTitle
+          kicker="VINCOLI FUNZIONALI"
+          title="Dove il sistema può perdere leva"
+          body="Questi sono i vincoli funzionali più probabili in base alla fase del business e alle dimensioni più deboli emerse dalla scorecard."
+        />
+
+        {functionConstraints.length > 0 ? (
+          <View style={styles.functionList}>
+            {functionConstraints.slice(0, 3).map((item: any, index: number) => (
+              <View key={item.id || index} style={styles.functionCard}>
+                <View style={styles.functionHeader}>
+                  <Text style={styles.functionRank}>#{index + 1}</Text>
+                  <Text style={styles.functionTitle}>{item.label}</Text>
+                </View>
+
+                <Text style={styles.blockLabel}>COSA INDICA</Text>
+                <Text style={styles.longText}>{item.implication}</Text>
+
+                <Text style={styles.blockLabel}>DA CHIARIRE</Text>
+                <Text style={styles.longText}>{item.work}</Text>
+
+                <Text style={styles.blockLabel}>EVITARE</Text>
+                <Text style={styles.longText}>{item.avoid}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.noteBox}>
+            <Text style={styles.noteTitle}>NESSUN VINCOLO FUNZIONALE SPECIFICO</Text>
+            <Text style={styles.noteText}>
+              La diagnosi principale emerge dalle sei dimensioni e dal vincolo binding.
+            </Text>
+          </View>
+        )}
+      </Page>
+
+      <Page size="A4" style={styles.page}>
+        <Header page="07" name={name} />
         <SectionTitle
           kicker={`PROFILO ${safeText(result.profile)}`}
           title={profileTitle}
@@ -851,6 +898,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#27708F",
     fontWeight: 700
+  },
+  functionList: {
+    gap: 12
+  },
+  functionCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 17,
+    marginBottom: 10
+  },
+  functionHeader: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 8
+  },
+  functionRank: {
+    fontSize: 16,
+    color: "#27708F",
+    fontWeight: 700,
+    width: 34
+  },
+  functionTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: 700,
+    color: "#151515"
   },
   profileDetailCard: {
     backgroundColor: "#FFFFFF",
