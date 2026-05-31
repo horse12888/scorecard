@@ -249,7 +249,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const strategicReviewBaseUrl = "https://davidedileo.it/strategic-review";
   const resolvedLeadId = result.leadId || result.metadata?.leadId || "";
   const strategicReviewUrl = resolvedLeadId
-    ? `${strategicReviewBaseUrl}?leadId=${encodeURIComponent(resolvedLeadId)}`
+    ? `${strategicReviewBaseUrl}#leadId=${encodeURIComponent(resolvedLeadId)}`
     : strategicReviewBaseUrl;
 
   return (
