@@ -14,6 +14,39 @@ export const DIMENSIONS_KEYS = [
   "readiness"
 ];
 
+type DimensionKey =
+  | "clarity"
+  | "acquisition"
+  | "operations"
+  | "margins"
+  | "asset"
+  | "readiness";
+
+type ProcessedDimension = {
+  key: string;
+  label: string;
+  subtitle: string;
+  score: number;
+  yes: number;
+  bracket: string;
+  cosaIndica: string;
+  vincolo: string;
+  nonFare: string;
+  lavoro: string;
+};
+
+type DiagnosticOptions = {
+  intentLevel?: number | null;
+  stagingScore?: number | null;
+};
+
+type RiskFlag = {
+  id: string;
+  title: string;
+  body: string;
+  severity: "low" | "medium" | "high";
+};
+
 export const DIMENSIONS_COPY: Record<string, any> = {
   clarity: {
     label: "Clarity",
@@ -642,6 +675,298 @@ export const IMPULSE_SCALING_ROADMAP: Record<string, any> = {
 
 export const STAGE_DATA = IMPULSE_SCALING_ROADMAP;
 
+const PROFILE_STAGE_MATRIX: Record<string, Record<string, any>> = {
+  A: {
+    FOUNDATION: {
+      title: "Chiarezza prima della crescita",
+      body:
+        "Il business non ha ancora una struttura di offerta abbastanza chiara. Prima di parlare di crescita, serve definire cosa viene venduto, a chi, perché e con quale pricing.",
+      focus:
+        "Ridurre la complessità commerciale e trasformare offerta, promessa e cliente ideale in una lettura semplice."
+    },
+    TRACTION: {
+      title: "Domanda potenziale, messaggio instabile",
+      body:
+        "C'è movimento, ma il mercato non riceve ancora un messaggio sufficientemente coerente. Il rischio è generare domanda confusa o clienti non ideali.",
+      focus:
+        "Rendere stabile la promessa commerciale prima di aumentare canali, contenuti o outbound."
+    },
+    STABILIZATION: {
+      title: "Chiarezza da codificare",
+      body:
+        "Il business funziona, ma la chiarezza commerciale non è ancora abbastanza codificata. Team, materiali o partner potrebbero non spiegare il valore nello stesso modo.",
+      focus:
+        "Allineare sito, materiali, pricing e conversazione commerciale."
+    },
+    PRODUCTIZATION: {
+      title: "Offerta da rendere pacchettizzabile",
+      body:
+        "Il business è vicino a diventare più pacchettizzabile, ma offerta, promessa e pricing devono essere più stabili prima di aumentare scala.",
+      focus:
+        "Trasformare il valore in una struttura di offerta più leggibile, replicabile e vendibile."
+    },
+    "SCALE READINESS": {
+      title: "Chiarezza come asset trasferibile",
+      body:
+        "La chiarezza è il collo di bottiglia residuo. Il valore esiste, ma deve essere espresso in modo più forte, trasferibile e immediato.",
+      focus:
+        "Rendere la narrativa commerciale indipendente dal founder."
+    }
+  },
+
+  B: {
+    FOUNDATION: {
+      title: "Motore commerciale non ancora validato",
+      body:
+        "Il business non ha ancora un motore di domanda affidabile. Prima di scalare, serve capire quale offerta può generare clienti giusti con margine sostenibile.",
+      focus:
+        "Validare un primo loop commerciale: segmento, canale, messaggio, conversione e margine."
+    },
+    TRACTION: {
+      title: "Trazione non ancora prevedibile",
+      body:
+        "Ci sono clienti o interesse, ma l'acquisizione dipende ancora troppo da referral, rete personale o sforzo diretto.",
+      focus:
+        "Separare domanda episodica da domanda ripetibile."
+    },
+    STABILIZATION: {
+      title: "Growth engine da misurare meglio",
+      body:
+        "La domanda esiste, ma il processo commerciale deve diventare più misurabile. Lead quality, conversione e margine vanno separati.",
+      focus:
+        "Misurare canali, qualità lead, conversione e margine per decidere dove investire."
+    },
+    PRODUCTIZATION: {
+      title: "Crescita da rendere meno founder-led",
+      body:
+        "Il business ha una base sufficiente, ma il growth engine deve diventare meno dipendente dal founder e più ripetibile.",
+      focus:
+        "Costruire un processo commerciale trasferibile, qualificabile e controllabile."
+    },
+    "SCALE READINESS": {
+      title: "Crescita come vincolo di scala",
+      body:
+        "La crescita è il vincolo principale. Il sistema è abbastanza maturo, ma serve una macchina commerciale più prevedibile.",
+      focus:
+        "Proteggere qualità, margine e prevedibilità mentre cresce il volume."
+    }
+  },
+
+  C: {
+    FOUNDATION: {
+      title: "Sistema operativo ancora troppo informale",
+      body:
+        "Il business dipende troppo dal founder o da processi informali. La priorità è rendere visibile come funziona davvero il sistema operativo.",
+      focus:
+        "Scrivere standard minimi, responsabilità e decisioni ricorrenti."
+    },
+    TRACTION: {
+      title: "La delivery può limitare la domanda",
+      body:
+        "La domanda può esserci, ma la delivery non è ancora abbastanza stabile. Più clienti potrebbero aumentare caos, eccezioni e dipendenza dal founder.",
+      focus:
+        "Stabilizzare delivery e ownership prima di aumentare volume commerciale."
+    },
+    STABILIZATION: {
+      title: "Delega decisionale da rafforzare",
+      body:
+        "Il business funziona, ma ruoli, decisioni e processi devono essere codificati. Il rischio è restare bloccati in una gestione troppo manuale.",
+      focus:
+        "Trasferire criteri decisionali, standard qualitativi e gestione delle eccezioni."
+    },
+    PRODUCTIZATION: {
+      title: "Delivery da rendere trasferibile",
+      body:
+        "La delivery deve diventare trasferibile. Il problema non è solo fare bene il lavoro, ma renderlo replicabile senza il founder al centro.",
+      focus:
+        "Trasformare capacità operativa in sistema, processi, ruoli e metriche."
+    },
+    "SCALE READINESS": {
+      title: "Operations da proteggere in scala",
+      body:
+        "Il business è vicino alla scala, ma l'operatività deve reggere volume, team e standardizzazione senza perdere qualità.",
+      focus:
+        "Rafforzare governance operativa, dashboard, ruoli e standard."
+    }
+  },
+
+  D: {
+    FOUNDATION: {
+      title: "Business non ancora leggibile dall'esterno",
+      body:
+        "Il business non è ancora leggibile per interlocutori esterni. Prima di esporlo a partner, advisor o capitali, servono numeri, materiali e struttura.",
+      focus:
+        "Preparare una lettura minima: numeri, modello, rischi, asset e narrativa."
+    },
+    TRACTION: {
+      title: "Sostanza ancora poco dimostrabile",
+      body:
+        "C'è attività, ma non ancora una narrativa ordinata. Il rischio è avere sostanza, ma non riuscire a dimostrarla bene.",
+      focus:
+        "Ordinare metriche, materiali e struttura prima di conversazioni strategiche."
+    },
+    STABILIZATION: {
+      title: "Leggibilità esterna da costruire",
+      body:
+        "Il business funziona, ma deve essere reso più leggibile. Numeri, ruoli, rischi e materiali devono poter parlare senza spiegazioni continue del founder.",
+      focus:
+        "Rendere il business spiegabile da materiali, numeri e struttura, non solo dalla tua voce."
+    },
+    PRODUCTIZATION: {
+      title: "Readiness come ponte verso il valore",
+      body:
+        "La readiness diventa il ponte verso partner, capitale o valorizzazione. Serve rendere il business valutabile e trasferibile.",
+      focus:
+        "Costruire materiali, asset, metriche e narrativa per interlocutori senior."
+    },
+    "SCALE READINESS": {
+      title: "Investor readiness da rafforzare",
+      body:
+        "Il business è vicino a uno stage avanzato, ma la qualità della documentazione, governance e narrative package può ancora limitarne il valore percepito.",
+      focus:
+        "Allineare metriche, data room leggera, asset, rischi e governance."
+    }
+  }
+};
+
+const TOP_GAP_PAIR_MATRIX: Record<string, any> = {
+  clarity_acquisition: {
+    title: "Clarity + Acquisition",
+    body:
+      "Il problema non è solo trovare più clienti. Il mercato potrebbe non capire abbastanza bene cosa viene offerto, per chi è pensato e perché dovrebbe scegliere te.",
+    warning:
+      "Aumentare advertising, contenuti o outreach può amplificare confusione.",
+    focus:
+      "Chiarire offerta, promessa, cliente ideale e messaggio prima di scalare canali."
+  },
+  clarity_operations: {
+    title: "Clarity + Operations",
+    body:
+      "Il business non è chiaro né commercialmente né operativamente. Ogni cliente può diventare un caso speciale e aumentare dipendenza dal founder.",
+    warning:
+      "Scalare in questa condizione aumenta complessità commerciale e operativa insieme.",
+    focus:
+      "Standardizzare offerta e delivery nello stesso intervento."
+  },
+  clarity_margins: {
+    title: "Clarity + Margins",
+    body:
+      "Il valore non è abbastanza chiaro, quindi anche il pricing diventa fragile. Quando il valore non è leggibile, il margine tende a essere difeso con più fatica.",
+    warning:
+      "Prezzi decisi per sensazione, sconti frequenti e margini poco difendibili.",
+    focus:
+      "Ricollegare pricing a valore percepito, outcome e posizionamento."
+  },
+  clarity_asset: {
+    title: "Clarity + Asset",
+    body:
+      "Il business può avere valore, ma non è ancora trasformato in asset riconoscibili. Il valore resta troppo nella persona, nella reputazione o nell'operatività quotidiana.",
+    warning:
+      "Senza asset chiari, il business viene percepito come meno trasferibile.",
+    focus:
+      "Identificare IP, metodologie, dati, processi, brand o contratti documentabili."
+  },
+  clarity_readiness: {
+    title: "Clarity + Readiness",
+    body:
+      "Il business non è ancora spiegabile in modo forte a un interlocutore senior. Il valore può esistere, ma richiede troppa traduzione.",
+    warning:
+      "Opportunità strategiche possono essere perse perché il valore non viene capito velocemente.",
+    focus:
+      "Creare narrativa chiara, numeri essenziali e materiali sintetici."
+  },
+  acquisition_operations: {
+    title: "Acquisition + Operations",
+    body:
+      "La domanda e la delivery non sono ancora allineate. Anche se arrivassero più clienti, il sistema potrebbe non reggere.",
+    warning:
+      "Più acquisizione può produrre più caos operativo.",
+    focus:
+      "Stabilizzare processo commerciale e delivery prima di aumentare volume."
+  },
+  acquisition_margins: {
+    title: "Acquisition + Margins",
+    body:
+      "Il growth engine non è ancora economicamente sano. Il problema può essere volume, qualità lead, conversione o margine.",
+    warning:
+      "Crescere in fatturato può peggiorare profitto, cash flow o qualità clienti.",
+    focus:
+      "Misurare canali per margine, non solo per lead o ricavi."
+  },
+  acquisition_asset: {
+    title: "Acquisition + Asset",
+    body:
+      "Il business vende, ma non accumula abbastanza valore proprietario o trasferibile. Ogni vendita rischia di restare transazionale.",
+    warning:
+      "La crescita può produrre ricavi senza creare enterprise value.",
+    focus:
+      "Trasformare acquisizione, clienti e delivery in dati, case study, IP, community o contratti."
+  },
+  acquisition_readiness: {
+    title: "Acquisition + Readiness",
+    body:
+      "Il business non ha ancora una pipeline leggibile né materiali forti per partner o figure senior. Il mercato interno non è prevedibile e l'esterno non capisce il potenziale.",
+    warning:
+      "Conversazioni strategiche esterne restano deboli se domanda e materiali non sono leggibili.",
+    focus:
+      "Costruire una lettura chiara di domanda, funnel, conversione e qualità clienti."
+  },
+  operations_margins: {
+    title: "Operations + Margins",
+    body:
+      "Il sistema operativo può stare erodendo margine. Il problema non è solo quanto vendi, ma quanto costa consegnare bene.",
+    warning:
+      "Delivery complessa, eccezioni, tempo founder nascosto e margini reali più bassi di quelli percepiti.",
+    focus:
+      "Mappare delivery economics, tempi, costi nascosti e ownership."
+  },
+  operations_asset: {
+    title: "Operations + Asset",
+    body:
+      "Il business funziona, ma il valore è ancora troppo incorporato nelle persone e nei processi informali.",
+    warning:
+      "Difficile delegare, vendere, trasferire o valorizzare se il sistema resta implicito.",
+    focus:
+      "Documentare processi, metodologie, asset e responsabilità."
+  },
+  operations_readiness: {
+    title: "Operations + Readiness",
+    body:
+      "Il business non è ancora sufficientemente autonomo né leggibile. La dipendenza operativa rende difficile una conversazione strategica esterna.",
+    warning:
+      "Il founder resta indispensabile in ogni spiegazione e decisione.",
+    focus:
+      "Separare ruoli, processi, numeri e materiali."
+  },
+  margins_asset: {
+    title: "Margins + Asset",
+    body:
+      "Il business può generare ricavi, ma non abbastanza valore economico o patrimoniale.",
+    warning:
+      "Molto lavoro può tradursi in poco enterprise value.",
+    focus:
+      "Capire quali offerte, clienti o canali creano margine e asset."
+  },
+  margins_readiness: {
+    title: "Margins + Readiness",
+    body:
+      "I numeri economici non sono ancora pronti per guidare decisioni o conversazioni esterne.",
+    warning:
+      "Decisioni strategiche prese su fatturato, non su margini e cash flow.",
+    focus:
+      "Rendere margini, cash flow e unit economics leggibili."
+  },
+  asset_readiness: {
+    title: "Asset + Readiness",
+    body:
+      "Il valore potenziale del business non è ancora dimostrabile. Potrebbero esserci asset, ma non sono pronti per essere capiti, valutati o trasferiti.",
+    warning:
+      "Il business viene percepito come meno solido di quanto sia.",
+    focus:
+      "Documentare asset, evidenze, contratti, IP, dati, rischi e materiali esterni."
+  }
+};
+
 function getProfileMaturityKey(overall: number) {
   if (overall < 40) return "foundational";
   if (overall >= 85) return "scale";
@@ -689,12 +1014,343 @@ export function fasciaFromScore(overall: number): string {
   return "READY";
 }
 
+function getProfileFromDimensionKey(key: string) {
+  if (key === "clarity") return "A";
+  if (key === "acquisition" || key === "margins") return "B";
+  if (key === "operations" || key === "asset") return "C";
+  if (key === "readiness") return "D";
+
+  return "B";
+}
+
+function hasKey(keys: string[], key: string) {
+  return keys.indexOf(key) !== -1;
+}
+
+function resolveProfileWithTieBreak(
+  sortedDims: ProcessedDimension[],
+  intentLevel: number | null
+) {
+  const lowestScore = Number(sortedDims[0]?.score || 0);
+
+  const candidateDims = sortedDims
+    .filter(dim => Number(dim.score) <= lowestScore + 0.7)
+    .map(dim => dim.key);
+
+  const exactLowestDims = sortedDims
+    .filter(dim => Number(dim.score) === lowestScore)
+    .map(dim => dim.key);
+
+  const intent = typeof intentLevel === "number" ? intentLevel : null;
+
+  if (intent === 3 && hasKey(candidateDims, "readiness")) {
+    return "D";
+  }
+
+  if (
+    hasKey(candidateDims, "clarity") &&
+    (hasKey(candidateDims, "acquisition") || hasKey(candidateDims, "margins"))
+  ) {
+    return "A";
+  }
+
+  if (
+    hasKey(candidateDims, "operations") &&
+    (hasKey(candidateDims, "acquisition") || hasKey(candidateDims, "margins"))
+  ) {
+    return "C";
+  }
+
+  if (hasKey(candidateDims, "operations") && hasKey(candidateDims, "asset")) {
+    return "C";
+  }
+
+  if (hasKey(candidateDims, "asset") && hasKey(candidateDims, "readiness")) {
+    return intent !== null && intent >= 2 ? "D" : "C";
+  }
+
+  if (hasKey(candidateDims, "acquisition") && hasKey(candidateDims, "margins")) {
+    return "B";
+  }
+
+  if (hasKey(exactLowestDims, "readiness")) {
+    return "D";
+  }
+
+  return getProfileFromDimensionKey(sortedDims[0]?.key || "acquisition");
+}
+
+function normalizeGapPairKey(first: string, second: string) {
+  const ordered = [first, second].sort(function (a, b) {
+    return DIMENSIONS_KEYS.indexOf(a) - DIMENSIONS_KEYS.indexOf(b);
+  });
+
+  return ordered.join("_");
+}
+
+function buildTopGapPair(sortedDims: ProcessedDimension[]) {
+  const first = sortedDims[0]?.key || "acquisition";
+  const second = sortedDims[1]?.key || "operations";
+  const key = normalizeGapPairKey(first, second);
+
+  return {
+    first,
+    second,
+    key
+  };
+}
+
+function getTopGapPairData(pairKey: string) {
+  return (
+    TOP_GAP_PAIR_MATRIX[pairKey] || {
+      title: "Diagnostic Pattern",
+      body:
+        "Il pattern diagnostico nasce dalla combinazione delle due dimensioni più deboli. Queste aree vanno lette insieme prima di scegliere cosa scalare.",
+      warning:
+        "Intervenire su una sola area può lasciare intatto il vincolo reale.",
+      focus:
+        "Leggere insieme i primi due gap e trasformarli in una sequenza operativa."
+    }
+  );
+}
+
+function getProfileStageData(profile: string, stageKey: string) {
+  const profileMap = PROFILE_STAGE_MATRIX[profile] || PROFILE_STAGE_MATRIX.B;
+
+  return (
+    profileMap[stageKey] || {
+      title: "Profilo e stage da leggere insieme",
+      body:
+        "Il profilo mostra il tipo di vincolo. Lo stage mostra quanto il business è pronto a reggere il prossimo salto.",
+      focus:
+        "Usare profilo e stage per decidere cosa correggere prima."
+    }
+  );
+}
+
+function getScoreMap(processedDims: ProcessedDimension[]) {
+  return processedDims.reduce((acc: Record<string, number>, dim) => {
+    acc[dim.key] = Number(dim.score || 0);
+    return acc;
+  }, {});
+}
+
+function buildRiskFlags(
+  processedDims: ProcessedDimension[],
+  overall: number,
+  intentLevel: number | null
+): RiskFlag[] {
+  const s = getScoreMap(processedDims);
+  const intent = typeof intentLevel === "number" ? intentLevel : null;
+  const risks: RiskFlag[] = [];
+
+  if (s.acquisition >= 6.7 && s.operations < 4) {
+    risks.push({
+      id: "demand_breaks_delivery",
+      title: "Demand breaks delivery",
+      body:
+        "La domanda non è il problema principale. Il rischio è aumentare volume prima che delivery e decisioni operative siano stabili.",
+      severity: "high"
+    });
+  }
+
+  if (s.acquisition >= 6 && s.margins < 4) {
+    risks.push({
+      id: "revenue_without_margin",
+      title: "Revenue without margin",
+      body:
+        "Il business può generare clienti, ma non è chiaro se la crescita produce margine sano.",
+      severity: "high"
+    });
+  }
+
+  if (s.operations < 4 && s.readiness < 5) {
+    risks.push({
+      id: "founder_dependency",
+      title: "Founder dependency",
+      body:
+        "Il business dipende ancora troppo dal founder per funzionare ed essere spiegato.",
+      severity: "high"
+    });
+  }
+
+  if (intent === 3 && s.readiness < 5) {
+    risks.push({
+      id: "strategic_exposure_risk",
+      title: "Strategic exposure risk",
+      body:
+        "Stai considerando una decisione importante, ma il business potrebbe non essere ancora abbastanza leggibile per sostenerla.",
+      severity: "high"
+    });
+  }
+
+  if (s.asset < 4 && Number(overall || 0) >= 50) {
+    risks.push({
+      id: "hidden_value_risk",
+      title: "Hidden value risk",
+      body:
+        "Il business può avere trazione, ma non sta ancora accumulando abbastanza valore trasferibile.",
+      severity: "medium"
+    });
+  }
+
+  if (Number(overall || 0) < 60 && intent !== null && intent >= 2) {
+    risks.push({
+      id: "premature_scaling_risk",
+      title: "Premature scaling risk",
+      body:
+        "Prima di aumentare team, capitale o complessità, serve chiarire il vincolo principale.",
+      severity: "high"
+    });
+  }
+
+  if (s.clarity < 4 && s.margins < 5) {
+    risks.push({
+      id: "positioning_leakage",
+      title: "Positioning leakage",
+      body:
+        "La mancanza di chiarezza può indebolire pricing, margine e qualità clienti.",
+      severity: "medium"
+    });
+  }
+
+  if (s.asset >= 6 && s.readiness < 5) {
+    risks.push({
+      id: "external_readiness_gap",
+      title: "External readiness gap",
+      body:
+        "Esistono asset o valore proprietario, ma non sono ancora pronti per essere presentati a partner o buyer.",
+      severity: "medium"
+    });
+  }
+
+  return risks.slice(0, 4);
+}
+
+function buildIntentInsight(intentLevel: number | null) {
+  if (intentLevel === 0) {
+    return {
+      level: 0,
+      label: "Nessuna decisione strategica immediata",
+      body:
+        "La diagnosi può essere usata per ordinare il business senza pressione immediata su capitale, exit, senior hire o partnership."
+    };
+  }
+
+  if (intentLevel === 1) {
+    return {
+      level: 1,
+      label: "Interesse esplorativo",
+      body:
+        "Esiste un interesse strategico, ma non ancora una finestra decisionale urgente. La priorità è aumentare chiarezza e controllo."
+    };
+  }
+
+  if (intentLevel === 2) {
+    return {
+      level: 2,
+      label: "Decisione probabile nei prossimi 6-12 mesi",
+      body:
+        "Il business va preparato prima che la decisione diventi urgente. Numeri, vincoli e materiali devono diventare più leggibili."
+    };
+  }
+
+  if (intentLevel === 3) {
+    return {
+      level: 3,
+      label: "Decisione prioritaria adesso",
+      body:
+        "La diagnosi va letta con maggiore urgenza. Se readiness, asset o operations sono bassi, una decisione strategica potrebbe essere prematura o sottovalutare i rischi."
+    };
+  }
+
+  return {
+    level: null,
+    label: "Intent non rilevato",
+    body:
+      "L'urgenza strategica non è disponibile in questa diagnosi. La priorità viene quindi calcolata solo da score, stage e vincoli dimensionali."
+  };
+}
+
+function buildStrategicWarning(
+  risks: RiskFlag[],
+  topGapPairData: any,
+  intentInsight: any
+) {
+  const highRisk = risks.find(risk => risk.severity === "high");
+
+  if (highRisk) {
+    return highRisk.body;
+  }
+
+  if (intentInsight && intentInsight.level === 3) {
+    return intentInsight.body;
+  }
+
+  return topGapPairData.warning || "";
+}
+
+function buildRecommendedFocus(
+  profileStageData: any,
+  topGapPairData: any,
+  risks: RiskFlag[]
+) {
+  const highRisk = risks.find(risk => risk.severity === "high");
+
+  if (highRisk) {
+    return highRisk.body;
+  }
+
+  return topGapPairData.focus || profileStageData.focus || "";
+}
+
+function buildDiagnosticPattern(
+  profile: string,
+  stageKey: string,
+  topGapPair: { first: string; second: string; key: string },
+  risks: RiskFlag[],
+  intentInsight: any
+) {
+  const profileStageData = getProfileStageData(profile, stageKey);
+  const topGapPairData = getTopGapPairData(topGapPair.key);
+
+  return {
+    profileStageKey: profile + "_" + stageKey,
+    profileStageTitle: profileStageData.title,
+    profileStageBody: profileStageData.body,
+
+    topGapPairKey: topGapPair.key,
+    topGapPairTitle: topGapPairData.title,
+    topGapPairBody: topGapPairData.body,
+
+    strategicWarning: buildStrategicWarning(
+      risks,
+      topGapPairData,
+      intentInsight
+    ),
+
+    recommendedFocus: buildRecommendedFocus(
+      profileStageData,
+      topGapPairData,
+      risks
+    )
+  };
+}
+
 export function computeDiagnosticState(
   overall: number,
-  rawDimensions: Record<string, { score: number; yes: number }>
+  rawDimensions: Record<string, { score: number; yes: number }>,
+  options: DiagnosticOptions = {}
 ) {
-  const fascia = fasciaFromScore(overall);
-  const originalStageLabel = stageFromScore(overall);
+  const safeOverall = Number(overall || 0);
+  const intentLevel =
+    typeof options.intentLevel === "number" ? options.intentLevel : null;
+
+  const stagingScore =
+    typeof options.stagingScore === "number" ? options.stagingScore : safeOverall;
+
+  const fascia = fasciaFromScore(safeOverall);
+  const originalStageLabel = stageFromScore(stagingScore);
 
   const baseRoadmapInfo =
     IMPULSE_SCALING_ROADMAP[
@@ -742,7 +1398,10 @@ export function computeDiagnosticState(
     };
   });
 
-  const sortedDims = [...processedDims].sort((a, b) => a.score - b.score);
+  const sortedDims = [...processedDims].sort((a, b) => {
+    if (a.score !== b.score) return a.score - b.score;
+    return DIMENSIONS_KEYS.indexOf(a.key) - DIMENSIONS_KEYS.indexOf(b.key);
+  });
 
   const uniqueScores = Array.from(new Set(sortedDims.map(d => d.score))).sort(
     (a, b) => a - b
@@ -805,21 +1464,8 @@ export function computeDiagnosticState(
       .slice(0, 3);
   }
 
-  const lowestKey = priorita[0]?.key || "acquisition";
-
-  let profile = "B";
-
-  if (lowestKey === "clarity") {
-    profile = "A";
-  } else if (lowestKey === "operations" || lowestKey === "asset") {
-    profile = "C";
-  } else if (lowestKey === "acquisition" || lowestKey === "margins") {
-    profile = "B";
-  } else if (lowestKey === "readiness") {
-    profile = "D";
-  }
-
-  const profileData = getProfileData(profile, overall);
+  const profile = resolveProfileWithTieBreak(sortedDims, intentLevel);
+  const profileData = getProfileData(profile, safeOverall);
 
   const weakestDimensions = priorita
     .map((dim: any) => dim.key as ImpulseDimension)
@@ -829,6 +1475,18 @@ export function computeDiagnosticState(
     weakestDimensions,
     impulseStage,
     3
+  );
+
+  const topGapPair = buildTopGapPair(sortedDims);
+  const intentInsight = buildIntentInsight(intentLevel);
+  const riskFlags = buildRiskFlags(processedDims, safeOverall, intentLevel);
+
+  const diagnosticPattern = buildDiagnosticPattern(
+    profile,
+    originalStageLabel,
+    topGapPair,
+    riskFlags,
+    intentInsight
   );
 
   return {
@@ -843,6 +1501,12 @@ export function computeDiagnosticState(
     profileData,
     forze,
     priorita,
-    processedDims
+    processedDims,
+
+    stagingScore,
+    topGapPair,
+    diagnosticPattern,
+    riskFlags,
+    intentInsight
   };
 }
