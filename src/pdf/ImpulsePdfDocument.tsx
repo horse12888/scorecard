@@ -19,6 +19,30 @@ type DimensionKey =
   | "asset"
   | "readiness";
 
+type RiskFlag = {
+  id?: string;
+  title?: string;
+  body?: string;
+  severity?: "low" | "medium" | "high" | string;
+};
+
+type DiagnosticPattern = {
+  profileStageKey?: string;
+  profileStageTitle?: string;
+  profileStageBody?: string;
+  topGapPairKey?: string;
+  topGapPairTitle?: string;
+  topGapPairBody?: string;
+  strategicWarning?: string;
+  recommendedFocus?: string;
+};
+
+type IntentInsight = {
+  level?: number | null;
+  label?: string;
+  body?: string;
+};
+
 type PdfResult = {
   leadId?: string;
   name?: string;
@@ -42,6 +66,10 @@ type PdfResult = {
   forze?: any[];
   stagingScore?: number;
   bindingConstraint?: string;
+  topGapPair?: any;
+  diagnosticPattern?: DiagnosticPattern;
+  riskFlags?: RiskFlag[];
+  intentInsight?: IntentInsight;
 };
 
 const dimensionNames: Record<DimensionKey, string> = {
@@ -190,6 +218,49 @@ function getScoreLabel(score: number) {
   return "IN SVILUPPO";
 }
 
+function getDiagnosticPattern(result: PdfResult, priorities: any[]) {
+  if (result.diagnosticPattern) {
+    return result.diagnosticPattern;
+  }
+
+  const first = priorities[0];
+  const second = priorities[1];
+
+  const firstLabel = first ? getDimensionLabel(first) : "Vincolo principale";
+  const secondLabel = second ? getDimensionLabel(second) : "Secondo vincolo";
+
+  return {
+    profileStageTitle: "Profilo e fase da leggere insieme",
+    profileStageBody:
+      "Il profilo mostra il tipo di vincolo. La fase mostra quanto il business è pronto a reggere il prossimo salto.",
+    topGapPairTitle: `${firstLabel} + ${secondLabel}`,
+    topGapPairBody:
+      "Il pattern diagnostico nasce dalla combinazione delle due dimensioni più deboli. Queste aree vanno lette insieme prima di decidere cosa scalare.",
+    strategicWarning:
+      "Intervenire su una sola area può lasciare intatto il vincolo reale.",
+    recommendedFocus:
+      "Leggere insieme i primi due gap e trasformarli in una sequenza operativa."
+  };
+}
+
+function getRiskFlags(result: PdfResult) {
+  if (result.riskFlags && result.riskFlags.length > 0) {
+    return result.riskFlags.slice(0, 4);
+  }
+
+  return [];
+}
+
+function getIntentInsight(result: PdfResult) {
+  return (
+    result.intentInsight || {
+      label: "Intent non rilevato",
+      body:
+        "L'urgenza strategica non è disponibile in questa diagnosi. La priorità viene quindi calcolata da score, stage e vincoli dimensionali."
+    }
+  );
+}
+
 function Bar({ score }: { score: number }) {
   const width = Math.max(0, Math.min(100, score * 10));
 
@@ -245,6 +316,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const fallbackBindingKey = priorities[0]?.key as DimensionKey | undefined;
   const displayedBindingKey = bindingKey || fallbackBindingKey;
   const functionConstraints = result.functionConstraints || [];
+  const diagnosticPattern = getDiagnosticPattern(result, priorities);
+  const riskFlags = getRiskFlags(result);
+  const intentInsight = getIntentInsight(result);
 
   const strategicReviewBaseUrl = "https://davidedileo.it/strategic-review";
   const resolvedLeadId = result.leadId || result.metadata?.leadId || "";
@@ -355,6 +429,85 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
       <Page size="A4" style={styles.page}>
         <Header page="03" name={name} />
         <SectionTitle
+          kicker="PATTERN DIAGNOSTICO"
+          title={safeText(diagnosticPattern.topGapPairTitle, "Pattern diagnostico")}
+          body={safeText(
+            diagnosticPattern.topGapPairBody,
+            "Il pattern diagnostico nasce dalla relazione tra le dimensioni più deboli del business."
+          )}
+        />
+
+        <View style={styles.patternCard}>
+          <Text style={styles.blockLabel}>PROFILO + FASE</Text>
+          <Text style={styles.patternTitle}>
+            {safeText(diagnosticPattern.profileStageTitle, "Profilo e fase da leggere insieme")}
+          </Text>
+          <Text style={styles.longText}>
+            {safeText(
+              diagnosticPattern.profileStageBody,
+              "Il profilo mostra il tipo di vincolo. La fase mostra quanto il business è pronto a reggere il prossimo salto."
+            )}
+          </Text>
+        </View>
+
+        <View style={styles.focusBox}>
+          <Text style={styles.focusLabel}>FOCUS RACCOMANDATO</Text>
+          <Text style={styles.focusText}>
+            {safeText(
+              diagnosticPattern.recommendedFocus,
+              "Chiarire il vincolo principale e trasformarlo in una sequenza operativa."
+            )}
+          </Text>
+        </View>
+
+        <View style={styles.warningBox}>
+          <Text style={styles.warningTitle}>ATTENZIONE STRATEGICA</Text>
+          <Text style={styles.warningText}>
+            {safeText(
+              diagnosticPattern.strategicWarning,
+              "Intervenire su una sola area può lasciare intatto il vincolo reale."
+            )}
+          </Text>
+        </View>
+
+        <View style={styles.intentBox}>
+          <Text style={styles.blockLabel}>INTENT</Text>
+          <Text style={styles.patternTitle}>
+            {safeText(intentInsight.label, "Intent non rilevato")}
+          </Text>
+          <Text style={styles.longText}>
+            {safeText(
+              intentInsight.body,
+              "L'urgenza strategica non è disponibile in questa diagnosi."
+            )}
+          </Text>
+        </View>
+
+        {riskFlags.length > 0 ? (
+          <View style={styles.riskList}>
+            <Text style={styles.cardTitle}>Risk flags principali</Text>
+            {riskFlags.map((risk: RiskFlag, index: number) => (
+              <View key={risk.id || index} style={styles.riskCard}>
+                <Text style={styles.riskTitle}>
+                  {safeText(risk.title, `Risk flag ${index + 1}`)}
+                </Text>
+                <Text style={styles.riskBody}>{safeText(risk.body)}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.noteBox}>
+            <Text style={styles.noteTitle}>RISK FLAGS</Text>
+            <Text style={styles.noteText}>
+              Nessun risk flag critico aggiuntivo è stato rilevato oltre ai vincoli principali della diagnosi.
+            </Text>
+          </View>
+        )}
+      </Page>
+
+      <Page size="A4" style={styles.page}>
+        <Header page="04" name={name} />
+        <SectionTitle
           kicker="LE 3 PRIORITÀ OPERATIVE"
           title="Cosa va chiarito prima"
           body="Queste sono le aree che oggi creano più attrito operativo. Prima di aumentare volume, complessità o investimento, vanno rese più chiare, trasferibili e leggibili."
@@ -391,7 +544,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
       </Page>
 
       <Page size="A4" style={styles.page}>
-        <Header page="04" name={name} />
+        <Header page="05" name={name} />
         <SectionTitle
           kicker="MAPPA DIAGNOSTICA"
           title="Le 6 dimensioni"
@@ -425,7 +578,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
       </Page>
 
       <Page size="A4" style={styles.page}>
-        <Header page="05" name={name} />
+        <Header page="06" name={name} />
         <SectionTitle
           kicker="COORDINATE"
           title="Forze e vincoli"
@@ -465,7 +618,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
       </Page>
 
       <Page size="A4" style={styles.page}>
-        <Header page="06" name={name} />
+        <Header page="07" name={name} />
         <SectionTitle
           kicker="VINCOLI FUNZIONALI"
           title="Dove il sistema può perdere leva"
@@ -503,7 +656,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
       </Page>
 
       <Page size="A4" style={styles.page}>
-        <Header page="07" name={name} />
+        <Header page="08" name={name} />
         <SectionTitle
           kicker={`PROFILO ${safeText(result.profile)}`}
           title={profileTitle}
@@ -765,7 +918,8 @@ const styles = StyleSheet.create({
   warningBox: {
     backgroundColor: "#FFF2F0",
     borderRadius: 16,
-    padding: 16
+    padding: 16,
+    marginBottom: 12
   },
   warningTitle: {
     fontSize: 9,
@@ -777,6 +931,67 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 11,
     lineHeight: 1.45,
+    color: "#B42318"
+  },
+  patternCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 14
+  },
+  patternTitle: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: "#151515",
+    marginBottom: 7
+  },
+  focusBox: {
+    backgroundColor: "#EAF5FA",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12
+  },
+  focusLabel: {
+    fontSize: 9,
+    color: "#27708F",
+    fontWeight: 700,
+    letterSpacing: 1,
+    marginBottom: 7,
+    textTransform: "uppercase"
+  },
+  focusText: {
+    fontSize: 11.5,
+    lineHeight: 1.45,
+    color: "#123C69",
+    fontWeight: 700
+  },
+  intentBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12
+  },
+  riskList: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 2
+  },
+  riskCard: {
+    backgroundColor: "#FFF2F0",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 8
+  },
+  riskTitle: {
+    fontSize: 11,
+    color: "#B42318",
+    fontWeight: 700,
+    marginBottom: 4
+  },
+  riskBody: {
+    fontSize: 9.5,
+    lineHeight: 1.35,
     color: "#B42318"
   },
   priorityList: {
