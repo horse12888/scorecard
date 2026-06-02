@@ -28,12 +28,81 @@ function getLeadIdFromParsed(parsed: any) {
   return parsed?.leadId || parsed?.metadata?.leadId || '';
 }
 
+function toNullableNumber(value: any) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const n = Number(value);
+
+  if (Number.isNaN(n)) {
+    return null;
+  }
+
+  return n;
+}
+
+function getIntentLevelFromParsed(parsed: any) {
+  return toNullableNumber(
+    parsed?.intentLevel ??
+      parsed?.intent_level ??
+      parsed?.metadata?.intentLevel ??
+      parsed?.metadata?.intent_level ??
+      null
+  );
+}
+
+function getStagingScoreFromParsed(parsed: any) {
+  return toNullableNumber(
+    parsed?.stagingScore ??
+      parsed?.staging_score ??
+      parsed?.metadata?.stagingScore ??
+      parsed?.metadata?.staging_score ??
+      null
+  );
+}
+
+function getIntentLevelFromResult(result: any) {
+  return toNullableNumber(
+    result?.intentLevel ??
+      result?.intent_level ??
+      result?.metadata?.intentLevel ??
+      result?.metadata?.intent_level ??
+      null
+  );
+}
+
+function getStagingScoreFromResult(result: any) {
+  return toNullableNumber(
+    result?.stagingScore ??
+      result?.staging_score ??
+      result?.metadata?.stagingScore ??
+      result?.metadata?.staging_score ??
+      null
+  );
+}
+
 function buildEnrichedResult(baseResult: any, state: any, leadId?: string) {
   const resolvedLeadId =
     leadId ||
     baseResult?.leadId ||
     baseResult?.metadata?.leadId ||
     '';
+
+  const resolvedIntentLevel =
+    baseResult?.intentLevel ??
+    baseResult?.intent_level ??
+    baseResult?.metadata?.intentLevel ??
+    baseResult?.metadata?.intent_level ??
+    state?.intentInsight?.level ??
+    null;
+
+  const resolvedStagingScore =
+    baseResult?.stagingScore ??
+    baseResult?.staging_score ??
+    state?.stagingScore ??
+    baseResult?.overall ??
+    null;
 
   return {
     ...baseResult,
@@ -42,8 +111,12 @@ function buildEnrichedResult(baseResult: any, state: any, leadId?: string) {
 
     metadata: {
       ...(baseResult.metadata || {}),
-      leadId: resolvedLeadId
+      leadId: resolvedLeadId,
+      intentLevel: resolvedIntentLevel
     },
+
+    intentLevel: resolvedIntentLevel,
+    stagingScore: resolvedStagingScore,
 
     fascia: state.fascia,
 
@@ -66,11 +139,53 @@ function buildEnrichedResult(baseResult: any, state: any, leadId?: string) {
     processedDims: state.processedDims,
     stageInfo: state.stageInfo,
 
+    topGapPair: state.topGapPair,
+    diagnosticPattern: state.diagnosticPattern,
+    riskFlags: state.riskFlags || [],
+    intentInsight: state.intentInsight,
+
     spiderDims: state.processedDims.map((d: any) => ({
       label: d.label,
       score: d.score
     }))
   };
+}
+
+function isValidParsedResult(parsed: any) {
+  const dims = parsed?.dimensions;
+
+  const requiredDims = [
+    'clarity',
+    'acquisition',
+    'operations',
+    'margins',
+    'asset',
+    'readiness'
+  ];
+
+  return (
+    typeof parsed?.name === 'string' &&
+    parsed.name.trim() !== '' &&
+    typeof parsed?.overall === 'number' &&
+    parsed.overall >= 0 &&
+    parsed.overall <= 100 &&
+    dims &&
+    requiredDims.every(
+      d =>
+        dims[d] &&
+        typeof dims[d].score === 'number' &&
+        dims[d].score >= 0 &&
+        dims[d].score <= 10 &&
+        typeof dims[d].yes === 'number' &&
+        dims[d].yes >= 0 &&
+        dims[d].yes <= 7
+    )
+  );
+}
+
+function decodeResultPayload(encodedResult: string) {
+  const decodedString = decodeURIComponent(escape(atob(encodedResult)));
+  return JSON.parse(decodedString);
 }
 
 export default function App() {
@@ -94,84 +209,63 @@ export default function App() {
 
     if (encodedResult) {
       try {
-        const decodedString = decodeURIComponent(escape(atob(encodedResult)));
-        const parsed = JSON.parse(decodedString);
+        const parsed = decodeResultPayload(encodedResult);
 
-        if (parsed) {
-          const dims = parsed.dimensions;
-          const requiredDims = [
-            'clarity',
-            'acquisition',
-            'operations',
-            'margins',
-            'asset',
-            'readiness'
-          ];
-
-          const isValid =
-            typeof parsed.name === 'string' &&
-            parsed.name.trim() !== '' &&
-            typeof parsed.overall === 'number' &&
-            parsed.overall >= 0 &&
-            parsed.overall <= 100 &&
-            dims &&
-            requiredDims.every(
-              d =>
-                dims[d] &&
-                typeof dims[d].score === 'number' &&
-                dims[d].score >= 0 &&
-                dims[d].score <= 10 &&
-                typeof dims[d].yes === 'number' &&
-                dims[d].yes >= 0 &&
-                dims[d].yes <= 7
-            );
-
-          if (isValid) {
-            const state = computeDiagnosticState(
-              parsed.overall,
-              parsed.dimensions
-            );
-
-            const leadId = getLeadIdFromParsed(parsed);
-
-            const enrichedResult = buildEnrichedResult(
-              {
-                leadId,
-                name: parsed.name,
-                company: parsed.company || '',
-                email: parsed.email || '',
-                metadata: parsed.metadata || {},
-                overall: parsed.overall,
-                dimensions: parsed.dimensions,
-                stagingScore: parsed.stagingScore,
-                bindingConstraint: parsed.bindingConstraint
-              },
-              state,
-              leadId
-            );
-
-            console.log('Parsed report leadId:', leadId);
-            console.log('Enriched report result:', enrichedResult);
-
-            setResult(enrichedResult);
-            setStep('summary');
-          } else {
-            console.error('Validation failed', parsed);
-            setStep('error');
-          }
-        } else {
+        if (!parsed || !isValidParsedResult(parsed)) {
+          console.error('Validation failed', parsed);
           setStep('error');
+          return;
         }
+
+        const leadId = getLeadIdFromParsed(parsed);
+        const intentLevel = getIntentLevelFromParsed(parsed);
+        const stagingScore = getStagingScoreFromParsed(parsed);
+
+        const state = computeDiagnosticState(
+          parsed.overall,
+          parsed.dimensions,
+          {
+            intentLevel,
+            stagingScore
+          }
+        );
+
+        const enrichedResult = buildEnrichedResult(
+          {
+            leadId,
+            name: parsed.name,
+            company: parsed.company || '',
+            email: parsed.email || '',
+            metadata: parsed.metadata || {},
+            overall: parsed.overall,
+            dimensions: parsed.dimensions,
+            stagingScore,
+            bindingConstraint: parsed.bindingConstraint,
+            intentLevel
+          },
+          state,
+          leadId
+        );
+
+        console.log('Parsed report leadId:', leadId);
+        console.log('Parsed intentLevel:', intentLevel);
+        console.log('Parsed stagingScore:', stagingScore);
+        console.log('Enriched report result:', enrichedResult);
+
+        setResult(enrichedResult);
+        setStep('summary');
       } catch (e) {
         console.error('Failed to decode result parameter', e);
         setStep('error');
       }
+
+      return;
+    }
+
+    if (SHOW_TESTS) {
+      setStep('info');
     } else {
-      if (SHOW_TESTS) {
-        setStep('info');
-      } else {
-        setStep('error');
-      }
+      setStep('error');
     }
   }, []);
 
@@ -202,30 +296,41 @@ export default function App() {
     handleNext(updatedAnswers);
   };
 
-  const handleNext = (currentAnswers = answers) => {
+  const handleNext = (currentAnswers: Record<string, any> = answers) => {
     if (currentIdx < QUESTIONS.length - 1) {
       setCurrentIdx(currentIdx + 1);
-    } else {
-      const finalResult = calculateScorecardResult(currentAnswers, user);
-      const state = computeDiagnosticState(
-        finalResult.overall,
-        finalResult.dimensions
-      );
-
-      const devLeadId = finalResult.leadId || makeDevLeadId();
-
-      const enrichedResult = buildEnrichedResult(
-        {
-          ...finalResult,
-          leadId: devLeadId
-        },
-        state,
-        devLeadId
-      );
-
-      setResult(enrichedResult);
-      setStep('summary');
+      return;
     }
+
+    const finalResult = calculateScorecardResult(currentAnswers, user);
+
+    const intentLevel = getIntentLevelFromResult(finalResult);
+    const stagingScore = getStagingScoreFromResult(finalResult);
+
+    const state = computeDiagnosticState(
+      finalResult.overall,
+      finalResult.dimensions,
+      {
+        intentLevel,
+        stagingScore
+      }
+    );
+
+    const devLeadId = finalResult.leadId || makeDevLeadId();
+
+    const enrichedResult = buildEnrichedResult(
+      {
+        ...finalResult,
+        leadId: devLeadId,
+        intentLevel,
+        stagingScore
+      },
+      state,
+      devLeadId
+    );
+
+    setResult(enrichedResult);
+    setStep('summary');
   };
 
   const handlePrev = () => {
@@ -247,9 +352,17 @@ export default function App() {
     mockUser: any
   ) => {
     const testResult = calculateScorecardResult(mockAnswers, mockUser);
+
+    const intentLevel = getIntentLevelFromResult(testResult);
+    const stagingScore = getStagingScoreFromResult(testResult);
+
     const state = computeDiagnosticState(
       testResult.overall,
-      testResult.dimensions
+      testResult.dimensions,
+      {
+        intentLevel,
+        stagingScore
+      }
     );
 
     const devLeadId = testResult.leadId || makeDevLeadId();
@@ -257,7 +370,9 @@ export default function App() {
     const enrichedTestResult = buildEnrichedResult(
       {
         ...testResult,
-        leadId: devLeadId
+        leadId: devLeadId,
+        intentLevel,
+        stagingScore
       },
       state,
       devLeadId
@@ -307,7 +422,7 @@ export default function App() {
 
   const testCases = [
     {
-      label: 'TEST 1 — CLARITY GAP',
+      label: 'TEST 1 - CLARITY GAP',
       user: {
         name: 'Anna Rossi',
         company: 'Rossi Studio',
@@ -316,7 +431,7 @@ export default function App() {
       answers: makeAnswers(2.8, 5.7, 5.7, 5.7, 5.7, 4.3)
     },
     {
-      label: 'TEST 2 — GROWTH ENGINE GAP',
+      label: 'TEST 2 - GROWTH ENGINE GAP',
       user: {
         name: 'Marco Bianchi',
         company: 'Bianchi Growth',
@@ -325,7 +440,7 @@ export default function App() {
       answers: makeAnswers(5.7, 4.3, 5.7, 4.3, 5.7, 5.7)
     },
     {
-      label: 'TEST 3 — OPERATIONAL GAP',
+      label: 'TEST 3 - OPERATIONAL GAP',
       user: {
         name: 'Luca Verdi',
         company: 'Verdi Industries',
@@ -334,7 +449,7 @@ export default function App() {
       answers: makeAnswers(8.1, 8.2, 5.1, 7.0, 4.8, 6.4)
     },
     {
-      label: 'TEST 4 — READINESS GAP',
+      label: 'TEST 4 - READINESS GAP',
       user: {
         name: 'Laura Neri',
         company: 'Neri Advisory',
@@ -395,10 +510,11 @@ export default function App() {
 
             {SHOW_TESTS && (
               <button
+                type="button"
                 onClick={() => setStep('info')}
                 className="mt-6 text-sm text-[rgb(39,112,143)] underline"
               >
-                (Dev mode: Show manual scorecard)
+                Dev mode: mostra scorecard manuale
               </button>
             )}
           </div>
@@ -475,7 +591,7 @@ export default function App() {
             {SHOW_TESTS && (
               <div className="mt-12 pt-6 border-t border-gray-100">
                 <p className="text-xs text-gray-400 font-mono mb-4 text-center">
-                  E2E TEST PIPELINE (DEV ONLY)
+                  E2E TEST PIPELINE, DEV ONLY
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -501,6 +617,7 @@ export default function App() {
               <span>
                 DOMANDA {currentIdx + 1} DI {QUESTIONS.length}
               </span>
+
               {currentQuestion.dimension && (
                 <span>{currentQuestion.dimension}</span>
               )}
@@ -514,6 +631,7 @@ export default function App() {
               {currentQuestion.type === 'yesno' ? (
                 <div className="flex gap-4">
                   <button
+                    type="button"
                     onClick={() => handleYesNo(false)}
                     className={`flex-1 py-4 text-lg font-medium rounded-lg border-2 transition ${
                       answers[currentQuestion.id] === false
@@ -525,6 +643,7 @@ export default function App() {
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => handleYesNo(true)}
                     className={`flex-1 py-4 text-lg font-medium rounded-lg border-2 transition ${
                       answers[currentQuestion.id] === true
@@ -540,6 +659,7 @@ export default function App() {
                   {currentQuestion.options?.map((opt, i) => (
                     <button
                       key={i}
+                      type="button"
                       onClick={() => handleSelectOption(i, opt)}
                       className={`block w-full text-left px-5 py-4 text-base font-medium rounded-lg border-2 transition ${
                         answers[currentQuestion.id] === opt
@@ -552,7 +672,8 @@ export default function App() {
                   ))}
 
                   <button
-                    onClick={handleNext}
+                    type="button"
+                    onClick={() => handleNext()}
                     disabled={answers[currentQuestion.id] === undefined}
                     className="w-full mt-4 bg-[rgb(39,112,143)] text-white font-medium py-3 px-6 rounded transition disabled:opacity-50"
                   >
@@ -564,6 +685,7 @@ export default function App() {
 
             <div className="flex justify-between items-center text-sm">
               <button
+                type="button"
                 onClick={handlePrev}
                 disabled={currentIdx === 0}
                 className="text-gray-500 hover:text-gray-900 disabled:opacity-30 flex items-center gap-2"
@@ -574,7 +696,8 @@ export default function App() {
               {currentQuestion.type === 'yesno' &&
                 answers[currentQuestion.id] !== undefined && (
                   <button
-                    onClick={handleNext}
+                    type="button"
+                    onClick={() => handleNext()}
                     className="bg-[rgb(39,112,143)] text-white py-2 px-6 rounded text-sm hover:bg-[rgb(30,85,110)] transition"
                   >
                     Avanti →
@@ -639,6 +762,34 @@ export default function App() {
               </div>
             </div>
 
+            {result.diagnosticPattern ? (
+              <div className="p-5 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
+                  DIAGNOSTIC PATTERN
+                </p>
+                <p className="text-lg font-bold text-gray-900 mb-2">
+                  {result.diagnosticPattern.topGapPairTitle}
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {result.diagnosticPattern.topGapPairBody}
+                </p>
+              </div>
+            ) : null}
+
+            {result.riskFlags && result.riskFlags.length > 0 ? (
+              <div className="p-5 bg-red-50 rounded-lg border border-red-100">
+                <p className="text-xs text-red-500 font-mono tracking-wider mb-2">
+                  RISK FLAG
+                </p>
+                <p className="text-lg font-bold text-red-700 mb-2">
+                  {result.riskFlags[0].title}
+                </p>
+                <p className="text-sm text-red-700 leading-relaxed">
+                  {result.riskFlags[0].body}
+                </p>
+              </div>
+            ) : null}
+
             {result.leadId ? (
               <div className="text-center text-xs text-gray-400 font-mono">
                 Report ID: {result.leadId}
@@ -646,6 +797,7 @@ export default function App() {
             ) : null}
 
             <button
+              type="button"
               onClick={handleDownloadPDF}
               className="w-full bg-[rgb(212,175,55)] hover:bg-[rgb(192,155,35)] text-gray-900 font-bold py-4 px-6 rounded mt-8 mb-4 transition"
             >
@@ -654,6 +806,7 @@ export default function App() {
 
             {SHOW_TESTS && (
               <button
+                type="button"
                 onClick={() => {
                   setStep('info');
                   setAnswers({});
@@ -661,7 +814,7 @@ export default function App() {
                 }}
                 className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 font-medium py-3 px-6 rounded transition"
               >
-                Nuovo Test (Dev Only)
+                Nuovo Test, Dev Only
               </button>
             )}
           </div>
