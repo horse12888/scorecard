@@ -1295,12 +1295,6 @@ function buildRecommendedFocus(
   topGapPairData: any,
   risks: RiskFlag[]
 ) {
-  const highRisk = risks.find(risk => risk.severity === "high");
-
-  if (highRisk) {
-    return highRisk.body;
-  }
-
   return topGapPairData.focus || profileStageData.focus || "";
 }
 
