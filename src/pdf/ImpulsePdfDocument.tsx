@@ -243,6 +243,94 @@ function getDiagnosticPattern(result: PdfResult, priorities: any[]) {
   };
 }
 
+function getFallbackFocusFromPatternTitle(title?: string) {
+  const clean = safeText(title).toLowerCase();
+
+  if (clean.includes("clarity") && clean.includes("acquisition")) {
+    return "Chiarire offerta, promessa, cliente ideale e canale prioritario prima di aumentare volume commerciale.";
+  }
+
+  if (clean.includes("clarity") && clean.includes("operations")) {
+    return "Standardizzare offerta e delivery nello stesso intervento, così che ogni cliente non diventi un caso speciale.";
+  }
+
+  if (clean.includes("clarity") && clean.includes("margins")) {
+    return "Ricollegare pricing, valore percepito, promessa e margine prima di aumentare acquisizione.";
+  }
+
+  if (clean.includes("clarity") && clean.includes("asset")) {
+    return "Identificare quali parti del valore possono diventare asset documentabili, trasferibili o difendibili.";
+  }
+
+  if (clean.includes("clarity") && clean.includes("readiness")) {
+    return "Rendere narrativa, numeri essenziali e materiali comprensibili anche senza spiegazione diretta del founder.";
+  }
+
+  if (clean.includes("acquisition") && clean.includes("operations")) {
+    return "Stabilizzare processo commerciale e delivery prima di aumentare volume.";
+  }
+
+  if (clean.includes("acquisition") && clean.includes("margins")) {
+    return "Misurare canali, conversione e qualità cliente in base al margine, non solo al volume.";
+  }
+
+  if (clean.includes("acquisition") && clean.includes("asset")) {
+    return "Trasformare acquisizione, clienti e delivery in dati, case study, IP, community o contratti.";
+  }
+
+  if (clean.includes("acquisition") && clean.includes("readiness")) {
+    return "Costruire una lettura chiara di domanda, funnel, conversione e qualità clienti.";
+  }
+
+  if (clean.includes("operations") && clean.includes("margins")) {
+    return "Mappare delivery economics, tempi, costi nascosti e ownership.";
+  }
+
+  if (clean.includes("operations") && clean.includes("asset")) {
+    return "Documentare processi, metodologie, asset e responsabilità.";
+  }
+
+  if (clean.includes("operations") && clean.includes("readiness")) {
+    return "Separare ruoli, processi, numeri e materiali.";
+  }
+
+  if (clean.includes("margins") && clean.includes("asset")) {
+    return "Capire quali offerte, clienti o canali creano margine e asset.";
+  }
+
+  if (clean.includes("margins") && clean.includes("readiness")) {
+    return "Rendere margini, cash flow e unit economics leggibili.";
+  }
+
+  if (clean.includes("asset") && clean.includes("readiness")) {
+    return "Documentare asset, evidenze, contratti, IP, dati, rischi e materiali esterni.";
+  }
+
+  return "Leggere insieme i primi due gap e trasformarli in una sequenza operativa.";
+}
+
+function getPdfRecommendedFocus(diagnosticPattern: DiagnosticPattern) {
+  const focus = safeText(diagnosticPattern.recommendedFocus).trim();
+  const warning = safeText(diagnosticPattern.strategicWarning).trim();
+
+  if (!focus) {
+    return getFallbackFocusFromPatternTitle(diagnosticPattern.topGapPairTitle);
+  }
+
+  if (warning && focus === warning) {
+    return getFallbackFocusFromPatternTitle(diagnosticPattern.topGapPairTitle);
+  }
+
+  return focus;
+}
+
+function getPdfStrategicWarning(diagnosticPattern: DiagnosticPattern) {
+  return safeText(
+    diagnosticPattern.strategicWarning,
+    "Intervenire su una sola area può lasciare intatto il vincolo reale."
+  );
+}
+
 function getRiskFlags(result: PdfResult) {
   if (result.riskFlags && result.riskFlags.length > 0) {
     return result.riskFlags.slice(0, 4);
@@ -317,6 +405,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const displayedBindingKey = bindingKey || fallbackBindingKey;
   const functionConstraints = result.functionConstraints || [];
   const diagnosticPattern = getDiagnosticPattern(result, priorities);
+  const pdfRecommendedFocus = getPdfRecommendedFocus(diagnosticPattern);
+  const pdfStrategicWarning = getPdfStrategicWarning(diagnosticPattern);
   const riskFlags = getRiskFlags(result);
   const intentInsight = getIntentInsight(result);
 
@@ -452,22 +542,12 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <View style={styles.focusBox}>
           <Text style={styles.focusLabel}>FOCUS RACCOMANDATO</Text>
-          <Text style={styles.focusText}>
-            {safeText(
-              diagnosticPattern.recommendedFocus,
-              "Chiarire il vincolo principale e trasformarlo in una sequenza operativa."
-            )}
-          </Text>
+          <Text style={styles.focusText}>{pdfRecommendedFocus}</Text>
         </View>
 
         <View style={styles.warningBox}>
           <Text style={styles.warningTitle}>ATTENZIONE STRATEGICA</Text>
-          <Text style={styles.warningText}>
-            {safeText(
-              diagnosticPattern.strategicWarning,
-              "Intervenire su una sola area può lasciare intatto il vincolo reale."
-            )}
-          </Text>
+          <Text style={styles.warningText}>{pdfStrategicWarning}</Text>
         </View>
 
         <View style={styles.intentBox}>
