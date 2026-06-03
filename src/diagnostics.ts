@@ -1347,10 +1347,19 @@ export function computeDiagnosticState(
     typeof options.intentLevel === "number" ? options.intentLevel : null;
 
   const stagingScore =
-    typeof options.stagingScore === "number" ? options.stagingScore : safeOverall;
+  typeof options.stagingScore === "number" ? options.stagingScore : safeOverall;
 
-  const fascia = fasciaFromScore(safeOverall);
-  const originalStageLabel = stageFromScore(stagingScore);
+const fascia = fasciaFromScore(safeOverall);
+
+/**
+ * Stage principale:
+ * usiamo lo score complessivo, non lo stagingScore.
+ *
+ * Lo stagingScore resta utile come segnale diagnostico interno,
+ * ma non deve abbassare lo stage principale quando il business
+ * mostra già segnali sufficienti per TRACTION.
+ */
+const originalStageLabel = stageFromScore(safeOverall);
 
   const baseRoadmapInfo =
     IMPULSE_SCALING_ROADMAP[
