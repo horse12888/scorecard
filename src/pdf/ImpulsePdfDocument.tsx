@@ -553,21 +553,22 @@ function arcPath(cx: number, cy: number, r: number, fromDeg: number, toDeg: numb
 }
 
 function CoverScoreGauge({ score }: { score: number }) {
-  const W = 104;
-  const H = 58;
+  const W = 168;
+  const H = 100;
   const cx = W / 2;
-  const cy = H - 4;
-  const r = 44;
+  const cy = H - 14;
+  const r = 66;
   const clamped = Math.max(0, Math.min(100, score));
   const scoreDeg = 180 - (clamped / 100) * 180;
+  const needle = polarPoint(cx, cy, r, scoreDeg);
 
   return (
     <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
       {/* binario */}
       <Path
         d={arcPath(cx, cy, r, 180, 0)}
-        stroke="#3F3F3F"
-        strokeWidth={2}
+        stroke={HAIRLINE}
+        strokeWidth={2.5}
         fill="none"
       />
       {/* valore */}
@@ -575,15 +576,15 @@ function CoverScoreGauge({ score }: { score: number }) {
         <Path
           d={arcPath(cx, cy, r, 180, scoreDeg)}
           stroke={GOLD}
-          strokeWidth={3}
+          strokeWidth={3.5}
           fill="none"
         />
       ) : null}
       {/* tacche alle soglie di stage (40/60/75/85) */}
       {STAGE_THRESHOLDS.map(t => {
         const deg = 180 - (t / 100) * 180;
-        const inner = polarPoint(cx, cy, r - 4, deg);
-        const outer = polarPoint(cx, cy, r + 4, deg);
+        const inner = polarPoint(cx, cy, r - 4.5, deg);
+        const outer = polarPoint(cx, cy, r + 4.5, deg);
         return (
           <Line
             key={t}
@@ -591,18 +592,30 @@ function CoverScoreGauge({ score }: { score: number }) {
             y1={inner.y}
             x2={outer.x}
             y2={outer.y}
-            stroke="#818181"
+            stroke={MUTED}
             strokeWidth={1}
           />
         );
       })}
       {/* indicatore */}
-      <Circle
-        cx={polarPoint(cx, cy, r, scoreDeg).x}
-        cy={polarPoint(cx, cy, r, scoreDeg).y}
-        r={3.2}
-        fill={GOLD}
-      />
+      <Circle cx={needle.x} cy={needle.y} r={3.6} fill={GOLD} />
+      {/* numero dentro il quadrante: larghezza fissa, zero collisioni */}
+      <Text
+        x={cx}
+        y={cy - 8}
+        textAnchor="middle"
+        style={{ fontSize: 34, fontFamily: "Helvetica-Bold", fill: INK }}
+      >
+        {String(clamped)}
+      </Text>
+      <Text
+        x={cx}
+        y={cy + 8}
+        textAnchor="middle"
+        style={{ fontSize: 8, fill: MUTED, letterSpacing: 1 }}
+      >
+        SU 100
+      </Text>
     </Svg>
   );
 }
@@ -776,15 +789,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <View style={styles.coverScoreRow}>
           <View style={styles.coverScoreBlock}>
             <Text style={styles.coverScoreLabel}>IMPULSE SCORE</Text>
-            <View style={styles.coverScoreGaugeRow}>
-              <View style={styles.coverScoreLine}>
-                {/* [N3] "/100" e non "%" */}
-                <Text style={styles.coverScoreNumber}>{score}</Text>
-                <Text style={styles.coverScoreOutOf}>/100</Text>
-              </View>
-              {/* [V2.3] Gauge con tacche alle soglie di stage reali */}
-              <CoverScoreGauge score={score} />
-            </View>
+            {/* [V2.4] Quadrante con numero integrato: tacche alle
+                soglie di stage reali (40/60/75/85), larghezza fissa */}
+            <CoverScoreGauge score={score} />
           </View>
 
           <View style={styles.coverConstraintBlock}>
@@ -1330,8 +1337,8 @@ const styles = StyleSheet.create({
     paddingTop: 42,
     paddingBottom: 42,
     paddingHorizontal: 46,
-    backgroundColor: COVER_BG,
-    color: "#FFFFFF",
+    backgroundColor: "#FFFDF7",
+    color: INK,
     fontFamily: "Helvetica"
   },
   coverTopRow: {
@@ -1341,23 +1348,23 @@ const styles = StyleSheet.create({
   },
   coverWordmark: {
     fontSize: 9,
-    color: "#FFFFFF",
-    letterSpacing: 2.4,
+    color: INK,
+    letterSpacing: 2.2,
     fontWeight: 700
   },
   coverWordmarkRight: {
     fontSize: 9,
-    color: "#818181",
-    letterSpacing: 2.4
+    color: MUTED,
+    letterSpacing: 2.2
   },
   coverGoldRule: {
     height: 2,
     backgroundColor: GOLD,
     width: 44,
-    marginBottom: 56
+    marginBottom: 40
   },
   coverTitleBlock: {
-    marginBottom: 44
+    marginBottom: 32
   },
   coverKicker: {
     fontSize: 8.5,
@@ -1367,43 +1374,43 @@ const styles = StyleSheet.create({
     marginBottom: 14
   },
   coverTitle: {
-    fontSize: 34,
-    lineHeight: 1.04,
-    color: "#FFFFFF",
+    fontSize: 38,
+    lineHeight: 1.02,
+    color: INK,
     fontWeight: 700,
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
     marginBottom: 16,
-    maxWidth: 380
+    maxWidth: 400
   },
   coverPrepared: {
     fontSize: 12,
-    color: "#DDDDDD",
+    color: BODY,
     marginBottom: 5
   },
   coverMetaLine: {
     fontSize: 9,
-    color: "#818181"
+    color: MUTED
   },
   coverScoreRow: {
     flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: "#3F3F3F",
+    borderTopColor: HAIRLINE,
     borderBottomWidth: 1,
-    borderBottomColor: "#3F3F3F",
-    paddingVertical: 26,
-    marginBottom: 26,
+    borderBottomColor: HAIRLINE,
+    paddingVertical: 20,
+    marginBottom: 22,
     gap: 30
   },
   coverScoreBlock: {
-    width: "34%",
+    width: "36%",
     borderRightWidth: 1,
-    borderRightColor: "#3F3F3F",
+    borderRightColor: HAIRLINE,
     paddingRight: 24,
     justifyContent: "center"
   },
   coverScoreLabel: {
     fontSize: 7.5,
-    color: "#8C8C8C",
+    color: MUTED,
     letterSpacing: 1.8,
     fontWeight: 700,
     marginBottom: 10
@@ -1414,16 +1421,14 @@ const styles = StyleSheet.create({
   },
   coverScoreNumber: {
     fontSize: 64,
-    lineHeight: 0.9,
-    color: "#FFFFFF",
+    lineHeight: 1,
+    color: INK,
     fontWeight: 700,
     letterSpacing: -2
   },
   coverScoreOutOf: {
     fontSize: 14,
-    color: "#8C8C8C",
-    marginLeft: 6,
-    marginBottom: 4
+    color: MUTED
   },
   coverConstraintBlock: {
     flex: 1,
@@ -1432,7 +1437,7 @@ const styles = StyleSheet.create({
   coverConstraintTitle: {
     fontSize: 23,
     lineHeight: 1.05,
-    color: "#FFFFFF",
+    color: INK,
     fontWeight: 700,
     letterSpacing: -0.4,
     marginBottom: 8
@@ -1440,16 +1445,16 @@ const styles = StyleSheet.create({
   coverConstraintBody: {
     fontSize: 10,
     lineHeight: 1.5,
-    color: "#BABABA"
+    color: MUTED
   },
   coverMetaGrid: {
     flexDirection: "row",
-    marginBottom: 40
+    marginBottom: 30
   },
   coverMetaItem: {
     flex: 1,
     borderRightWidth: 1,
-    borderRightColor: "#3F3F3F",
+    borderRightColor: HAIRLINE,
     paddingRight: 16,
     marginRight: 16
   },
@@ -1460,14 +1465,14 @@ const styles = StyleSheet.create({
   },
   coverMetaLabel: {
     fontSize: 7.5,
-    color: "#818181",
+    color: MUTED,
     letterSpacing: 1.8,
     fontWeight: 700,
     marginBottom: 6
   },
   coverMetaValue: {
     fontSize: 13,
-    color: "#FFFFFF",
+    color: INK,
     fontWeight: 700
   },
   coverIndex: {
@@ -1485,7 +1490,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "#313131"
+    borderBottomColor: HAIRLINE
   },
   coverIndexNum: {
     width: 30,
@@ -1495,17 +1500,17 @@ const styles = StyleSheet.create({
   },
   coverIndexText: {
     fontSize: 9.5,
-    color: "#D1D1D1"
+    color: BODY
   },
   coverFooter: {
     borderTopWidth: 1,
-    borderTopColor: "#3F3F3F",
+    borderTopColor: HAIRLINE,
     paddingTop: 12
   },
   coverFooterText: {
     fontSize: 7.5,
     lineHeight: 1.5,
-    color: "#767676"
+    color: MUTED
   },
 
   /* ---- Pagine interne ---- */
