@@ -6,8 +6,37 @@ import {
   View,
   StyleSheet,
   Font,
-  Link
+  Link,
+  Svg,
+  Path,
+  Line,
+  Polygon,
+  Circle
 } from "@react-pdf/renderer";
+
+/* ============================================================
+   [V2.3] FONT OPZIONALI — de-genericizzazione tipografica.
+   Helvetica resta il default sicuro (zero dipendenze).
+   Per attivare un display serif distintivo:
+   1. Scarica i TTF (es. Fraunces 600, Inter 400/700) in
+      /public/fonts/ del repo GitHub Pages.
+   2. Decommenta il blocco sotto e sostituisci i fontFamily
+      "Helvetica" dei titoli con "Display".
+   NON usare URL remoti di terzi: il PDF si genera nel browser
+   dell'utente e un font che non risponde rompe il rendering.
+
+Font.register({
+  family: "Display",
+  src: "/scorecard/fonts/Fraunces-SemiBold.ttf"
+});
+Font.register({
+  family: "Body",
+  fonts: [
+    { src: "/scorecard/fonts/Inter-Regular.ttf" },
+    { src: "/scorecard/fonts/Inter-Bold.ttf", fontWeight: 700 }
+  ]
+});
+============================================================ */
 
 /* ============================================================
    IMPULSE PDF DOCUMENT — v2.1 "Advisory Edition"
@@ -487,6 +516,192 @@ function SectionTitle({
   );
 }
 
+
+/* ============================================================
+   [V2.3] STRUMENTI DIAGNOSTICI — la firma visiva del report.
+   Stessa lingua ovunque: griglia hairline + inchiostro gold.
+   Le tacche del gauge sono le SOGLIE REALI di stage
+   (40 / 60 / 75 / 85): struttura che codifica informazione.
+============================================================ */
+
+const STAGE_THRESHOLDS = [40, 60, 75, 85];
+
+function polarPoint(cx: number, cy: number, r: number, deg: number) {
+  const rad = (deg * Math.PI) / 180;
+  return {
+    x: cx + r * Math.cos(rad),
+    y: cy - r * Math.sin(rad)
+  };
+}
+
+/* Semicerchio superiore: 180° (sx) -> 0° (dx). */
+function arcPath(cx: number, cy: number, r: number, fromDeg: number, toDeg: number) {
+  const start = polarPoint(cx, cy, r, fromDeg);
+  const end = polarPoint(cx, cy, r, toDeg);
+  const largeArc = Math.abs(fromDeg - toDeg) > 180 ? 1 : 0;
+  return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
+}
+
+function CoverScoreGauge({ score }: { score: number }) {
+  const W = 104;
+  const H = 58;
+  const cx = W / 2;
+  const cy = H - 4;
+  const r = 44;
+  const clamped = Math.max(0, Math.min(100, score));
+  const scoreDeg = 180 - (clamped / 100) * 180;
+
+  return (
+    <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+      {/* binario */}
+      <Path
+        d={arcPath(cx, cy, r, 180, 0)}
+        stroke="#3F3F3F"
+        strokeWidth={2}
+        fill="none"
+      />
+      {/* valore */}
+      {clamped > 0 ? (
+        <Path
+          d={arcPath(cx, cy, r, 180, scoreDeg)}
+          stroke={GOLD}
+          strokeWidth={3}
+          fill="none"
+        />
+      ) : null}
+      {/* tacche alle soglie di stage (40/60/75/85) */}
+      {STAGE_THRESHOLDS.map(t => {
+        const deg = 180 - (t / 100) * 180;
+        const inner = polarPoint(cx, cy, r - 4, deg);
+        const outer = polarPoint(cx, cy, r + 4, deg);
+        return (
+          <Line
+            key={t}
+            x1={inner.x}
+            y1={inner.y}
+            x2={outer.x}
+            y2={outer.y}
+            stroke="#818181"
+            strokeWidth={1}
+          />
+        );
+      })}
+      {/* indicatore */}
+      <Circle
+        cx={polarPoint(cx, cy, r, scoreDeg).x}
+        cy={polarPoint(cx, cy, r, scoreDeg).y}
+        r={3.2}
+        fill={GOLD}
+      />
+    </Svg>
+  );
+}
+
+const RADAR_ORDER: DimensionKey[] = [
+  "clarity",
+  "acquisition",
+  "operations",
+  "margins",
+  "asset",
+  "readiness"
+];
+
+function DimensionsRadar({
+  dims,
+  bindingKey
+}: {
+  dims: Record<DimensionKey, { score: number; yes: number }>;
+  bindingKey?: DimensionKey | "";
+}) {
+  const W = 300;
+  const H = 196;
+  const cx = W / 2;
+  const cy = H / 2 + 4;
+  const R = 70;
+
+  const angleFor = (i: number) => 90 - i * 60; /* parte in alto, orario */
+
+  const ringPoints = (radius: number) =>
+    RADAR_ORDER.map((_, i) => {
+      const p = polarPoint(cx, cy, radius, angleFor(i));
+      return `${p.x.toFixed(2)},${p.y.toFixed(2)}`;
+    }).join(" ");
+
+  const dataPoints = RADAR_ORDER.map((key, i) => {
+    const score = Math.max(0, Math.min(10, Number(dims?.[key]?.score || 0)));
+    const p = polarPoint(cx, cy, (score / 10) * R, angleFor(i));
+    return { key, x: p.x, y: p.y };
+  });
+
+  return (
+    <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+      {/* griglia: 3 anelli hairline */}
+      {[R / 3, (2 * R) / 3, R].map((radius, idx) => (
+        <Polygon
+          key={idx}
+          points={ringPoints(radius)}
+          stroke={HAIRLINE}
+          strokeWidth={0.8}
+          fill="none"
+        />
+      ))}
+      {/* assi */}
+      {RADAR_ORDER.map((_, i) => {
+        const p = polarPoint(cx, cy, R, angleFor(i));
+        return (
+          <Line
+            key={i}
+            x1={cx}
+            y1={cy}
+            x2={p.x}
+            y2={p.y}
+            stroke={HAIRLINE}
+            strokeWidth={0.8}
+          />
+        );
+      })}
+      {/* poligono dati */}
+      <Polygon
+        points={dataPoints.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ")}
+        fill={GOLD}
+        fillOpacity={0.16}
+        stroke={GOLD}
+        strokeWidth={1.5}
+      />
+      {/* vertici; il binding è pieno e più grande */}
+      {dataPoints.map(p => (
+        <Circle
+          key={p.key}
+          cx={p.x}
+          cy={p.y}
+          r={p.key === bindingKey ? 3.4 : 2}
+          fill={p.key === bindingKey ? GOLD : "#FFFFFF"}
+          stroke={GOLD}
+          strokeWidth={1}
+        />
+      ))}
+      {/* etichette */}
+      {RADAR_ORDER.map((key, i) => {
+        const deg = angleFor(i);
+        const p = polarPoint(cx, cy, R + 13, deg);
+        const cos = Math.cos((deg * Math.PI) / 180);
+        const anchor = cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle";
+        return (
+          <Text
+            key={key}
+            x={p.x}
+            y={p.y + 2.5}
+            style={{ fontSize: 7, fill: MUTED }}
+            textAnchor={anchor as any}
+          >
+            {dimensionNames[key]}
+          </Text>
+        );
+      })}
+    </Svg>
+  );
+}
+
 function FieldLabel({ children }: { children: any }) {
   return <Text style={styles.blockLabel}>{children}</Text>;
 }
@@ -551,10 +766,14 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <View style={styles.coverScoreRow}>
           <View style={styles.coverScoreBlock}>
             <Text style={styles.coverScoreLabel}>IMPULSE SCORE</Text>
-            <View style={styles.coverScoreLine}>
-              {/* [N3] "/100" e non "%" */}
-              <Text style={styles.coverScoreNumber}>{score}</Text>
-              <Text style={styles.coverScoreOutOf}>/100</Text>
+            <View style={styles.coverScoreGaugeRow}>
+              <View style={styles.coverScoreLine}>
+                {/* [N3] "/100" e non "%" */}
+                <Text style={styles.coverScoreNumber}>{score}</Text>
+                <Text style={styles.coverScoreOutOf}>/100</Text>
+              </View>
+              {/* [V2.3] Gauge con tacche alle soglie di stage reali */}
+              <CoverScoreGauge score={score} />
             </View>
           </View>
 
@@ -573,7 +792,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <View style={styles.coverMetaItem}>
             <Text style={styles.coverMetaLabel}>PROFILO</Text>
             <Text style={styles.coverMetaValue}>
-              Profilo {safeText(result.profile)}
+              {String(safeText(result.profile)).toLowerCase().startsWith("profilo")
+                ? safeText(result.profile)
+                : `Profilo ${safeText(result.profile)}`}
             </Text>
           </View>
           <View style={[styles.coverMetaItem, styles.coverMetaItemLast]}>
@@ -880,6 +1101,14 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           body="Questa pagina separa le aree più solide da quelle che limitano il prossimo salto."
         />
 
+        {/* [V2.3] Radar delle 6 dimensioni — lo strumento diagnostico */}
+        <View style={styles.radarWrap}>
+          <DimensionsRadar
+            dims={result.dimensions}
+            bindingKey={displayedBindingKey as DimensionKey}
+          />
+        </View>
+
         <View style={styles.twoColLarge}>
           <View style={styles.columnRuled}>
             <Text style={styles.cardTitle}>Le tue forze</Text>
@@ -976,7 +1205,11 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <PageHeader name={name} />
         <SectionTitle
           number="08"
-          kicker={`PROFILO ${safeText(result.profile)}`}
+          kicker={
+            String(safeText(result.profile)).toLowerCase().startsWith("profilo")
+              ? String(safeText(result.profile)).toUpperCase()
+              : `PROFILO ${safeText(result.profile)}`
+          }
           title={profileTitle}
           body={profileBody}
         />
@@ -1085,7 +1318,7 @@ const styles = StyleSheet.create({
   },
   coverWordmarkRight: {
     fontSize: 9,
-    color: "rgba(255,255,255,0.45)",
+    color: "#818181",
     letterSpacing: 2.4
   },
   coverGoldRule: {
@@ -1115,19 +1348,19 @@ const styles = StyleSheet.create({
   },
   coverPrepared: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.85)",
+    color: "#DDDDDD",
     marginBottom: 5
   },
   coverMetaLine: {
     fontSize: 9,
-    color: "rgba(255,255,255,0.45)"
+    color: "#818181"
   },
   coverScoreRow: {
     flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.16)",
+    borderTopColor: "#3F3F3F",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.16)",
+    borderBottomColor: "#3F3F3F",
     paddingVertical: 26,
     marginBottom: 26,
     gap: 30
@@ -1135,13 +1368,13 @@ const styles = StyleSheet.create({
   coverScoreBlock: {
     width: "34%",
     borderRightWidth: 1,
-    borderRightColor: "rgba(255,255,255,0.16)",
+    borderRightColor: "#3F3F3F",
     paddingRight: 24,
     justifyContent: "center"
   },
   coverScoreLabel: {
     fontSize: 7.5,
-    color: "rgba(255,255,255,0.5)",
+    color: "#8C8C8C",
     letterSpacing: 1.8,
     fontWeight: 700,
     marginBottom: 10
@@ -1159,7 +1392,7 @@ const styles = StyleSheet.create({
   },
   coverScoreOutOf: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.5)",
+    color: "#8C8C8C",
     marginLeft: 6,
     marginBottom: 4
   },
@@ -1178,7 +1411,7 @@ const styles = StyleSheet.create({
   coverConstraintBody: {
     fontSize: 10,
     lineHeight: 1.5,
-    color: "rgba(255,255,255,0.7)"
+    color: "#BABABA"
   },
   coverMetaGrid: {
     flexDirection: "row",
@@ -1187,7 +1420,7 @@ const styles = StyleSheet.create({
   coverMetaItem: {
     flex: 1,
     borderRightWidth: 1,
-    borderRightColor: "rgba(255,255,255,0.16)",
+    borderRightColor: "#3F3F3F",
     paddingRight: 16,
     marginRight: 16
   },
@@ -1198,7 +1431,7 @@ const styles = StyleSheet.create({
   },
   coverMetaLabel: {
     fontSize: 7.5,
-    color: "rgba(255,255,255,0.45)",
+    color: "#818181",
     letterSpacing: 1.8,
     fontWeight: 700,
     marginBottom: 6
@@ -1223,7 +1456,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.10)"
+    borderBottomColor: "#313131"
   },
   coverIndexNum: {
     width: 30,
@@ -1233,17 +1466,17 @@ const styles = StyleSheet.create({
   },
   coverIndexText: {
     fontSize: 9.5,
-    color: "rgba(255,255,255,0.8)"
+    color: "#D1D1D1"
   },
   coverFooter: {
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.16)",
+    borderTopColor: "#3F3F3F",
     paddingTop: 12
   },
   coverFooterText: {
     fontSize: 7.5,
     lineHeight: 1.5,
-    color: "rgba(255,255,255,0.4)"
+    color: "#767676"
   },
 
   /* ---- Pagine interne ---- */
@@ -1630,7 +1863,7 @@ const styles = StyleSheet.create({
   ctaBody: {
     fontSize: 9.5,
     lineHeight: 1.45,
-    color: "rgba(255,255,255,0.78)",
+    color: "#CDCDCD",
     marginBottom: 10
   },
   ctaButton: {
@@ -1646,8 +1879,20 @@ const styles = StyleSheet.create({
   },
   ctaSmallText: {
     fontSize: 7.5,
-    color: "rgba(255,255,255,0.45)",
+    color: "#818181",
     marginTop: 10
+  },
+  /* [V2.3] Riga numero + gauge in copertina */
+  coverScoreGaugeRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 16
+  },
+  /* [V2.3] Contenitore radar, pagina 06 */
+  radarWrap: {
+    alignItems: "center",
+    marginTop: 6,
+    marginBottom: 4
   },
   /* [V2.2] Nota di de-prioritizzazione, pagina 04 */
   deprioritizeNote: {
