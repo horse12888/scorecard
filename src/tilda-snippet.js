@@ -1,96 +1,92 @@
 /*
-TILDA INTEGRATION SNIPPET
-=========================
+TILDA → GITHUB PAGES — CONTRATTO DI INTEGRAZIONE (v2)
+=====================================================
 
-Incolla questo codice nel tuo blocco HTML/JS su Tilda.
-Puoi aggiungerlo in fondo allo script esistente che gestisce la scorecard.
+⚠️ QUESTO FILE È DOCUMENTAZIONE, NON CODICE DA INCOLLARE.
+La sorgente di verità dell'integrazione è il codice live su Tilda
+(scorecard + result page). Questo file descrive il contratto del
+payload così che chi legge il repo capisca cosa arriva all'app React.
 
-Questa funzione formatta il risultato ignorando le risposte grezze per 
-mantenere l'URL compatto, codifica il payload e redirige all'app React su Netlify.
-*/
+STORIA: la versione precedente di questo file descriveva
+l'architettura v1 (44 domande sì/no, yes 0-7, redirect immediato
+a Netlify al submit, payload senza leadId/intent/staging).
+Quell'architettura NON è più in uso.
 
-function getAnswerLabel(answer) {
-    if (!answer) return "";
-    if (typeof answer === "string") return answer;
-    if (answer.label) return answer.label;
-    if (answer.value) return answer.value;
-    if (answer.text) return answer.text;
-    return "";
+ARCHITETTURA ATTUALE (v2)
+-------------------------
+1. L'utente completa le 33 domande su Tilda (scala 0-3, Q3-Q32
+   scored + INTENT1 non scored) e compila il form contatti.
+2. Tilda calcola overall, dimensioni, stagingScore e
+   bindingConstraint IN LOCALE e mostra la pagina risultato
+   INLINE su Tilda (non c'è redirect al submit).
+3. In parallelo, Tilda invia il payload CRM ad Apps Script
+   (Google Sheets).
+4. Solo quando l'utente clicca "Scarica report PDF", la result
+   page apre l'app React (GitHub Pages) in nuova scheda con il
+   payload codificato in query string:
+
+   URL = GITHUB_REPORT_URL + "?result=" +
+         encodeURIComponent(btoa(unescape(encodeURIComponent(
+           JSON.stringify(payload)))))
+
+   GITHUB_REPORT_URL attuale nel codice live:
+   https://horse12888.github.io/scorecard/
+   (Se viene attivato un custom domain, aggiornarlo in UN SOLO
+   posto nel codice Tilda e in questo file — non mantenere due URL.)
+
+CONTRATTO DEL PAYLOAD (quello che App.tsx si aspetta e legge)
+-------------------------------------------------------------
+{
+  leadId: "imp_YYYYMMDDHHMMSS_xxxxxx",   // generato da Tilda
+  name: "...",                            // obbligatorio, non vuoto
+  company: "...",
+  email: "...",
+  metadata: {
+    leadId: "...",                        // ridondante, letto come fallback
+    businessType: "...",                  // label di Q1
+    revenueRange: "...",                  // label di Q2
+    website: "...",
+    phone: "...",
+    assessmentVersion: "v2_scale_0_3",
+    intentLevel: 0|1|2|3|null             // INTENT1, non scored
+  },
+  overall: 0-100,                         // intero
+  dimensions: {
+    clarity:     { score: 0-10, yes: 0-5 },
+    acquisition: { score: 0-10, yes: 0-5 },
+    operations:  { score: 0-10, yes: 0-5 },
+    margins:     { score: 0-10, yes: 0-5 },
+    asset:       { score: 0-10, yes: 0-5 },
+    readiness:   { score: 0-10, yes: 0-5 }
+  },
+  stagingScore: 0-100,                    // score - penalità binding
+  bindingConstraint: "clarity" | ... | "readiness"
 }
 
-function redirectNetlifyReport(data) {
-    if (!data || !data.user || !data.user.name || !data.dimensions) {
-        console.error("Dati mancanti per la generazione del report.");
-        // Facoltativamente mostra un alert all'utente
-        return;
-    }
+NOTE SUL CONTRATTO
+------------------
+- "yes" in v2 = numero di risposte 3/3 nella dimensione (max 5,
+  perché ogni dimensione ha 5 domande). In v1 era il numero di
+  "sì" su 7. Il nome della colonna è stato mantenuto per
+  retro-compatibilità; assessmentVersion disambigua.
+  (La validazione in App.tsx accetta yes <= 7 per compatibilità
+  con eventuali payload v1 ancora in circolazione.)
+- intentLevel e stagingScore sono letti da App.tsx sia top-level
+  sia da metadata (snake_case incluso): vedi
+  getIntentLevelFromParsed / getStagingScoreFromParsed.
+- L'app NON ricalcola overall/dimensioni: arricchisce il payload
+  con computeDiagnosticState (fascia, profilo, stage, pattern,
+  risk flags, priorità) e genera il PDF.
+- Lo stage pubblico è calcolato su `overall`, NON su
+  stagingScore (vedi commento in diagnostics.ts).
 
-    if (typeof data.overall !== 'number' || data.overall < 0 || data.overall > 100) {
-        console.error("Overall score mancante o invalido");
-        return;
-    }
-    
-    var requiredDims = ['clarity', 'acquisition', 'operations', 'margins', 'asset', 'readiness'];
-    for (var i = 0; i < requiredDims.length; i++) {
-        var dim = requiredDims[i];
-        if (!data.dimensions[dim] || typeof data.dimensions[dim].score !== 'number' || typeof data.dimensions[dim].yes !== 'number') {
-            console.error("Dati dimensione mancanti o invalidi:", dim);
-            return;
-        }
-        if (data.dimensions[dim].score < 0 || data.dimensions[dim].score > 10 || data.dimensions[dim].yes < 0 || data.dimensions[dim].yes > 7) {
-            console.error("Dati dimensione fuori range:", dim);
-            return;
-        }
-    }
-    
-    // Mappatura pulita delle 6 dimensioni (score 0-10, yes 0-7)
-    var dimensioniReact = {
-        clarity: { score: data.dimensions.clarity.score, yes: data.dimensions.clarity.yes },
-        acquisition: { score: data.dimensions.acquisition.score, yes: data.dimensions.acquisition.yes },
-        operations: { score: data.dimensions.operations.score, yes: data.dimensions.operations.yes },
-        margins: { score: data.dimensions.margins.score, yes: data.dimensions.margins.yes },
-        asset: { score: data.dimensions.asset.score, yes: data.dimensions.asset.yes },
-        readiness: { score: data.dimensions.readiness.score, yes: data.dimensions.readiness.yes }
-    };
-
-    // Creazione del payload compatto. 
-    // NON inviamo 'answers' grezze o logic di 'profile'/'fascia' calcolate da Tilda.
-    // L'app Netlify (React) ricalcolerà Profilo, Fascia, Stage, Forze e Priorità.
-    var payload = {
-        name: data.user.name,
-        company: data.user.company || "",
-        email: data.user.email || "",
-        metadata: {
-            businessType: getAnswerLabel(data.answers && data.answers.Q1),
-            revenueRange: getAnswerLabel(data.answers && data.answers.Q2)
-        },
-        overall: data.overall,
-        dimensions: dimensioniReact
-    };
-
-    // Encode base64 + encodeURIComponent per uso sicuro in query string
-    var encodedPayload = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    var urlSafePayload = encodeURIComponent(encodedPayload);
-    
-    // URL DI DESTINAZIONE (Modifica con l'URL di produzione Netlify)
-    var NETLIFY_URL = "https://scorecard.davidedileo.it/report"; 
-    
-    // REDIREZIONE
-    window.location.href = NETLIFY_URL + "?result=" + urlSafePayload;
-}
-
-/* 
-Esempio di come chiamarlo dentro submitScorecard in Tilda,
-DOPO aver fatto la chiamata email/webhook (se presente):
-
-async function submitScorecard() {
-    // ... validazione ...
-    // ... calculateScores() ...
-    
-    // Se usi Web3Forms o altro, aspetta che finisca
-    // await sendDataToWebhook(result); 
-    
-    // REDIRIGI A NETLIFY (Invece di mostrare la UI dei risultati su Tilda)
-    redirectNetlifyReport(result);
-}
+COSA NON FARE
+-------------
+- Non reintrodurre il redirect al submit: il risultato vive su
+  Tilda; l'app GitHub serve al PDF.
+- Non inviare le risposte grezze nel payload URL
+  (INCLUDE_ANSWERS_IN_PAYLOAD = false nel codice Tilda).
+- Non duplicare la logica di stage/profilo su Tilda oltre a
+  quanto già allineato: diagnostics.ts è la fonte di verità
+  per l'arricchimento.
 */
