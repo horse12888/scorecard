@@ -434,7 +434,27 @@ const PROFILE_NEXT_PROBLEM: Record<string, string> = {
   D: "Quando il business diventa leggibile dall'esterno, si apre la domanda strategica: a chi aprirlo per primo — partner, figure senior, capitale — e in quale forma. Ogni porta richiede una preparazione diversa, e l'ordine determina il tuo potere negoziale."
 };
 
+/* [V2.4.2] Il binding constraint (6 valori) è più preciso del
+   profilo (4 valori): un Profilo C con binding "asset" deve
+   leggere un loop sugli asset, non sulla delega.
+   Catena: binding -> profilo -> stage. Sempre WHAT-not-HOW. */
+const BINDING_NEXT_PROBLEM: Record<string, string> = {
+  clarity: PROFILE_NEXT_PROBLEM.A,
+  acquisition: PROFILE_NEXT_PROBLEM.B,
+  operations: PROFILE_NEXT_PROBLEM.C,
+  margins:
+    "Quando il margine torna leggibile, si apre la decisione successiva: quale leva muovere per prima — pricing, mix di offerte o struttura dei costi — senza toccare la qualità che i clienti migliori stanno comprando. Leve giuste in ordine sbagliato si annullano a vicenda.",
+  asset:
+    "Quando il valore inizia a cristallizzarsi, la domanda diventa: quale asset documentare per primo — metodo, dati, brand, contratti — e in quale forma. Dipende da quale porta vuoi aprire: ogni interlocutore legge asset diversi, e prepararli tutti insieme equivale a non prepararne nessuno.",
+  readiness: PROFILE_NEXT_PROBLEM.D
+};
+
 function getNextProblem(result: PdfResult, stageInfo: any): string | "" {
+  const binding = String(result.bindingConstraint || "").trim().toLowerCase();
+  if (binding && BINDING_NEXT_PROBLEM[binding]) {
+    return BINDING_NEXT_PROBLEM[binding];
+  }
+
   const raw = String(safeText(result.profile) || "").toUpperCase();
   const match = raw.match(/[ABCD]\s*$/);
   const letter = match ? match[0].trim() : "";
