@@ -967,6 +967,29 @@ const TOP_GAP_PAIR_MATRIX: Record<string, any> = {
   }
 };
 
+
+/* [V2.1-PROFILE-FIX] Variante asset del Profilo C.
+   Il Profilo C copre due dimensioni (operations e asset) ma la sua
+   copy parlava solo di operations/delega: un utente con binding
+   "asset" e operations alta riceveva una narrativa contraddetta
+   dai suoi stessi punteggi (es. operations 8.7 FORZA in pagina 05
+   e "gap di delega" in copertina). Questo blocco si attiva SOLO
+   quando profilo = C e la dimensione più debole è "asset".
+   Il contratto non cambia: il profilo resta "C" ovunque. */
+const PROFILE_C_ASSET_VARIANT = {
+  title: "Gap di valore trasferibile",
+  blocco:
+    "Il business funziona e regge. Il valore che produce, però, vive ancora nell'esecuzione: non si sta cristallizzando in asset che esistano indipendentemente da te.",
+  manifesta:
+    "Il sistema operativo tiene e i clienti vengono serviti bene. Ma metodo, dati, relazioni e reputazione non sono ancora documentati come asset: se domani servisse mostrarli, andrebbero ricostruiti a mano.",
+  rischio:
+    "Il business continua a generare cash flow senza accumulare valore trasferibile: ogni anno di lavoro migliora il conto economico, ma non il valore del business come asset.",
+  nonFare:
+    "Non parlare di espansione, capitale o partnership come se il business fosse già un asset solido: senza asset documentati, ogni negoziazione parte in svantaggio.",
+  decisione:
+    "Scegliere quale valore cristallizzare per primo — metodo, dati, brand, contratti — e dargli una forma che esista senza la tua presenza."
+};
+
 function getProfileMaturityKey(overall: number) {
   if (overall < 40) return "foundational";
   if (overall >= 85) return "scale";
@@ -974,9 +997,23 @@ function getProfileMaturityKey(overall: number) {
   return "base";
 }
 
-export function getProfileData(profileId: string, overall: number) {
+export function getProfileData(
+  profileId: string,
+  overall: number,
+  bindingKey?: string
+) {
   const baseProfile = PROFILES[profileId] || PROFILES.B;
   const maturityKey = getProfileMaturityKey(Number(overall || 0));
+
+  /* [V2.1-PROFILE-FIX] C + binding asset -> narrativa asset.
+     Parametro opzionale: i chiamanti esistenti senza bindingKey
+     mantengono il comportamento precedente. */
+  if (profileId === "C" && String(bindingKey || "").toLowerCase() === "asset") {
+    return {
+      ...baseProfile,
+      ...PROFILE_C_ASSET_VARIANT
+    };
+  }
 
   if (maturityKey !== "base" && baseProfile[maturityKey]) {
     return {
@@ -1298,14 +1335,27 @@ function buildRecommendedFocus(
   return topGapPairData.focus || profileStageData.focus || "";
 }
 
+
+/* [V2.1-PROFILE-FIX] Box "Profilo + fase" per C con binding asset:
+   stage-agnostico ma coerente con la narrativa asset. */
+const PROFILE_STAGE_C_ASSET = {
+  title: "Sistema solido, asset da cristallizzare",
+  body:
+    "Il sistema operativo regge e il business funziona. Il lavoro di questa fase è trasformare quel funzionamento in asset documentati — metodo, dati, relazioni, brand — che esistano oltre la tua presenza."
+};
+
 function buildDiagnosticPattern(
   profile: string,
   stageKey: string,
   topGapPair: { first: string; second: string; key: string },
   risks: RiskFlag[],
-  intentInsight: any
+  intentInsight: any,
+  bindingKey?: string
 ) {
-  const profileStageData = getProfileStageData(profile, stageKey);
+  const profileStageData =
+    profile === "C" && String(bindingKey || "").toLowerCase() === "asset"
+      ? PROFILE_STAGE_C_ASSET
+      : getProfileStageData(profile, stageKey);
   const topGapPairData = getTopGapPairData(topGapPair.key);
 
   return {
@@ -1468,7 +1518,11 @@ const originalStageLabel = stageFromScore(safeOverall);
   }
 
   const profile = resolveProfileWithTieBreak(sortedDims, intentLevel);
-  const profileData = getProfileData(profile, safeOverall);
+  const profileData = getProfileData(
+    profile,
+    safeOverall,
+    sortedDims[0]?.key
+  );
 
   const weakestDimensions = priorita
     .map((dim: any) => dim.key as ImpulseDimension)
@@ -1489,7 +1543,8 @@ const originalStageLabel = stageFromScore(safeOverall);
     originalStageLabel,
     topGapPair,
     riskFlags,
-    intentInsight
+    intentInsight,
+    sortedDims[0]?.key
   );
 
   return {
