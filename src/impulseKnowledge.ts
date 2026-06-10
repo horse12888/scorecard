@@ -24,6 +24,26 @@ export type FunctionConstraint = {
   avoid: string;
 };
 
+/*
+ * CHANGELOG v2 (report value upgrade):
+ * - Aggiunti 2 campi OPZIONALI al database stage:
+ *   costOfInaction?  -> cosa si amplifica se il vincolo viene ignorato
+ *                       (meccanismo, mai numeri)
+ *   nextProblem?     -> il problema che si apre una volta risolto il
+ *                       vincolo (loop verso la Strategic Review)
+ *   Opzionali = nessun breaking change per consumer esistenti.
+ * - Riscritti i 5 blocchi stage: sintomi specifici nel coreConstraint,
+ *   graduationCriteria in formato test osservabile (ancore coerenti con
+ *   le 33 domande della scorecard: 4 settimane, 12 mesi, una settimana).
+ * - LABEL allineati al naming del funnel (Tilda result page + PDF):
+ *   Foundation / Traction / Stabilization / Productization / Scale
+ *   Readiness. Le CHIAVI interne restano invariate, quindi
+ *   normalizeImpulseStage e tutti i consumer continuano a funzionare.
+ *   Se preferisci i vecchi label (Market Traction / Operating Stability /
+ *   Value Architecture), cambia SOLO le stringhe `label`.
+ * - FUNCTION_CONSTRAINT_LIBRARY e helper invariati (secondo pass a parte).
+ */
+
 export const IMPULSE_STAGE_DATABASE: Record<
   ImpulseStage,
   {
@@ -31,9 +51,11 @@ export const IMPULSE_STAGE_DATABASE: Record<
     role: string;
     headline: string;
     coreConstraint: string;
+    costOfInaction?: string;
     strategicReviewFocus: string;
     graduationCriteria: string[];
     nonFare: string;
+    nextProblem?: string;
     sourceConcepts: string[];
   }
 > = {
@@ -41,83 +63,99 @@ export const IMPULSE_STAGE_DATABASE: Record<
     label: "Foundation",
     role: "Founder as validator",
     headline:
-      "Il business deve dimostrare che esiste una proposta abbastanza chiara da essere capita, provata e pagata.",
+      "Il business deve dimostrare una cosa sola: che esiste qualcuno disposto a pagare, più di una volta, per un'offerta descrivibile in una frase.",
     coreConstraint:
-      "Il valore non è ancora sufficientemente validato, monetizzato o leggibile.",
+      "Il valore non è ancora validato da pagamenti ripetuti. Interesse, complimenti e utilizzo gratuito non sono domanda: sono segnali ambigui che possono assorbire mesi senza produrre un business.",
+    costOfInaction:
+      "Ogni mese speso a costruire struttura, contenuti o strumenti sopra un'offerta non ancora pagata è un mese di runway convertito in complessità invece che in prova di mercato. Il rischio non è andare piano: è costruire in una direzione che il mercato non ha mai confermato.",
     strategicReviewFocus:
-      "Chiarire cliente, problema, promessa, offerta minima vendibile, pricing iniziale e prove reali di domanda.",
+      "Separare i segnali veri di domanda da quelli ambigui, e definire l'offerta minima per cui qualcuno paga: cliente, problema, promessa, prezzo iniziale.",
     graduationCriteria: [
-      "L’offerta è descrivibile in modo semplice.",
-      "Esistono segnali reali di interesse o utilizzo.",
-      "Almeno alcuni clienti sono disposti a pagare.",
-      "Il business sa distinguere feedback positivo da domanda pagante.",
-      "I primi pagamenti, costi e risultati sono tracciati."
+      "L'offerta principale si descrive in una frase, senza spiegazioni aggiuntive.",
+      "Esistono pagamenti reali, non solo manifestazioni di interesse.",
+      "Almeno un cliente ha pagato una seconda volta o ha rinnovato.",
+      "Sai dire chi NON è un cliente in target, non solo chi lo è.",
+      "Entrate, costi e risultati dei primi clienti sono scritti, non a memoria."
     ],
     nonFare:
-      "Non costruire struttura, automazioni o team prima di aver validato proposta, cliente e disponibilità a pagare.",
+      "Non costruire team, automazioni, brand o presenza prima che qualcuno abbia pagato. La struttura amplifica un modello: se il modello non è validato, amplifica il dubbio.",
+    nextProblem:
+      "Una volta validato il pagamento, il problema cambia natura: non è più 'qualcuno paga?' ma 'in che ordine costruisco domanda ripetibile senza rompere quello che funziona?'. Quella sequenza dipende dal tuo caso specifico: margini, capacità, canale naturale.",
     sourceConcepts: ["Market Proof Before Monetization", "First Paid Proof"]
   },
 
   MARKET_TRACTION: {
-    label: "Market Traction",
+    label: "Traction",
     role: "Founder as demand builder",
     headline:
-      "Il business deve trasformare vendite episodiche in domanda più stabile, tracciabile e ripetibile.",
+      "Il business vende, ma a strappi. Il lavoro di questa fase è trasformare vendite episodiche in domanda che si ripete senza dipendere ogni volta dalla tua spinta personale.",
     coreConstraint:
-      "La crescita dipende ancora da sforzo personale, referral casuali o canali non misurati.",
+      "Il flusso di clienti è stop-and-go: mesi buoni seguiti da mesi vuoti, perché la generazione di domanda parte e si ferma con la tua attenzione. I sintomi tipici: non sai prevedere i clienti del mese prossimo nemmeno approssimativamente; il fatturato arriva quasi tutto da rete personale e referral; quando sei occupato a consegnare, smetti di vendere — e il vuoto si presenta 60-90 giorni dopo.",
+    costOfInaction:
+      "Ogni mese in questo stato rafforza la dipendenza: più consegni, meno vendi; più il fatturato oscilla, meno puoi pianificare assunzioni, investimenti o impegni. La crescita aggiunta su domanda imprevedibile non si accumula: si alterna.",
     strategicReviewFocus:
-      "Identificare il canale più promettente, rendere il messaggio più chiaro, tracciare lead e conversioni, e costruire una routine commerciale sostenibile.",
+      "Identificare quale singolo canale merita priorità nel tuo caso, cosa rende leggibile la qualità di un'opportunità, e quale routine commerciale è sostenibile con la tua capacità attuale.",
     graduationCriteria: [
-      "I nuovi clienti arrivano con maggiore regolarità.",
-      "Il business sa quali attività generano opportunità reali.",
-      "Esiste una prima logica di follow-up e conversione.",
-      "La qualità della delivery resta accettabile anche con più domanda.",
-      "Costi, entrate e attività commerciali sono monitorati."
+      "Sai stimare i nuovi clienti del prossimo mese guardando numeri di pipeline, non sensazioni.",
+      "Almeno un canale porta opportunità anche nelle settimane in cui non lo alimenti personalmente.",
+      "Distingui un lead buono da uno che brucia tempo PRIMA di investirci ore, con criteri detti ad alta voce.",
+      "Una richiesta commerciale segue lo stesso percorso ogni volta, non un'improvvisazione.",
+      "La qualità della delivery non è peggiorata mentre la domanda cresceva."
     ],
     nonFare:
-      "Non moltiplicare canali, offerte o campagne prima di sapere cosa produce clienti buoni in modo ripetibile.",
+      "Non aprire più canali in contemporanea e non aumentare budget su canali che non sai ancora leggere. Più volume su un sistema commerciale non leggibile produce più rumore, non più clienti buoni.",
+    nextProblem:
+      "Quando la domanda diventa ripetibile, emerge il problema successivo: il sistema operativo dietro la vendita. Quale canale viene prima, con quale offerta, a quale ritmo sostenibile per la TUA capacità di delivery — questa è una decisione di sequenza, non di volontà.",
     sourceConcepts: ["Consistent Demand Creation"]
   },
 
   OPERATING_STABILITY: {
-    label: "Operating Stability",
+    label: "Stabilization",
     role: "Founder as system builder",
     headline:
-      "Il business deve passare da esecuzione personale a sistema operativo minimo.",
+      "Il business funziona, ma funziona attraverso di te. Il lavoro di questa fase è il passaggio più difficile: da esecutore a costruttore di sistema.",
     coreConstraint:
-      "Il founder è ancora troppo centrale nella delivery, nelle decisioni, nel controllo qualità o nel coordinamento del team.",
+      "C'è più lavoro di quanto una persona possa reggere, e il sistema per distribuirlo non esiste ancora. I sintomi tipici: ogni eccezione torna sulla tua scrivania; i processi vivono nella tua testa o in quella di una persona sola; i nuovi clienti partono senza un percorso di ingresso e si sentono persi; gli strumenti si sono accumulati ma pochi vengono usati davvero; numeri e responsabilità si gestiscono a memoria.",
+    costOfInaction:
+      "In questo stato, ogni cliente in più aggiunge eccezioni più velocemente di quanto aggiunga margine. Assumere senza processi scritti trasferisce il caos, non il lavoro: la persona nuova ti costa tempo invece di liberartene. E il valore costruito resta intrappolato nella tua presenza.",
     strategicReviewFocus:
-      "Stabilizzare delivery, onboarding, responsabilità, processi critici, dati cliente, margini e gestione delle priorità.",
+      "Individuare quale processo va stabilizzato per primo nel tuo caso — non tutti insieme — e in quale ordine delega, documentazione e filtro clienti producono leva invece di costo.",
     graduationCriteria: [
-      "Il team può eseguire attività essenziali senza dipendere sempre dal founder.",
-      "Esistono processi minimi per onboarding, delivery e follow-up.",
-      "Il business sa quali clienti servire e quali evitare.",
-      "Le informazioni cliente sono raccolte in un sistema leggibile.",
-      "Margini, costi e responsabilità sono più chiari."
+      "Un'assenza di 4 settimane non ferma la delivery: rallenta, ma regge senza interventi d'emergenza.",
+      "Le decisioni operative ricorrenti hanno regole scritte: tornano a te le eccezioni vere, non la routine.",
+      "Una persona nuova può seguire i processi chiave leggendoli, senza affiancamento continuo.",
+      "Sai quali clienti servire e quali rifiutare, e il rifiuto avviene davvero.",
+      "Margini e costi per offerta sono scritti e consultati prima delle decisioni, non ricostruiti dopo."
     ],
     nonFare:
-      "Non assumere o aumentare volume per compensare processi deboli, clienti non filtrati o responsabilità non definite.",
+      "Non assumere e non comprare software per compensare processi non scritti. Persone e strumenti aggiunti sopra un sistema implicito ereditano il caos e lo moltiplicano per il numero di teste.",
+    nextProblem:
+      "Quando il sistema regge senza di te, si apre la domanda di valore: quali clienti, offerte e percorsi meritano di essere standardizzati e quali abbandonati. È una scelta di architettura del valore, e l'ordine sbagliato costa margine per anni.",
     sourceConcepts: ["Founder-to-Team Transfer", "Focus and Fit Discipline"]
   },
 
   VALUE_ARCHITECTURE: {
-    label: "Value Architecture",
+    label: "Productization",
     role: "Founder as value architect",
     headline:
-      "Il business deve aumentare il valore per cliente senza aumentare caos, delivery o costo operativo in modo proporzionale.",
+      "Il business ha trazione e regge. Il lavoro di questa fase è trasformare quello che fai in qualcosa che vale anche senza di te: offerta standard, percorso cliente, margine difendibile, asset documentati.",
     coreConstraint:
-      "L’azienda ha trazione, ma il modello di valore, margine e asset non è ancora abbastanza forte o trasferibile.",
+      "Il valore per cliente non è ancora architettato: ogni vendita rischia di restare un episodio. I sintomi tipici: dopo la prima vendita non esiste un percorso naturale di espansione; il pricing è fermo da troppo o deciso a sensazione; sai chi fattura di più ma non chi genera il margine migliore; il know-how che ti distingue non è documentato da nessuna parte.",
+    costOfInaction:
+      "Crescere senza architettura del valore significa aumentare i ricavi più velocemente del margine e del valore trasferibile: più lavoro che si traduce in poco enterprise value. La differenza tra un business che fattura e un business che vale si decide esattamente in questa fase.",
     strategicReviewFocus:
-      "Disegnare percorsi di valore, espansione cliente, materiali commerciali, customer journey, pricing, budget e asset documentabili.",
+      "Disegnare quale percorso di valore viene prima nel tuo caso: espansione cliente, revisione pricing, standardizzazione offerta o documentazione degli asset — e in quale sequenza si sostengono a vicenda invece di competere per la tua attenzione.",
     graduationCriteria: [
-      "Il business sa quali clienti generano maggiore valore.",
-      "Esiste un percorso chiaro dopo la prima vendita.",
-      "Il pricing riflette meglio valore e delivery.",
-      "La customer experience è più coerente.",
-      "Budget, forecast e capacità di reinvestimento sono più leggibili."
+      "Esiste un passo naturale dopo la prima vendita, e una parte dei clienti lo compie.",
+      "Il pricing è stato rivisto negli ultimi 12 mesi guardando il valore, non solo i costi.",
+      "Sai indicare per iscritto quali clienti, offerte e canali generano il margine migliore — e agisci di conseguenza.",
+      "Almeno un asset (metodo, dati, brand, contratti) è documentato al punto da poter essere spiegato a un esterno senza di te.",
+      "Budget e forecast esistono e vengono confrontati con la realtà, non solo redatti."
     ],
     nonFare:
-      "Non creare nuove offerte solo per fare di più. Ogni nuova offerta deve aumentare valore, margine o asset trasferibile.",
+      "Non creare nuove offerte per riempire il calendario. Ogni offerta nuova deve aumentare margine, valore per cliente o asset trasferibile — altrimenti aggiunge delivery e diluisce il sistema.",
+    nextProblem:
+      "Quando offerta, margine e asset sono architettati, il problema diventa la leggibilità esterna: rendere il sistema comprensibile a chi può moltiplicarlo — figure senior, partner, capitale. Cosa documentare prima, e in che forma, dipende da quale porta vuoi aprire.",
     sourceConcepts: ["Customer Value Expansion"]
   },
 
@@ -125,20 +163,24 @@ export const IMPULSE_STAGE_DATABASE: Record<
     label: "Scale Readiness",
     role: "Founder as scale architect",
     headline:
-      "Il business deve rendere sistemi, persone, dati, margini e decisioni abbastanza leggibili da sostenere scala, delega o investimento.",
+      "Il business è vicino al punto in cui può sostenere scala, delega seria o capitale. Il lavoro di questa fase è rendere il sistema leggibile e migliorarlo PRIMA di espanderlo.",
     coreConstraint:
-      "La crescita esiste, ma il sistema non è ancora abbastanza efficiente, classificato, specializzato o leggibile per aumentare complessità.",
+      "La crescita esiste, ma il sistema non è ancora abbastanza efficiente, classificato e leggibile per reggere complessità aggiuntiva. I sintomi tipici: si aggiungono iniziative prima di ottimizzare quelle esistenti; clienti, dati, ruoli e budget non sono classificati e ogni analisi parte da zero; responsabilità critiche senza ownership unica; decisioni importanti prese su intuizione perché le metriche non sono affidabili.",
+    costOfInaction:
+      "Scalare un sistema inefficiente scala l'inefficienza: ogni persona, canale o euro aggiunto rende il sistema più costoso da capire e da correggere. E un business illeggibile viene sistematicamente percepito — da partner, senior hire o capitale — come meno solido di quanto sia: lo sconto lo paghi tu.",
     strategicReviewFocus:
-      "Ottimizzare ciò che già funziona, classificare caos operativo, specializzare responsabilità, proteggere dati e costruire una base decisionale più solida.",
+      "Stabilire cosa ottimizzare, cosa classificare e cosa specializzare prima di aggiungere — e quale base decisionale serve perché il management regga senza la tua memoria.",
     graduationCriteria: [
-      "Il business migliora i sistemi esistenti prima di aggiungerne nuovi.",
-      "Clienti, lead, dati, ruoli e budget sono classificati.",
-      "Le responsabilità critiche hanno ownership chiara.",
-      "Le metriche operative e finanziarie sono affidabili.",
-      "Il management può prendere decisioni senza dipendere da intuizione o memoria."
+      "Il miglioramento di ciò che esiste ha priorità formale sull'aggiunta di nuovo: lo dimostrano le decisioni degli ultimi mesi.",
+      "Clienti, lead, dati, ruoli e budget sono classificati: un'analisi nuova parte da una base, non da zero.",
+      "Ogni responsabilità critica ha un solo owner, e l'owner non sei tu per default.",
+      "Le metriche operative e finanziarie reggono una verifica esterna senza ricostruzioni manuali.",
+      "Un advisor esterno capirebbe modello, numeri, rischi e asset in meno di una settimana, in autonomia."
     ],
     nonFare:
-      "Non aggiungere persone, canali, prodotti, software o capitale se il sistema attuale è già inefficiente o poco leggibile.",
+      "Non aggiungere persone, canali, prodotti, software o capitale sopra un sistema già inefficiente o poco leggibile. A questo livello, l'espansione prematura non rallenta la crescita: la rende irreversibilmente costosa.",
+    nextProblem:
+      "Superata questa soglia, le opzioni si moltiplicano: nuove linee, mercati, capitale, M&A, uscita parziale. Il problema non è più 'se' ma 'quale prima': ogni opzione richiede una preparazione diversa, e prepararle tutte insieme equivale a non prepararne nessuna.",
     sourceConcepts: [
       "Improve Before Expanding",
       "Categorize Before Scale",
