@@ -9,6 +9,32 @@ import {
   Link
 } from "@react-pdf/renderer";
 
+/* ============================================================
+   IMPULSE PDF DOCUMENT — v2.1 "Advisory Edition"
+   Redesign editoriale in stile advisory/Big4:
+   - Copertina scura con accenti gold (coerente con i blocchi
+     CTA del funnel), pagine interne bianche
+   - Sistema a righe sottili (hairline) al posto delle card
+     arrotondate; gerarchia tipografica netta; sezioni numerate
+   - Header e footer fissi con numerazione pagina automatica
+     e dicitura di riservatezza
+   - Disclaimer in copertina (coerente con la landing)
+
+   ALLINEAMENTI vs versione precedente (reversibili):
+   [N1] Nomi dimensioni in inglese (Clarity, Acquisition, ...)
+        come nel resto del funnel; sottotitoli in italiano.
+   [N2] normalizeStage allineato ai nomi usati in landing,
+        result page e CRM (Foundation / Traction / ...).
+        La vecchia mappa (Market Traction / Operating Stability /
+        Value Architecture) è conservata in commento.
+        NOTA: impulseKnowledge.ts usa ancora i vecchi label
+        internamente — decidere quale naming vince a livello
+        di funnel e allineare anche lì.
+   [N3] Score in copertina: "56 /100" invece di "56%"
+        (coerente con "su 100" su result page e landing).
+   LOGICA DATI E ACCESSOR: INVARIATI.
+============================================================ */
+
 Font.registerHyphenationCallback((word) => [word]);
 
 type DimensionKey =
@@ -72,13 +98,15 @@ type PdfResult = {
   intentInsight?: IntentInsight;
 };
 
+/* [N1] Nomi dimensione allineati al funnel (inglese = nome proprio
+   del framework, come su landing, result page e CRM). */
 const dimensionNames: Record<DimensionKey, string> = {
-  clarity: "Chiarezza",
-  acquisition: "Acquisizione",
-  operations: "Operazioni",
-  margins: "Margini",
+  clarity: "Clarity",
+  acquisition: "Acquisition",
+  operations: "Operations",
+  margins: "Margins",
   asset: "Asset",
-  readiness: "Preparazione"
+  readiness: "Readiness"
 };
 
 const dimensionShortCopy: Record<DimensionKey, string> = {
@@ -95,18 +123,23 @@ function safeText(value: any, fallback = "") {
   return String(value);
 }
 
+/* [N2] Stage display allineato ai nomi del funnel.
+   Vecchia mappa (per ripristino):
+   TRACTION -> "Market Traction"
+   STABILIZATION -> "Operating Stability"
+   PRODUCTIZATION -> "Value Architecture" */
 function normalizeStage(stage: string) {
   const map: Record<string, string> = {
     FOUNDATION: "Foundation",
-    TRACTION: "Market Traction",
-    MARKET_TRACTION: "Market Traction",
-    "MARKET TRACTION": "Market Traction",
-    STABILIZATION: "Operating Stability",
-    OPERATING_STABILITY: "Operating Stability",
-    "OPERATING STABILITY": "Operating Stability",
-    PRODUCTIZATION: "Value Architecture",
-    VALUE_ARCHITECTURE: "Value Architecture",
-    "VALUE ARCHITECTURE": "Value Architecture",
+    TRACTION: "Traction",
+    MARKET_TRACTION: "Traction",
+    "MARKET TRACTION": "Traction",
+    STABILIZATION: "Stabilization",
+    OPERATING_STABILITY: "Stabilization",
+    "OPERATING STABILITY": "Stabilization",
+    PRODUCTIZATION: "Productization",
+    VALUE_ARCHITECTURE: "Productization",
+    "VALUE ARCHITECTURE": "Productization",
     "SCALE READINESS": "Scale Readiness",
     SCALE_READINESS: "Scale Readiness"
   };
@@ -349,48 +382,94 @@ function getIntentInsight(result: PdfResult) {
   );
 }
 
-function Bar({ score }: { score: number }) {
+function getReportDate() {
+  try {
+    return new Date().toLocaleDateString("it-IT", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric"
+    });
+  } catch (e) {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+/* ---------- Componenti ---------- */
+
+function Bar({ score, accent }: { score: number; accent?: boolean }) {
   const width = Math.max(0, Math.min(100, score * 10));
 
   return (
     <View style={styles.barTrack}>
-      <View style={[styles.barFill, { width: `${width}%` }]} />
+      <View
+        style={[
+          styles.barFill,
+          accent ? styles.barFillAccent : null,
+          { width: `${width}%` }
+        ]}
+      />
     </View>
   );
 }
 
-function Header({ page, name }: { page: string; name?: string }) {
+function PageHeader({ name }: { name?: string }) {
   return (
     <View style={styles.header} fixed>
-      <Text style={styles.headerText}>IMPULSE REPORT</Text>
       <Text style={styles.headerText}>
-        PAGINA {page} {safeText(name).toUpperCase()}
+        IMPULSE SYSTEM — BUSINESS READINESS REPORT
       </Text>
+      <Text style={styles.headerText}>{safeText(name).toUpperCase()}</Text>
+    </View>
+  );
+}
+
+function PageFooter() {
+  return (
+    <View style={styles.footer} fixed>
+      <Text style={styles.footerText}>
+        Riservato e confidenziale · IMPULSE System · davidedileo.it
+      </Text>
+      <Text
+        style={styles.footerText}
+        render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+      />
     </View>
   );
 }
 
 function SectionTitle({
+  number,
   kicker,
   title,
   body
 }: {
+  number: string;
   kicker?: string;
   title: string;
   body?: string;
 }) {
   return (
     <View style={styles.sectionTitleBlock}>
-      {kicker ? <Text style={styles.kicker}>{kicker}</Text> : null}
+      <View style={styles.sectionNumberRow}>
+        <Text style={styles.sectionNumber}>{number}</Text>
+        <View style={styles.sectionNumberRule} />
+        {kicker ? <Text style={styles.kicker}>{kicker}</Text> : null}
+      </View>
       <Text style={styles.sectionTitle}>{title}</Text>
       {body ? <Text style={styles.sectionBody}>{body}</Text> : null}
+      <View style={styles.sectionBottomRule} />
     </View>
   );
+}
+
+function FieldLabel({ children }: { children: any }) {
+  return <Text style={styles.blockLabel}>{children}</Text>;
 }
 
 export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const score = Number(result.overall || 0);
   const name = safeText(result.name);
+  const company = safeText(result.company);
   const firstName = getFirstName(name);
   const profileTitle = getProfileTitle(result);
   const profileBody = getProfileBody(result);
@@ -409,6 +488,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const pdfStrategicWarning = getPdfStrategicWarning(diagnosticPattern);
   const riskFlags = getRiskFlags(result);
   const intentInsight = getIntentInsight(result);
+  const reportDate = getReportDate();
 
   const strategicReviewBaseUrl = "https://davidedileo.it/strategic-review";
   const resolvedLeadId = result.leadId || result.metadata?.leadId || "";
@@ -422,104 +502,159 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
       author="IMPULSE System"
       subject="Business Readiness Report"
     >
-      <Page size="A4" style={styles.page}>
-        <Header page="01" name={name} />
+      {/* ================= COPERTINA (scura) ================= */}
+      <Page size="A4" style={styles.coverPage}>
+        <View style={styles.coverTopRow}>
+          <Text style={styles.coverWordmark}>IMPULSE SYSTEM</Text>
+          <Text style={styles.coverWordmarkRight}>BUSINESS READINESS</Text>
+        </View>
+        <View style={styles.coverGoldRule} />
 
-        <View style={styles.coverHero}>
-          <Text style={styles.reportTitle}>IMPULSE BUSINESS READINESS REPORT</Text>
-          <Text style={styles.preparedFor}>
+        <View style={styles.coverTitleBlock}>
+          <Text style={styles.coverKicker}>DIAGNOSI OPERATIVA</Text>
+          <Text style={styles.coverTitle}>Business Readiness Report</Text>
+          <Text style={styles.coverPrepared}>
             Preparato per {name || "il tuo business"}
+            {company ? ` · ${company}` : ""}
+          </Text>
+          <Text style={styles.coverMetaLine}>
+            {reportDate}
+            {resolvedLeadId ? `  ·  Report ID ${resolvedLeadId}` : ""}
           </Text>
         </View>
 
-        <View style={styles.coverGrid}>
-          <View style={styles.scoreBox}>
-            <Text style={styles.bigScore}>{score}%</Text>
-            <Text style={styles.scoreCaption}>SCORE COMPLESSIVO</Text>
+        <View style={styles.coverScoreRow}>
+          <View style={styles.coverScoreBlock}>
+            <Text style={styles.coverScoreLabel}>IMPULSE SCORE</Text>
+            <View style={styles.coverScoreLine}>
+              {/* [N3] "/100" e non "%" */}
+              <Text style={styles.coverScoreNumber}>{score}</Text>
+              <Text style={styles.coverScoreOutOf}>/100</Text>
+            </View>
           </View>
 
-          <View style={styles.profileBox}>
-            <Text style={styles.kicker}>VINCOLO PRINCIPALE</Text>
-            <Text style={styles.profileTitle}>{profileTitle}</Text>
-            <Text style={styles.profileBody}>{profileBody}</Text>
+          <View style={styles.coverConstraintBlock}>
+            <Text style={styles.coverScoreLabel}>VINCOLO PRINCIPALE</Text>
+            <Text style={styles.coverConstraintTitle}>{profileTitle}</Text>
+            <Text style={styles.coverConstraintBody}>{profileBody}</Text>
           </View>
         </View>
 
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>FASCIA</Text>
-            <Text style={styles.summaryValue}>{safeText(result.fascia)}</Text>
+        <View style={styles.coverMetaGrid}>
+          <View style={styles.coverMetaItem}>
+            <Text style={styles.coverMetaLabel}>FASCIA</Text>
+            <Text style={styles.coverMetaValue}>{safeText(result.fascia)}</Text>
           </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>PROFILO</Text>
-            <Text style={styles.summaryValue}>Profilo {safeText(result.profile)}</Text>
+          <View style={styles.coverMetaItem}>
+            <Text style={styles.coverMetaLabel}>PROFILO</Text>
+            <Text style={styles.coverMetaValue}>
+              Profilo {safeText(result.profile)}
+            </Text>
           </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>FASE</Text>
-            <Text style={styles.summaryValue}>{stageLabel}</Text>
+          <View style={[styles.coverMetaItem, styles.coverMetaItemLast]}>
+            <Text style={styles.coverMetaLabel}>STAGE</Text>
+            <Text style={styles.coverMetaValue}>{stageLabel}</Text>
           </View>
         </View>
 
-        <View style={styles.noteBox}>
-          <Text style={styles.noteTitle}>PUNTO CHIAVE</Text>
-          <Text style={styles.noteText}>
-            Il report identifica dove il business perde leva. La Strategic Review serve a trasformare questa diagnosi in ordine operativo, priorità e decisioni.
+        <View style={styles.coverIndex}>
+          <Text style={styles.coverIndexTitle}>CONTENUTI</Text>
+          {[
+            "Lo stage operativo",
+            "Il pattern diagnostico",
+            "Le 3 priorità operative",
+            "La mappa delle 6 dimensioni",
+            "Forze e vincoli",
+            "I vincoli funzionali",
+            "Profilo e prossimo passo"
+          ].map((item, index) => (
+            <View key={index} style={styles.coverIndexRow}>
+              <Text style={styles.coverIndexNum}>
+                {String(index + 2).padStart(2, "0")}
+              </Text>
+              <Text style={styles.coverIndexText}>{item}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.coverFooter}>
+          <Text style={styles.coverFooterText}>
+            Riservato e confidenziale. Questo report è una diagnosi operativa
+            generata dalle risposte fornite. Non costituisce consulenza
+            finanziaria, legale o fiscale.
           </Text>
         </View>
       </Page>
 
+      {/* ================= 02 — STAGE ================= */}
       <Page size="A4" style={styles.page}>
-        <Header page="02" name={name} />
+        <PageHeader name={name} />
         <SectionTitle
-          kicker="LA TUA FASE"
+          number="02"
+          kicker="LO STAGE OPERATIVO"
           title={stageLabel}
-          body={stageInfo.headline || "Il business ha segnali utili, ma il prossimo salto richiede più struttura e leggibilità."}
+          body={
+            stageInfo.headline ||
+            "Il business ha segnali utili, ma il prossimo salto richiede più struttura e leggibilità."
+          }
         />
 
-        <View style={styles.stageCard}>
-          <View style={styles.twoCol}>
-            <View style={styles.col}>
-              <Text style={styles.blockLabel}>RUOLO</Text>
-              <Text style={styles.blockText}>{stageInfo.role || "Founder as system builder"}</Text>
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.blockLabel}>FOCUS</Text>
-              <Text style={styles.blockText}>
-                {stageInfo.strategicReviewFocus || "Chiarire il vincolo principale e la sequenza operativa."}
-              </Text>
-            </View>
+        <View style={styles.twoCol}>
+          <View style={styles.colRuled}>
+            <FieldLabel>RUOLO</FieldLabel>
+            <Text style={styles.blockText}>
+              {stageInfo.role || "Founder as system builder"}
+            </Text>
           </View>
+          <View style={styles.colRuled}>
+            <FieldLabel>FOCUS</FieldLabel>
+            <Text style={styles.blockText}>
+              {stageInfo.strategicReviewFocus ||
+                "Chiarire il vincolo principale e la sequenza operativa."}
+            </Text>
+          </View>
+        </View>
 
-          <View style={styles.divider} />
-
-          <Text style={styles.blockLabel}>VINCOLO DI STAGE</Text>
+        <View style={styles.ruledBlock}>
+          <FieldLabel>VINCOLO DI STAGE</FieldLabel>
           <Text style={styles.longText}>
-            {stageInfo.bottomLineConstraint || "Il business deve rendere più leggibili sistemi, numeri, responsabilità e margini prima di aumentare complessità."}
+            {stageInfo.bottomLineConstraint ||
+              "Il business deve rendere più leggibili sistemi, numeri, responsabilità e margini prima di aumentare complessità."}
           </Text>
         </View>
 
-        <View style={styles.criteriaCard}>
+        <View style={styles.ruledBlock}>
           <Text style={styles.cardTitle}>Criteri per il prossimo salto</Text>
-          {(stageInfo.graduationCriteria || []).slice(0, 5).map((item: string, index: number) => (
-            <View key={index} style={styles.listRow}>
-              <Text style={styles.listNumber}>{String(index + 1).padStart(2, "0")}</Text>
-              <Text style={styles.listText}>{item}</Text>
-            </View>
-          ))}
+          {(stageInfo.graduationCriteria || [])
+            .slice(0, 5)
+            .map((item: string, index: number) => (
+              <View key={index} style={styles.listRow}>
+                <Text style={styles.listNumber}>
+                  {String(index + 1).padStart(2, "0")}
+                </Text>
+                <Text style={styles.listText}>{item}</Text>
+              </View>
+            ))}
         </View>
 
         <View style={styles.warningBox}>
           <Text style={styles.warningTitle}>COSA NON SCALARE ANCORA</Text>
           <Text style={styles.warningText}>
-            {stageInfo.nonFare || stageInfo.troppoPresto || "Non aumentare complessità prima di aver reso chiaro il vincolo operativo principale."}
+            {stageInfo.nonFare ||
+              stageInfo.troppoPresto ||
+              "Non aumentare complessità prima di aver reso chiaro il vincolo operativo principale."}
           </Text>
         </View>
+
+        <PageFooter />
       </Page>
 
+      {/* ================= 03 — PATTERN ================= */}
       <Page size="A4" style={styles.page}>
-        <Header page="03" name={name} />
+        <PageHeader name={name} />
         <SectionTitle
-          kicker="PATTERN DIAGNOSTICO"
+          number="03"
+          kicker="IL PATTERN DIAGNOSTICO"
           title={safeText(diagnosticPattern.topGapPairTitle, "Pattern diagnostico")}
           body={safeText(
             diagnosticPattern.topGapPairBody,
@@ -527,10 +662,13 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           )}
         />
 
-        <View style={styles.patternCard}>
-          <Text style={styles.blockLabel}>PROFILO + FASE</Text>
+        <View style={styles.ruledBlock}>
+          <FieldLabel>PROFILO + FASE</FieldLabel>
           <Text style={styles.patternTitle}>
-            {safeText(diagnosticPattern.profileStageTitle, "Profilo e fase da leggere insieme")}
+            {safeText(
+              diagnosticPattern.profileStageTitle,
+              "Profilo e fase da leggere insieme"
+            )}
           </Text>
           <Text style={styles.longText}>
             {safeText(
@@ -550,8 +688,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={styles.warningText}>{pdfStrategicWarning}</Text>
         </View>
 
-        <View style={styles.intentBox}>
-          <Text style={styles.blockLabel}>INTENT</Text>
+        <View style={styles.ruledBlock}>
+          <FieldLabel>INTENT</FieldLabel>
           <Text style={styles.patternTitle}>
             {safeText(intentInsight.label, "Intent non rilevato")}
           </Text>
@@ -564,10 +702,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         </View>
 
         {riskFlags.length > 0 ? (
-          <View style={styles.riskList}>
+          <View style={styles.ruledBlock}>
             <Text style={styles.cardTitle}>Risk flags principali</Text>
             {riskFlags.map((risk: RiskFlag, index: number) => (
-              <View key={risk.id || index} style={styles.riskCard}>
+              <View key={risk.id || index} style={styles.riskRow}>
                 <Text style={styles.riskTitle}>
                   {safeText(risk.title, `Risk flag ${index + 1}`)}
                 </Text>
@@ -576,187 +714,249 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             ))}
           </View>
         ) : (
-          <View style={styles.noteBox}>
-            <Text style={styles.noteTitle}>RISK FLAGS</Text>
-            <Text style={styles.noteText}>
-              Nessun risk flag critico aggiuntivo è stato rilevato oltre ai vincoli principali della diagnosi.
+          <View style={styles.ruledBlock}>
+            <FieldLabel>RISK FLAGS</FieldLabel>
+            <Text style={styles.longText}>
+              Nessun risk flag critico aggiuntivo è stato rilevato oltre ai
+              vincoli principali della diagnosi.
             </Text>
           </View>
         )}
+
+        <PageFooter />
       </Page>
 
+      {/* ================= 04 — PRIORITÀ ================= */}
       <Page size="A4" style={styles.page}>
-        <Header page="04" name={name} />
+        <PageHeader name={name} />
         <SectionTitle
+          number="04"
           kicker="LE 3 PRIORITÀ OPERATIVE"
           title="Cosa va chiarito prima"
           body="Queste sono le aree che oggi creano più attrito operativo. Prima di aumentare volume, complessità o investimento, vanno rese più chiare, trasferibili e leggibili."
         />
 
-        <View style={styles.priorityList}>
-          {priorities.map((item: any, index: number) => (
-            <View key={item.key || index} style={styles.priorityCard}>
-              <View style={styles.priorityHeader}>
-                <Text style={styles.priorityRank}>#{index + 1}</Text>
-                <View style={styles.priorityTitleBlock}>
-                  <Text style={styles.priorityTitle}>{getDimensionLabel(item)}</Text>
-                  <Text style={styles.priorityScore}>{Number(item.score || 0).toFixed(1)} / 10</Text>
-                </View>
-              </View>
-
-              <Text style={styles.blockLabel}>VINCOLO</Text>
-              <Text style={styles.longText}>
-                {item.vincolo || item.cosaIndica || dimensionShortCopy[item.key as DimensionKey] || ""}
+        {priorities.map((item: any, index: number) => (
+          <View key={item.key || index} style={styles.priorityBlock}>
+            <View style={styles.priorityHeader}>
+              <Text style={styles.priorityRank}>
+                {String(index + 1).padStart(2, "0")}
               </Text>
-
-              <Text style={styles.blockLabel}>DA CHIARIRE</Text>
-              <Text style={styles.longText}>
-                {item.lavoro || "Rendere più chiari numeri, responsabilità, criteri e sequenza operativa."}
-              </Text>
-
-              <Text style={styles.blockLabel}>EVITARE</Text>
-              <Text style={styles.longText}>
-                {item.nonFare || "Non aumentare complessità prima di avere una lettura più stabile di questa area."}
+              <Text style={styles.priorityTitle}>{getDimensionLabel(item)}</Text>
+              <Text style={styles.priorityScore}>
+                {Number(item.score || 0).toFixed(1)} / 10
               </Text>
             </View>
-          ))}
-        </View>
+
+            <View style={styles.priorityBody}>
+              <FieldLabel>VINCOLO</FieldLabel>
+              <Text style={styles.longText}>
+                {item.vincolo ||
+                  item.cosaIndica ||
+                  dimensionShortCopy[item.key as DimensionKey] ||
+                  ""}
+              </Text>
+
+              <FieldLabel>DA CHIARIRE</FieldLabel>
+              <Text style={styles.longText}>
+                {item.lavoro ||
+                  "Rendere più chiari numeri, responsabilità, criteri e sequenza operativa."}
+              </Text>
+
+              <FieldLabel>EVITARE</FieldLabel>
+              <Text style={styles.longText}>
+                {item.nonFare ||
+                  "Non aumentare complessità prima di avere una lettura più stabile di questa area."}
+              </Text>
+            </View>
+          </View>
+        ))}
+
+        <PageFooter />
       </Page>
 
+      {/* ================= 05 — MAPPA 6 DIMENSIONI ================= */}
       <Page size="A4" style={styles.page}>
-        <Header page="05" name={name} />
+        <PageHeader name={name} />
         <SectionTitle
-          kicker="MAPPA DIAGNOSTICA"
+          number="05"
+          kicker="LA MAPPA DIAGNOSTICA"
           title="Le 6 dimensioni"
           body="Questa pagina mostra la relazione tra le aree del business. Le dimensioni più basse indicano dove il valore resta bloccato prima ancora di cercare più clienti, più automazione o più capitale."
         />
 
-        <View style={styles.dimensionGrid}>
-          {dims.map((dim: any) => (
-            <View key={dim.key} style={styles.dimensionCard}>
-              <View style={styles.dimensionHeader}>
-                <Text style={styles.dimensionTitle}>{getDimensionLabel(dim)}</Text>
-                <Text style={styles.dimensionScore}>{Number(dim.score || 0).toFixed(1)} / 10</Text>
+        <View style={styles.dimTableHead}>
+          <Text style={styles.dimTableHeadLeft}>DIMENSIONE</Text>
+          <Text style={styles.dimTableHeadRight}>SCORE</Text>
+        </View>
+
+        {dims.map((dim: any) => {
+          const isBinding = dim.key === displayedBindingKey;
+          return (
+            <View key={dim.key} style={styles.dimRow}>
+              <View style={styles.dimRowTop}>
+                <View style={styles.dimRowNameWrap}>
+                  <Text style={styles.dimensionTitle}>
+                    {getDimensionLabel(dim)}
+                  </Text>
+                  <Text style={styles.dimensionStatus}>
+                    {getBracketLabel(dim.bracket) ||
+                      getScoreLabel(Number(dim.score || 0))}
+                    {isBinding ? "  ·  VINCOLO BINDING" : ""}
+                  </Text>
+                </View>
+                <Text style={styles.dimensionScore}>
+                  {Number(dim.score || 0).toFixed(1)} / 10
+                </Text>
               </View>
-              <Bar score={Number(dim.score || 0)} />
-              <Text style={styles.dimensionStatus}>
-                {getBracketLabel(dim.bracket) || getScoreLabel(Number(dim.score || 0))}
-              </Text>
+              <Bar score={Number(dim.score || 0)} accent={isBinding} />
               <Text style={styles.dimensionText}>
                 {dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}
               </Text>
             </View>
-          ))}
-        </View>
+          );
+        })}
 
-        <View style={styles.insightBox}>
-          <Text style={styles.insightTitle}>LETTURA OPERATIVA</Text>
+        <View style={styles.focusBox}>
+          <Text style={styles.focusLabel}>LETTURA OPERATIVA</Text>
           <Text style={styles.insightText}>
-            Il punto non è solo migliorare il punteggio di ogni area. Il salto avviene quando offerta, acquisizione, delivery, margini, asset e leggibilità esterna iniziano a funzionare come un sistema unico.
+            Il punto non è solo migliorare il punteggio di ogni area. Il salto
+            avviene quando offerta, acquisizione, delivery, margini, asset e
+            leggibilità esterna iniziano a funzionare come un sistema unico.
           </Text>
         </View>
+
+        <PageFooter />
       </Page>
 
+      {/* ================= 06 — FORZE E VINCOLI ================= */}
       <Page size="A4" style={styles.page}>
-        <Header page="06" name={name} />
+        <PageHeader name={name} />
         <SectionTitle
-          kicker="COORDINATE"
+          number="06"
+          kicker="LE COORDINATE"
           title="Forze e vincoli"
           body="Questa pagina separa le aree più solide da quelle che limitano il prossimo salto."
         />
 
         <View style={styles.twoColLarge}>
-          <View style={styles.columnCard}>
+          <View style={styles.columnRuled}>
             <Text style={styles.cardTitle}>Le tue forze</Text>
             {strengths.map((item: any, index: number) => (
               <View key={item.key || index} style={styles.scoreRow}>
-                <Text style={styles.scoreRowName}>{getDimensionLabel(item)}</Text>
-                <Text style={styles.scoreRowValue}>{Number(item.score || 0).toFixed(1)}</Text>
+                <Text style={styles.scoreRowName}>
+                  {getDimensionLabel(item)}
+                </Text>
+                <Text style={styles.scoreRowValue}>
+                  {Number(item.score || 0).toFixed(1)}
+                </Text>
               </View>
             ))}
           </View>
 
-          <View style={styles.columnCard}>
+          <View style={styles.columnRuled}>
             <Text style={styles.cardTitle}>Le tue priorità</Text>
             {priorities.map((item: any, index: number) => (
               <View key={item.key || index} style={styles.scoreRow}>
-                <Text style={styles.scoreRowName}>{getDimensionLabel(item)}</Text>
-                <Text style={styles.scoreRowValue}>{Number(item.score || 0).toFixed(1)}</Text>
+                <Text style={styles.scoreRowName}>
+                  {getDimensionLabel(item)}
+                </Text>
+                <Text style={styles.scoreRowValue}>
+                  {Number(item.score || 0).toFixed(1)}
+                </Text>
               </View>
             ))}
           </View>
         </View>
 
-        <View style={styles.noteBox}>
-          <Text style={styles.noteTitle}>VINCOLO BINDING</Text>
-          <Text style={styles.noteText}>
+        <View style={styles.focusBox}>
+          <Text style={styles.focusLabel}>VINCOLO BINDING</Text>
+          <Text style={styles.insightText}>
             {displayedBindingKey
-              ? `La dimensione che oggi limita di più lo stage è ${dimensionNames[displayedBindingKey] || displayedBindingKey}.`
+              ? `La dimensione che oggi limita di più lo stage è ${
+                  dimensionNames[displayedBindingKey] || displayedBindingKey
+                }.`
               : "Il vincolo principale emerge dalla combinazione delle dimensioni più deboli."}
           </Text>
         </View>
+
+        <PageFooter />
       </Page>
 
+      {/* ================= 07 — VINCOLI FUNZIONALI ================= */}
       <Page size="A4" style={styles.page}>
-        <Header page="07" name={name} />
+        <PageHeader name={name} />
         <SectionTitle
-          kicker="VINCOLI FUNZIONALI"
+          number="07"
+          kicker="I VINCOLI FUNZIONALI"
           title="Dove il sistema può perdere leva"
           body="Questi sono i vincoli funzionali più probabili in base alla fase del business e alle dimensioni più deboli emerse dalla scorecard."
         />
 
         {functionConstraints.length > 0 ? (
-          <View style={styles.functionList}>
+          <View>
             {functionConstraints.slice(0, 3).map((item: any, index: number) => (
-              <View key={item.id || index} style={styles.functionCard}>
-                <View style={styles.functionHeader}>
-                  <Text style={styles.functionRank}>#{index + 1}</Text>
-                  <Text style={styles.functionTitle}>{item.label}</Text>
+              <View key={item.id || index} style={styles.priorityBlock}>
+                <View style={styles.priorityHeader}>
+                  <Text style={styles.priorityRank}>
+                    {String(index + 1).padStart(2, "0")}
+                  </Text>
+                  <Text style={styles.priorityTitle}>{item.label}</Text>
                 </View>
 
-                <Text style={styles.blockLabel}>COSA INDICA</Text>
-                <Text style={styles.functionText}>{item.implication}</Text>
+                <View style={styles.priorityBody}>
+                  <FieldLabel>COSA INDICA</FieldLabel>
+                  <Text style={styles.longText}>{item.implication}</Text>
 
-                <Text style={styles.blockLabel}>DA CHIARIRE</Text>
-                <Text style={styles.functionText}>{item.work}</Text>
+                  <FieldLabel>DA CHIARIRE</FieldLabel>
+                  <Text style={styles.longText}>{item.work}</Text>
 
-                <Text style={styles.blockLabel}>EVITARE</Text>
-                <Text style={styles.functionText}>{item.avoid}</Text>
+                  <FieldLabel>EVITARE</FieldLabel>
+                  <Text style={styles.longText}>{item.avoid}</Text>
+                </View>
               </View>
             ))}
           </View>
         ) : (
-          <View style={styles.noteBox}>
-            <Text style={styles.noteTitle}>NESSUN VINCOLO FUNZIONALE SPECIFICO</Text>
-            <Text style={styles.noteText}>
-              La diagnosi principale emerge dalle sei dimensioni e dal vincolo binding.
+          <View style={styles.ruledBlock}>
+            <FieldLabel>NESSUN VINCOLO FUNZIONALE SPECIFICO</FieldLabel>
+            <Text style={styles.longText}>
+              La diagnosi principale emerge dalle sei dimensioni e dal vincolo
+              binding.
             </Text>
           </View>
         )}
+
+        <PageFooter />
       </Page>
 
+      {/* ================= 08 — PROFILO + CTA ================= */}
       <Page size="A4" style={styles.page}>
-        <Header page="08" name={name} />
+        <PageHeader name={name} />
         <SectionTitle
+          number="08"
           kicker={`PROFILO ${safeText(result.profile)}`}
           title={profileTitle}
           body={profileBody}
         />
 
-        <View style={styles.profileDetailCard}>
-          <Text style={styles.blockLabel}>COME SI MANIFESTA</Text>
+        <View style={styles.ruledBlock}>
+          <FieldLabel>COME SI MANIFESTA</FieldLabel>
           <Text style={styles.longText}>
-            {result.profileData?.manifesta || "Il vincolo si manifesta quando il business deve essere capito, delegato o valutato senza la presenza costante del founder."}
+            {result.profileData?.manifesta ||
+              "Il vincolo si manifesta quando il business deve essere capito, delegato o valutato senza la presenza costante del founder."}
           </Text>
 
-          <Text style={styles.blockLabel}>RISCHIO SE IGNORATO</Text>
+          <FieldLabel>RISCHIO SE IGNORATO</FieldLabel>
           <Text style={styles.longText}>
-            {result.profileData?.rischio || "Il rischio è aumentare volume, complessità o esposizione esterna senza aver prima chiarito il sistema."}
+            {result.profileData?.rischio ||
+              "Il rischio è aumentare volume, complessità o esposizione esterna senza aver prima chiarito il sistema."}
           </Text>
 
-          <Text style={styles.blockLabel}>LA DECISIONE CHE VIENE PRIMA</Text>
+          <FieldLabel>LA DECISIONE CHE VIENE PRIMA</FieldLabel>
           <Text style={styles.longText}>
-            {result.profileData?.decisione || "Rendere più chiari numeri, responsabilità, offerta e vincolo operativo principale."}
+            {result.profileData?.decisione ||
+              "Rendere più chiari numeri, responsabilità, offerta e vincolo operativo principale."}
           </Text>
         </View>
 
@@ -768,7 +968,11 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               : "Trasforma la diagnosi in ordine operativo."}
           </Text>
           <Text style={styles.ctaBody}>
-            Il report ha isolato il vincolo che oggi limita il prossimo salto del business. La Strategic Review serve a trasformare questa diagnosi in un piano operativo: cosa correggere prima, cosa non scalare ancora, quali decisioni prendere e quali priorità mettere in ordine nei prossimi 30-60 giorni.
+            Il report ha isolato il vincolo che oggi limita il prossimo salto
+            del business. La Strategic Review serve a trasformare questa
+            diagnosi in un piano operativo: cosa correggere prima, cosa non
+            scalare ancora, quali decisioni prendere e quali priorità mettere
+            in ordine nei prossimi 30-60 giorni.
           </Text>
           <Link src={strategicReviewUrl} style={styles.ctaButton}>
             Prenota la Strategic Review
@@ -777,521 +981,616 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             <Text style={styles.ctaSmallText}>Report ID: {resolvedLeadId}</Text>
           ) : null}
         </View>
+
+        <PageFooter />
       </Page>
     </Document>
   );
 }
 
+/* ============================================================
+   STILI — sistema editoriale "advisory"
+   Token allineati al funnel:
+   ink #171717 · body #33302A · muted #6F6A61 · hairline #DDD3C4
+   teal #27708F · teal-dark #1F5B75 · gold #B88A2A
+============================================================ */
+
+const INK = "#171717";
+const BODY = "#33302A";
+const MUTED = "#6F6A61";
+const HAIRLINE = "#DDD3C4";
+const TEAL = "#27708F";
+const TEAL_DARK = "#1F5B75";
+const GOLD = "#B88A2A";
+const DANGER = "#B42318";
+const CREAM = "#FAF6EC";
+const COVER_BG = "#1A1A1A";
+
 const styles = StyleSheet.create({
+  /* ---- Copertina ---- */
+  coverPage: {
+    paddingTop: 42,
+    paddingBottom: 42,
+    paddingHorizontal: 46,
+    backgroundColor: COVER_BG,
+    color: "#FFFFFF",
+    fontFamily: "Helvetica"
+  },
+  coverTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12
+  },
+  coverWordmark: {
+    fontSize: 9,
+    color: "#FFFFFF",
+    letterSpacing: 2.4,
+    fontWeight: 700
+  },
+  coverWordmarkRight: {
+    fontSize: 9,
+    color: "rgba(255,255,255,0.45)",
+    letterSpacing: 2.4
+  },
+  coverGoldRule: {
+    height: 2,
+    backgroundColor: GOLD,
+    width: 44,
+    marginBottom: 56
+  },
+  coverTitleBlock: {
+    marginBottom: 44
+  },
+  coverKicker: {
+    fontSize: 8.5,
+    color: GOLD,
+    letterSpacing: 2.2,
+    fontWeight: 700,
+    marginBottom: 14
+  },
+  coverTitle: {
+    fontSize: 34,
+    lineHeight: 1.04,
+    color: "#FFFFFF",
+    fontWeight: 700,
+    letterSpacing: -0.5,
+    marginBottom: 16,
+    maxWidth: 380
+  },
+  coverPrepared: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.85)",
+    marginBottom: 5
+  },
+  coverMetaLine: {
+    fontSize: 9,
+    color: "rgba(255,255,255,0.45)"
+  },
+  coverScoreRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.16)",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.16)",
+    paddingVertical: 26,
+    marginBottom: 26,
+    gap: 30
+  },
+  coverScoreBlock: {
+    width: "34%",
+    borderRightWidth: 1,
+    borderRightColor: "rgba(255,255,255,0.16)",
+    paddingRight: 24,
+    justifyContent: "center"
+  },
+  coverScoreLabel: {
+    fontSize: 7.5,
+    color: "rgba(255,255,255,0.5)",
+    letterSpacing: 1.8,
+    fontWeight: 700,
+    marginBottom: 10
+  },
+  coverScoreLine: {
+    flexDirection: "row",
+    alignItems: "flex-end"
+  },
+  coverScoreNumber: {
+    fontSize: 64,
+    lineHeight: 0.9,
+    color: "#FFFFFF",
+    fontWeight: 700,
+    letterSpacing: -2
+  },
+  coverScoreOutOf: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.5)",
+    marginLeft: 6,
+    marginBottom: 4
+  },
+  coverConstraintBlock: {
+    flex: 1,
+    justifyContent: "center"
+  },
+  coverConstraintTitle: {
+    fontSize: 23,
+    lineHeight: 1.05,
+    color: "#FFFFFF",
+    fontWeight: 700,
+    letterSpacing: -0.4,
+    marginBottom: 8
+  },
+  coverConstraintBody: {
+    fontSize: 10,
+    lineHeight: 1.5,
+    color: "rgba(255,255,255,0.7)"
+  },
+  coverMetaGrid: {
+    flexDirection: "row",
+    marginBottom: 40
+  },
+  coverMetaItem: {
+    flex: 1,
+    borderRightWidth: 1,
+    borderRightColor: "rgba(255,255,255,0.16)",
+    paddingRight: 16,
+    marginRight: 16
+  },
+  coverMetaItemLast: {
+    borderRightWidth: 0,
+    marginRight: 0,
+    paddingRight: 0
+  },
+  coverMetaLabel: {
+    fontSize: 7.5,
+    color: "rgba(255,255,255,0.45)",
+    letterSpacing: 1.8,
+    fontWeight: 700,
+    marginBottom: 6
+  },
+  coverMetaValue: {
+    fontSize: 13,
+    color: "#FFFFFF",
+    fontWeight: 700
+  },
+  coverIndex: {
+    marginTop: "auto",
+    marginBottom: 28
+  },
+  coverIndexTitle: {
+    fontSize: 7.5,
+    color: GOLD,
+    letterSpacing: 2,
+    fontWeight: 700,
+    marginBottom: 12
+  },
+  coverIndexRow: {
+    flexDirection: "row",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.10)"
+  },
+  coverIndexNum: {
+    width: 30,
+    fontSize: 8.5,
+    color: GOLD,
+    fontWeight: 700
+  },
+  coverIndexText: {
+    fontSize: 9.5,
+    color: "rgba(255,255,255,0.8)"
+  },
+  coverFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.16)",
+    paddingTop: 12
+  },
+  coverFooterText: {
+    fontSize: 7.5,
+    lineHeight: 1.5,
+    color: "rgba(255,255,255,0.4)"
+  },
+
+  /* ---- Pagine interne ---- */
   page: {
     paddingTop: 34,
-    paddingBottom: 34,
-    paddingHorizontal: 38,
-    backgroundColor: "#FAF7EE",
-    color: "#151515",
+    paddingBottom: 52,
+    paddingHorizontal: 46,
+    backgroundColor: "#FFFFFF",
+    color: INK,
     fontFamily: "Helvetica"
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 26,
+    marginBottom: 28,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#E6E2D8"
+    borderBottomColor: HAIRLINE
   },
   headerText: {
-    fontSize: 8,
-    color: "#5F6368",
-    letterSpacing: 1.1,
+    fontSize: 7,
+    color: MUTED,
+    letterSpacing: 1.6,
     textTransform: "uppercase"
   },
-  coverHero: {
-    marginBottom: 28
-  },
-  reportTitle: {
-    fontSize: 18,
-    color: "#123C69",
-    fontWeight: 700,
-    letterSpacing: 1,
-    marginBottom: 8
-  },
-  preparedFor: {
-    fontSize: 11,
-    color: "#5F6368"
-  },
-  coverGrid: {
+  footer: {
+    position: "absolute",
+    bottom: 24,
+    left: 46,
+    right: 46,
     flexDirection: "row",
-    gap: 18,
-    marginBottom: 20
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: HAIRLINE,
+    paddingTop: 8
   },
-  scoreBox: {
-    width: "36%",
-    minHeight: 170,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 18,
-    justifyContent: "center",
-    alignItems: "center"
+  footerText: {
+    fontSize: 7,
+    color: MUTED,
+    letterSpacing: 0.6
   },
-  bigScore: {
-    fontSize: 54,
-    color: "#27708F",
-    fontWeight: 700
+
+  /* ---- Titoli di sezione ---- */
+  sectionTitleBlock: {
+    marginBottom: 24
   },
-  scoreCaption: {
-    fontSize: 8,
-    color: "#5F6368",
-    letterSpacing: 0.6,
-    textAlign: "center",
-    marginTop: 8
+  sectionNumberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12
   },
-  profileBox: {
-    width: "64%",
-    minHeight: 170,
-    backgroundColor: "#EAF5FA",
-    borderRadius: 20,
-    padding: 22
+  sectionNumber: {
+    fontSize: 11,
+    color: GOLD,
+    fontWeight: 700,
+    letterSpacing: 1
+  },
+  sectionNumberRule: {
+    width: 26,
+    height: 1,
+    backgroundColor: HAIRLINE,
+    marginHorizontal: 10
   },
   kicker: {
-    fontSize: 8,
-    color: "#27708F",
-    letterSpacing: 1.2,
+    fontSize: 7.5,
+    color: TEAL_DARK,
+    letterSpacing: 1.8,
     textTransform: "uppercase",
-    fontWeight: 700,
-    marginBottom: 8
-  },
-  profileTitle: {
-    fontSize: 28,
-    lineHeight: 1.05,
-    fontWeight: 700,
-    color: "#151515",
-    marginBottom: 10
-  },
-  profileBody: {
-    fontSize: 11.5,
-    lineHeight: 1.45,
-    color: "#3D4348"
-  },
-  summaryGrid: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 20
-  },
-  summaryItem: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 14
-  },
-  summaryLabel: {
-    fontSize: 8,
-    color: "#5F6368",
-    letterSpacing: 1.1,
-    marginBottom: 5
-  },
-  summaryValue: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: "#151515"
-  },
-  noteBox: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 18,
-    marginTop: 8
-  },
-  noteTitle: {
-    fontSize: 9,
-    color: "#27708F",
-    fontWeight: 700,
-    letterSpacing: 1.1,
-    marginBottom: 8
-  },
-  noteText: {
-    fontSize: 11,
-    lineHeight: 1.45,
-    color: "#3D4348",
-    marginBottom: 4
-  },
-  sectionTitleBlock: {
-    marginBottom: 22
+    fontWeight: 700
   },
   sectionTitle: {
-    fontSize: 34,
-    lineHeight: 1.05,
+    fontSize: 30,
+    lineHeight: 1.04,
     fontWeight: 700,
-    color: "#151515",
+    color: INK,
+    letterSpacing: -0.6,
     marginBottom: 10
   },
   sectionBody: {
-    fontSize: 12,
-    lineHeight: 1.45,
-    color: "#5F6368",
-    maxWidth: 480
+    fontSize: 10.5,
+    lineHeight: 1.5,
+    color: MUTED,
+    maxWidth: 440
   },
-  stageCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 16
+  sectionBottomRule: {
+    height: 1,
+    backgroundColor: HAIRLINE,
+    marginTop: 18
+  },
+
+  /* ---- Blocchi a righe ---- */
+  ruledBlock: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: HAIRLINE,
+    marginBottom: 4
   },
   twoCol: {
     flexDirection: "row",
-    gap: 16
+    gap: 28,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: HAIRLINE,
+    marginBottom: 4
   },
-  col: {
+  colRuled: {
     flex: 1
   },
   blockLabel: {
-    fontSize: 8,
-    color: "#27708F",
+    fontSize: 7.5,
+    color: TEAL_DARK,
     fontWeight: 700,
-    letterSpacing: 1,
-    marginTop: 8,
+    letterSpacing: 1.6,
+    marginTop: 10,
     marginBottom: 4,
     textTransform: "uppercase"
   },
   blockText: {
-    fontSize: 11,
-    lineHeight: 1.4,
-    color: "#151515"
-  },
-  longText: {
     fontSize: 10.5,
     lineHeight: 1.45,
-    color: "#3D4348"
+    color: INK
   },
-  divider: {
-    height: 1,
-    backgroundColor: "#E6E2D8",
-    marginVertical: 14
-  },
-  criteriaCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 16
+  longText: {
+    fontSize: 10,
+    lineHeight: 1.55,
+    color: BODY
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 700,
-    color: "#151515",
-    marginBottom: 12
+    color: INK,
+    letterSpacing: -0.2,
+    marginBottom: 10
   },
   listRow: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 8
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EFEAE0"
   },
   listNumber: {
     width: 22,
-    fontSize: 10,
-    color: "#27708F",
+    fontSize: 9,
+    color: GOLD,
     fontWeight: 700
   },
   listText: {
     flex: 1,
-    fontSize: 11,
-    lineHeight: 1.35,
-    color: "#3D4348"
+    fontSize: 10,
+    lineHeight: 1.4,
+    color: BODY
   },
-  warningBox: {
-    backgroundColor: "#FFF2F0",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12
-  },
-  warningTitle: {
-    fontSize: 9,
-    color: "#B42318",
-    fontWeight: 700,
-    letterSpacing: 1,
-    marginBottom: 6
-  },
-  warningText: {
-    fontSize: 11,
-    lineHeight: 1.45,
-    color: "#B42318"
-  },
-  patternCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 14
-  },
-  patternTitle: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: "#151515",
-    marginBottom: 7
-  },
+
+  /* ---- Box accentati ---- */
   focusBox: {
-    backgroundColor: "#EAF5FA",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12
+    backgroundColor: CREAM,
+    borderLeftWidth: 2,
+    borderLeftColor: GOLD,
+    padding: 14,
+    marginTop: 14,
+    marginBottom: 4
   },
   focusLabel: {
-    fontSize: 9,
-    color: "#27708F",
+    fontSize: 7.5,
+    color: TEAL_DARK,
     fontWeight: 700,
-    letterSpacing: 1,
-    marginBottom: 7,
+    letterSpacing: 1.6,
+    marginBottom: 6,
     textTransform: "uppercase"
   },
   focusText: {
-    fontSize: 11.5,
-    lineHeight: 1.45,
-    color: "#123C69",
+    fontSize: 10.5,
+    lineHeight: 1.5,
+    color: TEAL_DARK,
     fontWeight: 700
   },
-  intentBox: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12
+  warningBox: {
+    borderLeftWidth: 2,
+    borderLeftColor: DANGER,
+    backgroundColor: "#FBF1EF",
+    padding: 14,
+    marginTop: 14,
+    marginBottom: 4
   },
-  riskList: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 16,
-    marginTop: 2
+  warningTitle: {
+    fontSize: 7.5,
+    color: DANGER,
+    fontWeight: 700,
+    letterSpacing: 1.6,
+    marginBottom: 6
   },
-  riskCard: {
-    backgroundColor: "#FFF2F0",
-    borderRadius: 14,
-    padding: 12,
+  warningText: {
+    fontSize: 10,
+    lineHeight: 1.5,
+    color: DANGER
+  },
+  patternTitle: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: INK,
+    marginBottom: 6
+  },
+  insightText: {
+    fontSize: 10,
+    lineHeight: 1.5,
+    color: BODY
+  },
+  riskRow: {
+    borderLeftWidth: 2,
+    borderLeftColor: DANGER,
+    paddingLeft: 12,
+    paddingVertical: 6,
     marginBottom: 8
   },
   riskTitle: {
-    fontSize: 11,
-    color: "#B42318",
+    fontSize: 10.5,
+    color: DANGER,
     fontWeight: 700,
-    marginBottom: 4
+    marginBottom: 3
   },
   riskBody: {
-    fontSize: 9.5,
-    lineHeight: 1.35,
-    color: "#B42318"
+    fontSize: 9,
+    lineHeight: 1.4,
+    color: DANGER
   },
-  priorityList: {
-    gap: 12
-  },
-  priorityCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 17,
-    marginBottom: 10
+
+  /* ---- Priorità ---- */
+  priorityBlock: {
+    borderBottomWidth: 1,
+    borderBottomColor: HAIRLINE,
+    paddingBottom: 14,
+    marginBottom: 14
   },
   priorityHeader: {
     flexDirection: "row",
+    alignItems: "baseline",
     gap: 12,
-    marginBottom: 8
+    marginBottom: 4
   },
   priorityRank: {
     fontSize: 16,
-    color: "#27708F",
+    color: GOLD,
     fontWeight: 700,
-    width: 34
-  },
-  priorityTitleBlock: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10
+    width: 30
   },
   priorityTitle: {
-    fontSize: 15,
+    flex: 1,
+    fontSize: 16,
     fontWeight: 700,
-    color: "#151515"
+    color: INK,
+    letterSpacing: -0.3
   },
   priorityScore: {
-    fontSize: 13,
-    fontWeight: 700,
-    color: "#27708F"
-  },
-  dimensionGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12
-  },
-  dimensionCard: {
-    width: "48%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 10
-  },
-  dimensionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
-    marginBottom: 10
-  },
-  dimensionTitle: {
-    fontSize: 13,
-    fontWeight: 700,
-    color: "#151515"
-  },
-  dimensionScore: {
     fontSize: 12,
     fontWeight: 700,
-    color: "#27708F"
+    color: TEAL
   },
-  dimensionStatus: {
-    fontSize: 8,
-    color: "#5F6368",
-    letterSpacing: 1,
-    marginTop: 8,
-    marginBottom: 6
+  priorityBody: {
+    paddingLeft: 42
   },
-  dimensionText: {
-    fontSize: 10,
-    lineHeight: 1.35,
-    color: "#5F6368"
+
+  /* ---- Tabella dimensioni ---- */
+  dimTableHead: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: INK,
+    marginBottom: 2
   },
-  insightBox: {
-    backgroundColor: "#EAF5FA",
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 12
+  dimTableHeadLeft: {
+    fontSize: 7.5,
+    color: MUTED,
+    letterSpacing: 1.6,
+    fontWeight: 700
   },
-  insightTitle: {
-    fontSize: 9,
-    color: "#27708F",
-    fontWeight: 700,
-    letterSpacing: 1,
+  dimTableHeadRight: {
+    fontSize: 7.5,
+    color: MUTED,
+    letterSpacing: 1.6,
+    fontWeight: 700
+  },
+  dimRow: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: HAIRLINE
+  },
+  dimRowTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
     marginBottom: 7
   },
-  insightText: {
-    fontSize: 10.5,
-    lineHeight: 1.45,
-    color: "#3D4348"
+  dimRowNameWrap: {
+    flexDirection: "column"
+  },
+  dimensionTitle: {
+    fontSize: 12.5,
+    fontWeight: 700,
+    color: INK
+  },
+  dimensionStatus: {
+    fontSize: 7,
+    color: MUTED,
+    letterSpacing: 1.2,
+    marginTop: 3
+  },
+  dimensionScore: {
+    fontSize: 11.5,
+    fontWeight: 700,
+    color: TEAL
+  },
+  dimensionText: {
+    fontSize: 9,
+    lineHeight: 1.35,
+    color: MUTED,
+    marginTop: 6
   },
   barTrack: {
-    height: 7,
-    backgroundColor: "#EDF1F4",
-    borderRadius: 10,
+    height: 4,
+    backgroundColor: "#EFEAE0",
     overflow: "hidden"
   },
   barFill: {
-    height: 7,
-    backgroundColor: "#27708F",
-    borderRadius: 10
+    height: 4,
+    backgroundColor: TEAL
   },
+  barFillAccent: {
+    backgroundColor: GOLD
+  },
+
+  /* ---- Colonne forze/vincoli ---- */
   twoColLarge: {
     flexDirection: "row",
-    gap: 14,
-    marginBottom: 18
+    gap: 28,
+    marginBottom: 4
   },
-  columnCard: {
+  columnRuled: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 18
+    borderTopWidth: 1,
+    borderTopColor: INK,
+    paddingTop: 12
   },
   scoreRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#E6E2D8",
-    paddingBottom: 8,
-    marginBottom: 8
+    borderBottomColor: HAIRLINE,
+    paddingVertical: 8
   },
   scoreRowName: {
-    fontSize: 11,
-    color: "#3D4348"
+    fontSize: 10.5,
+    color: BODY
   },
   scoreRowValue: {
-    fontSize: 11,
-    color: "#27708F",
+    fontSize: 10.5,
+    color: TEAL,
     fontWeight: 700
   },
-  functionList: {
-    gap: 8
-  },
-  functionCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 13,
-    marginBottom: 7
-  },
-  functionHeader: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 6
-  },
-  functionRank: {
-    fontSize: 15,
-    color: "#27708F",
-    fontWeight: 700,
-    width: 32
-  },
-  functionTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: 700,
-    color: "#151515"
-  },
-  functionText: {
-    fontSize: 9.2,
-    lineHeight: 1.32,
-    color: "#3D4348"
-  },
-  profileDetailCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 18
-  },
+
+  /* ---- CTA finale ---- */
   ctaBox: {
-    backgroundColor: "#123C69",
-    borderRadius: 20,
-    padding: 24,
-    marginTop: 10
+    backgroundColor: COVER_BG,
+    padding: 26,
+    marginTop: 18
   },
   ctaLabel: {
-    fontSize: 8,
-    color: "#FFFFFF",
-    letterSpacing: 1.2,
+    fontSize: 7.5,
+    color: GOLD,
+    letterSpacing: 2,
     textTransform: "uppercase",
     fontWeight: 700,
-    marginBottom: 8
+    marginBottom: 10
   },
   ctaTitle: {
-    fontSize: 24,
-    lineHeight: 1.1,
+    fontSize: 22,
+    lineHeight: 1.08,
     color: "#FFFFFF",
     fontWeight: 700,
+    letterSpacing: -0.4,
     marginBottom: 12
   },
   ctaBody: {
-    fontSize: 12,
-    lineHeight: 1.45,
-    color: "#FFFFFF",
-    marginBottom: 14
-  },
-  ctaUrl: {
-    fontSize: 13,
-    color: "#FFFFFF",
-    fontWeight: 700
+    fontSize: 10.5,
+    lineHeight: 1.5,
+    color: "rgba(255,255,255,0.78)",
+    marginBottom: 16
   },
   ctaButton: {
-    fontSize: 13,
-    color: "#FFFFFF",
+    fontSize: 12,
+    color: COVER_BG,
     fontWeight: 700,
     textDecoration: "none",
-    backgroundColor: "#27708F",
-    borderRadius: 12,
+    backgroundColor: GOLD,
     paddingTop: 10,
     paddingBottom: 10,
-    paddingHorizontal: 14,
-    alignSelf: "flex-start",
-    marginTop: 2
+    paddingHorizontal: 16,
+    alignSelf: "flex-start"
   },
   ctaSmallText: {
-    fontSize: 8,
-    color: "#DCEAF0",
-    marginTop: 8
+    fontSize: 7.5,
+    color: "rgba(255,255,255,0.45)",
+    marginTop: 10
   }
 });
