@@ -96,6 +96,7 @@ type PdfResult = {
   diagnosticPattern?: DiagnosticPattern;
   riskFlags?: RiskFlag[];
   intentInsight?: IntentInsight;
+  intentLevel?: number | null;
 };
 
 /* [N1] Nomi dimensione allineati al funnel (inglese = nome proprio
@@ -382,6 +383,30 @@ function getIntentInsight(result: PdfResult) {
   );
 }
 
+/* [V2.2 / P6] Chiusura calibrata su intentLevel (0-3).
+   Fonte: result.intentLevel (top-level, da buildEnrichedResult)
+   con fallback su intentInsight.level se presente.
+   Se l'intent non è disponibile, nessuna riga aggiuntiva. */
+function getIntentClosing(result: PdfResult): string | null {
+  const raw =
+    result.intentLevel ?? (result.intentInsight as any)?.level ?? null;
+  const level = Number(raw);
+
+  if (raw === null || raw === undefined || Number.isNaN(level)) {
+    return null;
+  }
+
+  if (level >= 3) {
+    return "Hai indicato una priorità immediata. In questa finestra, la sequenza conta più dello sforzo: gli interventi fatti nell'ordine sbagliato consumano la finestra senza prepararla.";
+  }
+
+  if (level === 2) {
+    return "Hai indicato una decisione importante nei prossimi 6-12 mesi. L'ordine degli interventi determina con quale forza arriverai a quella decisione.";
+  }
+
+  return "L'urgenza dichiarata è bassa. La diagnosi resta valida: quando deciderai di muoverti, il punto di partenza è già identificato.";
+}
+
 function getReportDate() {
   try {
     return new Date().toLocaleDateString("it-IT", {
@@ -623,6 +648,15 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           </Text>
         </View>
 
+        {/* [V2.2 / P2] Costo dell'inazione: meccanismo, mai numeri.
+            Render condizionale: se il campo non c'è, il layout resta v2.1. */}
+        {stageInfo.costOfInaction ? (
+          <View style={styles.ruledBlock}>
+            <FieldLabel>IL COSTO DELL'INAZIONE</FieldLabel>
+            <Text style={styles.longText}>{stageInfo.costOfInaction}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.ruledBlock}>
           <Text style={styles.cardTitle}>Criteri per il prossimo salto</Text>
           {(stageInfo.graduationCriteria || [])
@@ -771,6 +805,13 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             </View>
           </View>
         ))}
+
+        {/* [V2.2 / P4] De-prioritizzazione esplicita: ciò che non è
+            in lista è rumore per questa fase. */}
+        <Text style={styles.deprioritizeNote}>
+          Tutto ciò che non è in queste tre priorità è, per questa fase,
+          rumore: non perché non conti, ma perché conta dopo.
+        </Text>
 
         <PageFooter />
       </Page>
@@ -960,6 +1001,15 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           </Text>
         </View>
 
+        {/* [V2.2 / P5] Il problema rivelato: il loop che la Strategic
+            Review chiude. Render condizionale. */}
+        {stageInfo.nextProblem ? (
+          <View style={styles.ruledBlock}>
+            <FieldLabel>IL PROBLEMA CHE SI APRE DOPO</FieldLabel>
+            <Text style={styles.longText}>{stageInfo.nextProblem}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.ctaBox}>
           <Text style={styles.ctaLabel}>STRATEGIC REVIEW</Text>
           <Text style={styles.ctaTitle}>
@@ -967,13 +1017,19 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               ? `${firstName}, trasforma la diagnosi in ordine operativo.`
               : "Trasforma la diagnosi in ordine operativo."}
           </Text>
+          {/* [V2.2 / 4.3] Registro "descrivi, non spiegare". */}
           <Text style={styles.ctaBody}>
-            Il report ha isolato il vincolo che oggi limita il prossimo salto
-            del business. La Strategic Review serve a trasformare questa
-            diagnosi in un piano operativo: cosa correggere prima, cosa non
-            scalare ancora, quali decisioni prendere e quali priorità mettere
-            in ordine nei prossimi 30-60 giorni.
+            Questo report ti ha dato il COSA: il vincolo, la posta in gioco,
+            i criteri per riconoscere quando è risolto. Quello che non può
+            darti è la sequenza applicata al tuo caso: cosa viene prima tra
+            le tue priorità, con i tuoi margini, la tua capacità e la tua
+            finestra di decisione. La Strategic Review serve esattamente a
+            questo: trasformare la diagnosi in un ordine operativo dei
+            prossimi 30-60 giorni.
           </Text>
+          {getIntentClosing(result) ? (
+            <Text style={styles.ctaIntentLine}>{getIntentClosing(result)}</Text>
+          ) : null}
           <Link src={strategicReviewUrl} style={styles.ctaButton}>
             Prenota la Strategic Review
           </Link>
@@ -1592,5 +1648,22 @@ const styles = StyleSheet.create({
     fontSize: 7.5,
     color: "rgba(255,255,255,0.45)",
     marginTop: 10
+  },
+  /* [V2.2] Nota di de-prioritizzazione, pagina 04 */
+  deprioritizeNote: {
+    fontSize: 8.5,
+    lineHeight: 1.5,
+    color: MUTED,
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: 0.75,
+    borderTopColor: HAIRLINE
+  },
+  /* [V2.2] Riga di chiusura calibrata su intent, dentro la ctaBox */
+  ctaIntentLine: {
+    fontSize: 9.5,
+    lineHeight: 1.5,
+    color: GOLD,
+    marginBottom: 16
   }
 });
