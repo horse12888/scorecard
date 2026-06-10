@@ -671,7 +671,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             ))}
         </View>
 
-        <View style={styles.warningBox}>
+        <View style={styles.warningBox} wrap={false}>
           <Text style={styles.warningTitle}>COSA NON SCALARE ANCORA</Text>
           <Text style={styles.warningText}>
             {stageInfo.nonFare ||
@@ -717,7 +717,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={styles.focusText}>{pdfRecommendedFocus}</Text>
         </View>
 
-        <View style={styles.warningBox}>
+        <View style={styles.warningBox} wrap={false}>
           <Text style={styles.warningTitle}>ATTENZIONE STRATEGICA</Text>
           <Text style={styles.warningText}>{pdfStrategicWarning}</Text>
         </View>
@@ -1010,7 +1010,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           </View>
         ) : null}
 
-        <View style={styles.ctaBox}>
+        <View style={styles.ctaBox} wrap={false}>
           <Text style={styles.ctaLabel}>STRATEGIC REVIEW</Text>
           <Text style={styles.ctaTitle}>
             {firstName
@@ -1248,8 +1248,8 @@ const styles = StyleSheet.create({
 
   /* ---- Pagine interne ---- */
   page: {
-    paddingTop: 34,
-    paddingBottom: 52,
+    paddingTop: 30,
+    paddingBottom: 46,
     paddingHorizontal: 46,
     backgroundColor: "#FFFFFF",
     color: INK,
@@ -1336,10 +1336,10 @@ const styles = StyleSheet.create({
 
   /* ---- Blocchi a righe ---- */
   ruledBlock: {
-    paddingVertical: 14,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: HAIRLINE,
-    marginBottom: 4
+    marginBottom: 2
   },
   twoCol: {
     flexDirection: "row",
@@ -1357,8 +1357,8 @@ const styles = StyleSheet.create({
     color: TEAL_DARK,
     fontWeight: 700,
     letterSpacing: 1.6,
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 7,
+    marginBottom: 3,
     textTransform: "uppercase"
   },
   blockText: {
@@ -1367,8 +1367,8 @@ const styles = StyleSheet.create({
     color: INK
   },
   longText: {
-    fontSize: 10,
-    lineHeight: 1.55,
+    fontSize: 9.5,
+    lineHeight: 1.42,
     color: BODY
   },
   cardTitle: {
@@ -1381,7 +1381,7 @@ const styles = StyleSheet.create({
   listRow: {
     flexDirection: "row",
     gap: 12,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: "#EFEAE0"
   },
@@ -1425,9 +1425,9 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
     borderLeftColor: DANGER,
     backgroundColor: "#FBF1EF",
-    padding: 14,
-    marginTop: 14,
-    marginBottom: 4
+    padding: 11,
+    marginTop: 10,
+    marginBottom: 2
   },
   warningTitle: {
     fontSize: 7.5,
@@ -1475,8 +1475,8 @@ const styles = StyleSheet.create({
   priorityBlock: {
     borderBottomWidth: 1,
     borderBottomColor: HAIRLINE,
-    paddingBottom: 14,
-    marginBottom: 14
+    paddingBottom: 10,
+    marginBottom: 10
   },
   priorityHeader: {
     flexDirection: "row",
@@ -1608,8 +1608,8 @@ const styles = StyleSheet.create({
   /* ---- CTA finale ---- */
   ctaBox: {
     backgroundColor: COVER_BG,
-    padding: 26,
-    marginTop: 18
+    padding: 18,
+    marginTop: 12
   },
   ctaLabel: {
     fontSize: 7.5,
@@ -1620,18 +1620,18 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   ctaTitle: {
-    fontSize: 22,
+    fontSize: 19,
     lineHeight: 1.08,
     color: "#FFFFFF",
     fontWeight: 700,
     letterSpacing: -0.4,
-    marginBottom: 12
+    marginBottom: 8
   },
   ctaBody: {
-    fontSize: 10.5,
-    lineHeight: 1.5,
+    fontSize: 9.5,
+    lineHeight: 1.45,
     color: "rgba(255,255,255,0.78)",
-    marginBottom: 16
+    marginBottom: 10
   },
   ctaButton: {
     fontSize: 12,
@@ -1652,18 +1652,18 @@ const styles = StyleSheet.create({
   /* [V2.2] Nota di de-prioritizzazione, pagina 04 */
   deprioritizeNote: {
     fontSize: 8.5,
-    lineHeight: 1.5,
+    lineHeight: 1.45,
     color: MUTED,
-    marginTop: 14,
-    paddingTop: 10,
+    marginTop: 8,
+    paddingTop: 6,
     borderTopWidth: 0.75,
     borderTopColor: HAIRLINE
   },
   /* [V2.2] Riga di chiusura calibrata su intent, dentro la ctaBox */
   ctaIntentLine: {
-    fontSize: 9.5,
-    lineHeight: 1.5,
+    fontSize: 9,
+    lineHeight: 1.45,
     color: GOLD,
-    marginBottom: 16
+    marginBottom: 10
   }
 });
