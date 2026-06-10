@@ -1121,16 +1121,36 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <View style={styles.twoColLarge}>
           <View style={styles.columnRuled}>
             <Text style={styles.cardTitle}>Le tue forze</Text>
-            {strengths.map((item: any, index: number) => (
-              <View key={item.key || index} style={styles.scoreRow}>
-                <Text style={styles.scoreRowName}>
-                  {getDimensionLabel(item)}
-                </Text>
-                <Text style={styles.scoreRowValue}>
-                  {Number(item.score || 0).toFixed(1)}
-                </Text>
-              </View>
-            ))}
+            {/* [V2.3.2] Coerenza col bracket di pagina 05: sotto 4.0
+                una dimensione è etichettata VINCOLO e non può
+                comparire qui come forza. */}
+            {(() => {
+              const realStrengths = (strengths || []).filter(
+                (item: any) => Number(item.score || 0) >= 4.0
+              );
+
+              if (realStrengths.length === 0) {
+                return (
+                  <Text style={styles.longText}>
+                    In questa fase nessuna dimensione è ancora un punto
+                    d'appoggio consolidato. Non è un giudizio: è la
+                    fotografia di un sistema che va alzato alla base
+                    prima di poter fare leva su un punto di forza.
+                  </Text>
+                );
+              }
+
+              return realStrengths.map((item: any, index: number) => (
+                <View key={item.key || index} style={styles.scoreRow}>
+                  <Text style={styles.scoreRowName}>
+                    {getDimensionLabel(item)}
+                  </Text>
+                  <Text style={styles.scoreRowValue}>
+                    {Number(item.score || 0).toFixed(1)}
+                  </Text>
+                </View>
+              ));
+            })()}
           </View>
 
           <View style={styles.columnRuled}>
