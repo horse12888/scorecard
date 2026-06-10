@@ -416,6 +416,16 @@ function getIntentInsight(result: PdfResult) {
    Fonte: result.intentLevel (top-level, da buildEnrichedResult)
    con fallback su intentInsight.level se presente.
    Se l'intent non è disponibile, nessuna riga aggiuntiva. */
+
+/* [V2.3.1] Conteggio priorità dinamico: la diagnostics può
+   restituirne meno di 3 (es. quando solo 2 dimensioni sono
+   sotto soglia). La copy deve seguire i dati, non viceversa. */
+function priorityCountWord(n: number) {
+  if (n === 1) return "una";
+  if (n === 2) return "due";
+  return "tre";
+}
+
 function getIntentClosing(result: PdfResult): string | null {
   const raw =
     result.intentLevel ?? (result.intentInsight as any)?.level ?? null;
@@ -808,7 +818,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           {[
             "Lo stage operativo",
             "Il pattern diagnostico",
-            "Le 3 priorità operative",
+            `Le ${priorityCountWord(priorities.length)} priorità operative`,
             "La mappa delle 6 dimensioni",
             "Forze e vincoli",
             "I vincoli funzionali",
@@ -986,7 +996,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <PageHeader name={name} />
         <SectionTitle
           number="04"
-          kicker="LE 3 PRIORITÀ OPERATIVE"
+          kicker={`LE ${priorityCountWord(priorities.length).toUpperCase()} PRIORITÀ OPERATIVE`}
           title="Cosa va chiarito prima"
           body="Queste sono le aree che oggi creano più attrito operativo. Prima di aumentare volume, complessità o investimento, vanno rese più chiare, trasferibili e leggibili."
         />
@@ -1030,8 +1040,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         {/* [V2.2 / P4] De-prioritizzazione esplicita: ciò che non è
             in lista è rumore per questa fase. */}
         <Text style={styles.deprioritizeNote}>
-          Tutto ciò che non è in queste tre priorità è, per questa fase,
-          rumore: non perché non conti, ma perché conta dopo.
+          {`Tutto ciò che non è in queste ${priorityCountWord(priorities.length)} priorità è, per questa fase, rumore: non perché non conti, ma perché conta dopo.`}
         </Text>
 
         <PageFooter />
