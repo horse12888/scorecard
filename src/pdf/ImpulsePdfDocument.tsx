@@ -420,6 +420,31 @@ function getIntentInsight(result: PdfResult) {
 /* [V2.3.1] Conteggio priorità dinamico: la diagnostics può
    restituirne meno di 3 (es. quando solo 2 dimensioni sono
    sotto soglia). La copy deve seguire i dati, non viceversa. */
+
+/* [V2.4.1 / CONVERSIONE] Il loop aperto prima della CTA deve
+   specchiare IL LORO gap, non quello medio dello stage.
+   Pagina 08 è la pagina del profilo: il nextProblem segue il
+   profilo (A-D), con fallback al nextProblem di stage.
+   Tutte le varianti restano WHAT-not-HOW: aprono una decisione
+   di sequenza, mai un metodo. */
+const PROFILE_NEXT_PROBLEM: Record<string, string> = {
+  A: "Quando il messaggio diventa stabile, il problema cambia natura: in quale ordine propagarlo — pricing, materiali, canali — senza fermare la vendita mentre lo fai. Quella sequenza dipende dai tuoi margini e dal tuo ciclo di vendita.",
+  B: "Quando il motore di crescita torna leggibile, la domanda diventa: quale leva muovere per prima — canale, qualifica o pricing — e a quale ritmo il sistema regge senza degradare la delivery. È una decisione di sequenza, non di volume.",
+  C: "Quando le regole ricorrenti sono scritte, si apre il problema successivo: cosa delegare per primo e cosa tenere. Delega e standard nell'ordine sbagliato creano più supervisione, non meno — e l'ordine giusto dipende dal tuo team reale.",
+  D: "Quando il business diventa leggibile dall'esterno, si apre la domanda strategica: a chi aprirlo per primo — partner, figure senior, capitale — e in quale forma. Ogni porta richiede una preparazione diversa, e l'ordine determina il tuo potere negoziale."
+};
+
+function getNextProblem(result: PdfResult, stageInfo: any): string | "" {
+  const raw = String(safeText(result.profile) || "").toUpperCase();
+  const match = raw.match(/[ABCD]\s*$/);
+  const letter = match ? match[0].trim() : "";
+  return (
+    (letter && PROFILE_NEXT_PROBLEM[letter]) ||
+    stageInfo?.nextProblem ||
+    ""
+  );
+}
+
 function priorityCountWord(n: number) {
   if (n === 1) return "una";
   if (n === 2) return "due";
@@ -1047,7 +1072,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         {/* [V2.2 / P4] De-prioritizzazione esplicita: ciò che non è
             in lista è rumore per questa fase. */}
         <Text style={styles.deprioritizeNote}>
-          {`Tutto ciò che non è in queste ${priorityCountWord(priorities.length)} priorità è, per questa fase, rumore: non perché non conti, ma perché conta dopo.`}
+          {`Tutto ciò che non è in queste ${priorityCountWord(priorities.length)} priorità è, per questa fase, rumore: non perché non conti, ma perché conta dopo. L'ordine di intervento tra queste priorità — cosa prima, cosa dopo, a quale ritmo — è il lavoro della Strategic Review (pagina 08).`}
         </Text>
 
         <PageFooter />
@@ -1272,10 +1297,12 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         {/* [V2.2 / P5] Il problema rivelato: il loop che la Strategic
             Review chiude. Render condizionale. */}
-        {stageInfo.nextProblem ? (
+        {getNextProblem(result, stageInfo) ? (
           <View style={styles.ruledBlock}>
             <FieldLabel>IL PROBLEMA CHE SI APRE DOPO</FieldLabel>
-            <Text style={styles.longText}>{stageInfo.nextProblem}</Text>
+            <Text style={styles.longText}>
+              {getNextProblem(result, stageInfo)}
+            </Text>
           </View>
         ) : null}
 
@@ -1288,13 +1315,13 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           </Text>
           {/* [V2.2 / 4.3] Registro "descrivi, non spiegare". */}
           <Text style={styles.ctaBody}>
-            Questo report ti ha dato il COSA: il vincolo, la posta in gioco,
-            i criteri per riconoscere quando è risolto. Quello che non può
-            darti è la sequenza applicata al tuo caso: cosa viene prima tra
-            le tue priorità, con i tuoi margini, la tua capacità e la tua
-            finestra di decisione. La Strategic Review serve esattamente a
-            questo: trasformare la diagnosi in un ordine operativo dei
-            prossimi 30-60 giorni.
+            {`Questo report ti ha dato il COSA: il vincolo, la posta in gioco, i criteri per riconoscere quando è risolto. Quello che non può darti è la sequenza applicata al tuo caso: cosa viene prima tra ${
+              priorities.length > 0
+                ? priorities
+                    .map((item: any) => getDimensionLabel(item))
+                    .join(", ")
+                : "le tue priorità"
+            }, con i tuoi margini, la tua capacità e la tua finestra di decisione. La Strategic Review serve esattamente a questo: trasformare la diagnosi in un ordine operativo dei prossimi 30-60 giorni.`}
           </Text>
           {getIntentClosing(result) ? (
             <Text style={styles.ctaIntentLine}>{getIntentClosing(result)}</Text>
