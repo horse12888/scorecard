@@ -191,6 +191,19 @@ export const IMPULSE_STAGE_DATABASE: Record<
 };
 
 export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> = {
+  /* [V2 PASS — sezione 4.4 dello spec]
+     Regole applicate a ogni vincolo:
+     - P1: trigger = sintomi specifici e riconoscibili
+     - P2: implication = costo come MECCANISMO (mai numeri)
+     - work = lo stato finale che deve esistere (WHAT), mai il metodo
+     - avoid = anti-azione
+     - TAG DISCIPLINATI: una dimensione sta nei tag solo se la copy
+       ne parla davvero. (Prima: copy margins taggata anche readiness
+       -> utenti con binding readiness ricevevano consigli sui numeri
+       interni che i loro stessi punteggi smentivano.)
+     - 2 vincoli NUOVI per il lato readiness, prima orfano:
+       readiness_external_materials, finance_external_readability */
+
   product: [
     {
       id: "product_v1_not_paid_ready",
@@ -198,13 +211,13 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
       dimensions: ["clarity", "margins"],
       stages: ["FOUNDATION"],
       trigger:
-        "L’offerta è interessante, ma non ancora abbastanza chiara, concreta o necessaria da generare pagamento.",
+        "Arrivano complimenti, richieste di informazioni e demo che non si chiudono — ma il prezzo non è quasi mai stato detto ad alta voce, e nessuno ha ancora pagato due volte.",
       implication:
-        "Il mercato può apprezzare l’idea senza ancora riconoscerla come qualcosa da comprare.",
+        "Ogni settimana spesa a perfezionare ciò che nessuno ha comprato converte runway in complessità invece che in prova di mercato: l'interesse non è domanda finché non passa dalla cassa.",
       work:
-        "Definire una prima versione vendibile, una promessa chiara, un pricing iniziale e criteri minimi di successo cliente.",
+        "Una prima versione vendibile con promessa in una frase, un prezzo iniziale detto senza esitare e criteri minimi di successo cliente.",
       avoid:
-        "Non aumentare marketing prima di aver chiarito cosa viene comprato e perché."
+        "Non aumentare marketing prima di aver chiarito cosa viene comprato, da chi e a quale prezzo."
     },
     {
       id: "product_too_broad",
@@ -212,27 +225,27 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
       dimensions: ["clarity", "operations", "margins"],
       stages: ["OPERATING_STABILITY"],
       trigger:
-        "Il business serve clienti troppo diversi, personalizza troppo e fatica a mantenere qualità, margine e coerenza.",
+        "Quasi ogni cliente compra una versione leggermente diversa: preventivi su misura, eccezioni in delivery, e la domanda \"cosa fate esattamente?\" riceve risposte diverse a seconda di chi risponde.",
       implication:
-        "Ogni nuovo cliente può aumentare ricavi ma anche complessità nascosta.",
+        "Ogni variante aggiunta vende una volta ma si paga per sempre: più eccezioni in delivery, margine meno leggibile, messaggio più diluito. Il fatturato cresce mentre il sistema si indebolisce.",
       work:
-        "Identificare il cliente migliore, ridurre varianti inutili e allineare offerta, delivery e pricing attorno a quel segmento.",
+        "Il cliente migliore identificato, le varianti ridotte all'essenziale, e offerta, delivery e pricing allineati attorno a quel segmento.",
       avoid:
-        "Non dire sì a clienti o richieste che rendono il sistema meno scalabile."
+        "Non dire sì a clienti o richieste che rendono il sistema meno scalabile, anche quando portano fatturato."
     },
     {
       id: "product_value_expansion_missing",
       label: "Percorso di valore incompleto",
-      dimensions: ["asset", "margins", "clarity"],
+      dimensions: ["asset", "margins"],
       stages: ["VALUE_ARCHITECTURE"],
       trigger:
-        "Il business ha una prima offerta funzionante, ma non ha un percorso chiaro per aumentare valore, retention o LTV.",
+        "Dopo la prima vendita non succede niente di strutturato: chi vuole continuare deve chiederlo lui, e il valore generato per i clienti migliori non ha un passo successivo naturale.",
       implication:
-        "La crescita dipende troppo dall’acquisizione di nuovi clienti invece che dall’espansione del valore per clienti già acquisiti.",
+        "Senza percorso di espansione, ogni crescita richiede clienti nuovi: il costo di acquisizione si ripaga una volta sola, e il valore costruito con i clienti migliori resta sul tavolo.",
       work:
-        "Disegnare un percorso cliente con offerta principale, possibile espansione, pricing coerente e materiali commerciali riutilizzabili.",
+        "Un percorso cliente con offerta principale, espansione naturale, pricing coerente e materiali riutilizzabili.",
       avoid:
-        "Non creare nuovi prodotti scollegati dal bisogno dei clienti migliori."
+        "Non creare nuovi prodotti scollegati dal bisogno dei clienti migliori per riempire il calendario."
     }
   ],
 
@@ -240,30 +253,30 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
     {
       id: "marketing_no_repeatable_channel",
       label: "Canale di acquisizione non ripetibile",
-      dimensions: ["acquisition", "clarity"],
+      dimensions: ["acquisition"],
       stages: ["MARKET_TRACTION"],
       trigger:
-        "I clienti arrivano da referral, relazioni personali o iniziative sporadiche, senza un canale misurabile.",
+        "I clienti arrivano quasi solo da passaparola e rete personale: quando spingi tu c'è un picco, quando consegni c'è silenzio — e il vuoto si presenta 60-90 giorni dopo.",
       implication:
-        "Il business può vendere, ma non sa ancora generare domanda con prevedibilità.",
+        "Finché la domanda parte e si ferma con la tua attenzione, il fatturato non si accumula: si alterna. E ogni mese imprevedibile rende impossibile pianificare assunzioni o investimenti.",
       work:
-        "Identificare il canale più promettente, definire una routine commerciale e tracciare attività, lead e conversioni.",
+        "Un canale identificato come prioritario, una routine commerciale sostenibile e numeri visibili su attività, lead e conversioni.",
       avoid:
-        "Non aprire troppi canali contemporaneamente."
+        "Non aprire più canali in contemporanea: più volume su un sistema non leggibile produce rumore, non clienti."
     },
     {
       id: "marketing_unqualified_demand",
       label: "Domanda non qualificata",
-      dimensions: ["acquisition", "margins", "operations"],
+      dimensions: ["acquisition", "margins"],
       stages: ["OPERATING_STABILITY"],
       trigger:
-        "Il marketing genera interesse, ma troppi lead non sono adatti, non comprano o creano attrito nella delivery.",
+        "Il marketing porta richieste, ma troppe sono fuori target: call con gente che non comprerà mai, preventivi che non si chiudono, e i clienti sbagliati che entrano consumano più di quanto pagano.",
       implication:
-        "Il business spreca tempo commerciale e abbassa qualità operativa.",
+        "Ogni lead fuori target costa due volte: il tempo commerciale che brucia e il posto che occupa al posto di un cliente giusto. Il volume cresce mentre il margine per ora lavorata scende.",
       work:
-        "Chiarire ICP, messaggio, criteri di qualificazione e contenuti che attirano clienti più vicini al profilo migliore.",
+        "Un profilo cliente esplicito, criteri di qualificazione detti ad alta voce e un messaggio che attira chi è vicino al profilo migliore.",
       avoid:
-        "Non misurare solo quantità di lead se la qualità dei lead consuma margine."
+        "Non misurare il marketing solo sulla quantità di lead se la loro qualità sta consumando margine."
     },
     {
       id: "marketing_cac_pressure",
@@ -271,13 +284,13 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
       dimensions: ["acquisition", "margins", "asset"],
       stages: ["SCALE_READINESS"],
       trigger:
-        "I canali funzionano meno, i costi salgono o il business dipende troppo da performance marketing immediato.",
+        "I canali che funzionavano rendono meno: serve più budget per gli stessi risultati, e se l'advertising si fermasse domani, la domanda si fermerebbe con lui.",
       implication:
-        "La crescita può continuare a produrre volume ma comprimere margine e controllo.",
+        "Un business che compra tutta la sua domanda compete ogni giorno all'asta: chi ha brand, referral e asset propri paga meno per lo stesso cliente — e nel tempo quel divario si mangia il margine.",
       work:
-        "Rafforzare posizionamento, contenuto, brand asset, referral e misurazione del ritorno reale per canale.",
+        "Posizionamento, brand asset, referral e una misura del ritorno reale per canale che non dipenda solo dalla spesa corrente.",
       avoid:
-        "Non aumentare budget pubblicitario se il sistema non sa ancora attribuire qualità e ritorno."
+        "Non aumentare budget pubblicitario se il sistema non sa ancora attribuire qualità e ritorno per canale."
     }
   ],
 
@@ -285,16 +298,16 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
     {
       id: "sales_no_script_or_feedback",
       label: "Vendita non codificata",
-      dimensions: ["acquisition", "asset", "readiness"],
+      dimensions: ["acquisition", "asset"],
       stages: ["MARKET_TRACTION", "OPERATING_STABILITY"],
       trigger:
-        "La vendita dipende dal founder o da talento individuale, senza script, obiezioni raccolte o materiali riutilizzabili.",
+        "Le vendite migliori le chiudi tu, a modo tuo: le obiezioni le gestisci a memoria, i materiali si rifanno ogni volta, e nessuno saprebbe replicare la tua conversazione di vendita.",
       implication:
-        "Il business non trasforma conversazioni commerciali in asset trasferibili.",
+        "Ogni trattativa vinta in questo modo produce fatturato ma zero asset: il know-how commerciale evapora invece di accumularsi, e la vendita resta non delegabile per costruzione.",
       work:
-        "Documentare promessa, obiezioni, domande frequenti, follow-up, materiali e criteri di qualificazione.",
+        "Promessa, obiezioni ricorrenti, domande frequenti, follow-up e criteri di qualificazione esistenti in forma scritta e riutilizzabile.",
       avoid:
-        "Non delegare vendita senza prima rendere visibile cosa funziona."
+        "Non delegare la vendita prima di aver reso visibile cosa funziona: si delega un sistema, non un talento."
     },
     {
       id: "sales_follow_up_leakage",
@@ -302,13 +315,13 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
       dimensions: ["acquisition", "operations"],
       stages: ["OPERATING_STABILITY", "SCALE_READINESS"],
       trigger:
-        "Lead buoni vengono persi perché non esiste una sequenza chiara di follow-up, ownership o priorità.",
+        "Lead buoni muoiono in inbox: il follow-up parte quando qualcuno se ne ricorda, nessuno sa di chi è la responsabilità di una trattativa aperta, e i \"ci risentiamo\" non hanno una data.",
       implication:
-        "Il business paga per generare opportunità che poi non vengono lavorate con disciplina.",
+        "Stai pagando — in tempo o in budget — per generare opportunità che poi non vengono lavorate: il sistema perde a valle quello che compra a monte, e aumentare i lead amplifica la perdita.",
       work:
-        "Creare pipeline, tempi di risposta, responsabilità e sequenze minime per ogni categoria di lead.",
+        "Una pipeline visibile, tempi di risposta definiti, ownership chiara e una sequenza minima di follow-up per ogni categoria di lead.",
       avoid:
-        "Non aumentare lead generation se la pipeline perde opportunità già presenti."
+        "Non aumentare la lead generation finché la pipeline perde opportunità già presenti."
     }
   ],
 
@@ -316,30 +329,30 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
     {
       id: "cs_onboarding_weak",
       label: "Onboarding cliente fragile",
-      dimensions: ["operations", "asset", "readiness"],
+      dimensions: ["operations"],
       stages: ["OPERATING_STABILITY"],
       trigger:
-        "I nuovi clienti si sentono persi, chiedono troppe spiegazioni o non arrivano rapidamente al primo risultato.",
+        "I nuovi clienti fanno sempre le stesse domande nelle prime settimane, il primo risultato arriva tardi, e ogni partenza assorbe attenzione tua o delle persone migliori.",
       implication:
-        "La promessa commerciale perde forza nella delivery e aumenta il rischio di insoddisfazione.",
+        "La promessa fatta in vendita si gioca nei primi giorni: un ingresso disordinato converte entusiasmo in dubbio, e ogni cliente nuovo costa più capacità operativa di quanta dovrebbe.",
       work:
-        "Definire un onboarding standard con passaggi, responsabilità, materiali, tempi e criteri di primo successo.",
+        "Un percorso di ingresso standard con passaggi, responsabilità, materiali, tempi e un primo successo definito.",
       avoid:
-        "Non vendere più clienti se l’onboarding non è ancora capace di assorbire volume."
+        "Non vendere più clienti se l'ingresso non è ancora in grado di assorbire volume senza di te."
     },
     {
       id: "cs_no_satisfaction_metrics",
       label: "Soddisfazione cliente non misurata",
-      dimensions: ["operations", "asset", "readiness"],
+      dimensions: ["operations", "readiness"],
       stages: ["OPERATING_STABILITY", "SCALE_READINESS"],
       trigger:
-        "Il business non misura qualità della customer experience, cause di churn, reclami o segnali di soddisfazione.",
+        "Chi se ne va lo scopri quando se n'è già andato: non esiste un segnale che distingua un cliente silenzioso da uno insoddisfatto, e i reclami arrivano solo quando è tardi.",
       implication:
-        "Il team può confondere clienti silenziosi con clienti soddisfatti.",
+        "Internamente si vola alla cieca sulla qualità; esternamente, retention e soddisfazione non sono dimostrabili a nessuno — e ciò che non è misurato, per un interlocutore serio, non esiste.",
       work:
-        "Creare metriche leggere di soddisfazione, feedback, rinnovo, problemi ricorrenti e miglioramenti prioritari.",
+        "Metriche leggere di soddisfazione e rinnovo, cause di abbandono identificate e un elenco vivo dei problemi ricorrenti.",
       avoid:
-        "Non aspettare reclami evidenti per capire dove la delivery perde valore."
+        "Non aspettare il reclamo evidente per capire dove la delivery perde valore."
     }
   ],
 
@@ -347,30 +360,30 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
     {
       id: "ops_founder_dependency",
       label: "Dipendenza operativa dal founder",
-      dimensions: ["operations", "readiness", "asset"],
+      dimensions: ["operations", "readiness"],
       stages: ["OPERATING_STABILITY"],
       trigger:
-        "Il founder è ancora necessario per risolvere problemi, coordinare persone, prendere decisioni o garantire qualità.",
+        "Ogni eccezione torna sulla tua scrivania, le decisioni ricorrenti aspettano il tuo ok, e una tua assenza di qualche settimana richiederebbe interventi d'emergenza.",
       implication:
-        "Il business può funzionare, ma non è ancora trasferibile o scalabile.",
+        "Il business funziona, ma funziona attraverso di te: la tua capacità di assorbire eccezioni è il tetto dell'azienda — e ciò che dipende dalla tua presenza non è né trasferibile né valutabile da fuori.",
       work:
-        "Mappare attività critiche, responsabilità, standard di qualità, escalation e documentazione minima.",
+        "Attività critiche mappate, regole scritte per le decisioni ricorrenti, standard di qualità e un'escalation che filtra cosa davvero deve arrivare a te.",
       avoid:
-        "Non assumere altre persone senza sapere quali decisioni e responsabilità devono uscire dal founder."
+        "Non assumere per delegare il caos: senza regole scritte, ogni persona nuova eredita il disordine e te lo riporta moltiplicato."
     },
     {
       id: "ops_no_weekly_rhythm",
       label: "Ritmo operativo non visibile",
-      dimensions: ["operations", "margins", "readiness"],
+      dimensions: ["operations"],
       stages: ["OPERATING_STABILITY", "SCALE_READINESS"],
       trigger:
-        "Il team è occupato, ma non è chiaro cosa sia prioritario, cosa sia arretrato e cosa stia consumando capacità.",
+        "Tutti sono occupati ma nessuno sa dire cosa è prioritario questa settimana: l'urgente scavalca l'importante, gli arretrati sono invisibili finché non esplodono.",
       implication:
-        "La crescita può creare attività senza creare avanzamento reale.",
+        "Un calendario pieno non è un sistema operativo: senza un ritmo che renda visibili priorità e capacità, l'attività cresce senza che cresca l'avanzamento — e il rumore vince sul segnale.",
       work:
-        "Creare un ritmo settimanale per priorità, capacità, follow-up, urgenze, blocchi e responsabilità.",
+        "Un ritmo settimanale in cui priorità, capacità, blocchi e responsabilità sono visibili a tutti quelli che devono vederli.",
       avoid:
-        "Non confondere calendario pieno con sistema operativo sano."
+        "Non confondere l'essere occupati con l'avanzare: sono due misure diverse, e solo la seconda conta."
     }
   ],
 
@@ -378,30 +391,44 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
     {
       id: "finance_basic_visibility_missing",
       label: "Numeri base non leggibili",
-      dimensions: ["margins", "readiness"],
+      dimensions: ["margins"],
       stages: ["FOUNDATION", "MARKET_TRACTION", "OPERATING_STABILITY"],
       trigger:
-        "Il business non traccia chiaramente incassi, costi, margini, tasse, pagamenti o cash flow.",
+        "Le decisioni si prendono guardando il conto in banca: il margine per offerta si ricostruisce a mano quando serve, e tra incassato e guadagnato la differenza si scopre dopo.",
       implication:
-        "Ogni decisione di crescita rischia di essere presa senza capire il reale impatto economico.",
+        "Ogni decisione di crescita presa senza margini leggibili è una scommessa: si può accelerare esattamente sull'offerta o sul canale che distrugge valore, convinti di stare crescendo.",
       work:
-        "Rendere visibili entrate, costi, margine per offerta, cash flow minimo e obblighi fiscali.",
+        "Entrate, costi, margine per offerta, cash flow minimo e obblighi fiscali visibili senza ricostruzioni manuali.",
       avoid:
-        "Non aumentare spesa o team prima di sapere cosa il business può sostenere."
+        "Non aumentare spesa o team prima di sapere cosa il business può davvero sostenere."
+    },
+    {
+      id: "finance_external_readability",
+      label: "Numeri leggibili dentro, illeggibili fuori",
+      dimensions: ["readiness", "margins"],
+      stages: ["OPERATING_STABILITY", "VALUE_ARCHITECTURE", "SCALE_READINESS"],
+      trigger:
+        "I numeri esistono e tu li conosci — ma ogni interlocutore esterno richiede giorni di estrazioni manuali e la tua presenza per spiegare cosa significano davvero.",
+      implication:
+        "Un business i cui numeri richiedono traduzione orale viene prudenzialmente scontato da chiunque debba valutarlo: partner, figure senior, capitale. Quello sconto non lo vedi mai scritto, ma lo paghi a ogni negoziazione.",
+      work:
+        "Una vista dei numeri — struttura, margini, andamento — che un interlocutore esterno legge e capisce senza di te nella stanza.",
+      avoid:
+        "Non aprire conversazioni con partner o capitale presentando numeri ricostruiti ad hoc per l'occasione."
     },
     {
       id: "finance_reinvestment_unclear",
       label: "Capacità di reinvestimento non chiara",
-      dimensions: ["margins", "asset", "readiness"],
+      dimensions: ["margins", "asset"],
       stages: ["VALUE_ARCHITECTURE", "SCALE_READINESS"],
       trigger:
-        "Il business cresce ma non sa quanto può reinvestire in marketing, team, prodotto o sistemi senza comprimere margine.",
+        "Il business cresce, ma quanto si può reinvestire in marketing, team o sistemi è una sensazione: ogni investimento importante è un atto di fede sul cash flow futuro.",
       implication:
-        "La crescita può sembrare positiva mentre riduce liquidità, controllo o resilienza.",
+        "Senza una misura della capacità di reinvestimento, la crescita può sembrare salute mentre consuma liquidità e resilienza: si scopre il limite solo sbattendoci contro.",
       work:
-        "Creare budget, forecast semplice, margine per offerta e scenari di reinvestimento.",
+        "Un budget, un forecast semplice, il margine per offerta e scenari di reinvestimento confrontati con la realtà.",
       avoid:
-        "Non finanziare crescita con intuizione se i numeri non mostrano capacità reale."
+        "Non finanziare la crescita a intuito se i numeri non mostrano la capacità reale di sostenerla."
     }
   ],
 
@@ -412,27 +439,27 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
       dimensions: ["operations", "readiness"],
       stages: ["OPERATING_STABILITY", "SCALE_READINESS"],
       trigger:
-        "Le persone aiutano, ma responsabilità, output attesi, criteri e ownership non sono definiti.",
+        "Tutti aiutano, nessuno possiede: gli output attesi non sono scritti, le review non esistono, e quando qualcosa cade a terra non è colpa di nessuno perché non era di nessuno.",
       implication:
-        "Il team aumenta capacità solo in apparenza, mentre crea più coordinamento per il founder.",
+        "Persone senza ownership aumentano la capacità solo in apparenza: ogni testa in più aggiunge coordinamento sulle tue spalle — e da fuori, un'organizzazione senza ruoli leggibili sembra una persona con aiutanti.",
       work:
-        "Definire ruoli, output, responsabilità decisionali, criteri di performance e momenti di review.",
+        "Ruoli con output attesi, responsabilità decisionali esplicite, criteri di performance e momenti di review che esistono davvero.",
       avoid:
-        "Non aggiungere persone se ogni nuova persona aumenta il carico di coordinamento."
+        "Non aggiungere persone se ogni nuova persona aumenta il carico di coordinamento invece di ridurlo."
     },
     {
       id: "people_specialization_gap",
       label: "Competenze non specializzate",
-      dimensions: ["operations", "asset", "readiness"],
+      dimensions: ["operations", "readiness"],
       stages: ["SCALE_READINESS"],
       trigger:
-        "Il business richiede competenze specifiche, ma continua ad affidarsi a generalisti o persone che devono coprire troppi ambiti.",
+        "Problemi ormai specialistici — finanza, dati, canali a scala — vengono gestiti da generalisti che coprono troppi fronti: le decisioni competenti aspettano sempre te o un consulente esterno.",
       implication:
-        "La complessità supera la capacità del team di prendere decisioni competenti e autonome.",
+        "Quando la complessità supera la competenza disponibile, le decisioni rallentano o peggiorano in silenzio: il costo non si vede in un report, si vede nei mesi persi sulle scelte sbagliate.",
       work:
-        "Separare responsabilità specialistiche, ownership funzionali, sistemi di collaborazione e metriche dedicate.",
+        "Responsabilità specialistiche separate, ownership funzionali e metriche dedicate per le aree che ormai richiedono profondità.",
       avoid:
-        "Non chiedere a un generalista di risolvere problemi specialistici senza struttura."
+        "Non chiedere a un generalista di risolvere problemi specialistici senza dargli struttura, mandato e limiti chiari."
     }
   ],
 
@@ -440,30 +467,52 @@ export const FUNCTION_CONSTRAINT_LIBRARY: Record<string, FunctionConstraint[]> =
     {
       id: "systems_scattered_data",
       label: "Dati dispersi",
-      dimensions: ["readiness", "asset", "operations"],
+      dimensions: ["operations", "readiness"],
       stages: ["OPERATING_STABILITY", "SCALE_READINESS"],
       trigger:
-        "Informazioni cliente, lead, processi, file, password o decisioni sono distribuiti in troppi luoghi.",
+        "Informazioni clienti, file, accessi e decisioni vivono in posti diversi: trovare un dato richiede sapere a chi chiederlo, e ogni analisi parte da una caccia al tesoro.",
       implication:
-        "Il business funziona finché le persone ricordano dove sono le cose, ma diventa fragile quando cresce.",
+        "Il business funziona finché le persone ricordano dove sono le cose: ogni crescita aumenta i punti di rottura, e ciò che non è recuperabile in autonomia non è verificabile da nessuno — dentro o fuori.",
       work:
-        "Centralizzare dati critici, sistemi, accessi, documenti e responsabilità di aggiornamento.",
+        "Dati critici, documenti e accessi centralizzati, con una responsabilità chiara di aggiornamento.",
       avoid:
-        "Non aumentare complessità se le informazioni base non sono ancora recuperabili e affidabili."
+        "Non aggiungere complessità se le informazioni base non sono ancora recuperabili e affidabili."
     },
     {
       id: "systems_tool_sprawl",
       label: "Troppi strumenti, poco sistema",
-      dimensions: ["operations", "margins", "readiness"],
+      dimensions: ["operations", "margins"],
       stages: ["OPERATING_STABILITY", "SCALE_READINESS"],
       trigger:
-        "Il business ha acquistato tool, software o automazioni senza reale adozione, ownership o integrazione.",
+        "Abbonamenti che nessuno usa, lo stesso dato inserito in tre tool diversi, automazioni partite con entusiasmo e abbandonate a metà: la tecnologia si è accumulata, il sistema no.",
       implication:
-        "La tecnologia aumenta costo e complessità invece di ridurre lavoro operativo.",
+        "Ogni tool aggiunto sopra un processo non chiarito aggiunge costo fisso e complessità senza togliere lavoro: si paga due volte — l'abbonamento e il tempo per tenerlo in piedi.",
       work:
-        "Valutare quali strumenti sono essenziali, chi li usa, quale processo supportano e cosa va eliminato.",
+        "Gli strumenti essenziali identificati, ognuno con un owner e un processo che supporta; il resto eliminato.",
       avoid:
-        "Non comprare nuovi tool per compensare processi non chiariti."
+        "Non comprare nuovi tool per compensare processi non chiariti: lo strumento eredita il disordine, non lo risolve."
+    }
+  ],
+
+  externalReadiness: [
+    {
+      id: "readiness_external_materials",
+      label: "Materiali esterni inesistenti",
+      dimensions: ["readiness", "clarity"],
+      stages: [
+        "MARKET_TRACTION",
+        "OPERATING_STABILITY",
+        "VALUE_ARCHITECTURE",
+        "SCALE_READINESS"
+      ],
+      trigger:
+        "Ogni conversazione seria — partner, figura senior, banca — richiede che tu prepari materiali da zero e che tu sia presente per spiegare: senza di te nella stanza, il business non si racconta.",
+      implication:
+        "Chi non può verificare in autonomia, prudenzialmente svaluta: il valore che richiede la tua spiegazione orale viene percepito come più piccolo e più rischioso di quanto sia. E ogni incontro improvvisato consuma una relazione che non torna.",
+      work:
+        "Un set minimo di materiali — sintesi del modello, numeri chiave, struttura — che regge una lettura esterna senza la tua presenza.",
+      avoid:
+        "Non moltiplicare gli incontri esterni sperando che la presenza compensi i materiali: prima si ordina la lettura interna, poi si apre la porta."
     }
   ]
 };
