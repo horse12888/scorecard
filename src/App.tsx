@@ -235,7 +235,7 @@ function getReviewCta(result: any) {
     kicker: 'QUANDO SARAI PRONTO',
     title: 'Il punto di partenza è già identificato.',
     body:
-      'Questa diagnosi resta valida nel tempo. Se vuoi trasformarla in una sequenza operativa con una sessione di lavoro sul tuo caso, la Strategic Review è il passo dopo.',
+      'Questa diagnosi resta valida nel tempo. Se vuoi trasformarla in una sequenza operativa con una sessione di lavoro sul tuo caso, la Strategic Review è il passo successivo.',
     button: 'Scopri la Strategic Review'
   };
 }
