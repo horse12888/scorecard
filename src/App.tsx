@@ -188,6 +188,58 @@ function decodeResultPayload(encodedResult: string) {
   return JSON.parse(decodedString);
 }
 
+/* [V2.5 / CONVERSIONE] CTA Strategic Review on-page, calibrata su intent.
+   Prima la CTA esisteva solo dentro il PDF. */
+function buildStrategicReviewUrl(result: any) {
+  const base = 'https://davidedileo.it/strategic-review';
+  const utm = result?.metadata?.utm || {};
+  const params = new URLSearchParams();
+
+  Object.keys(utm).forEach(k => {
+    if (utm[k]) params.set(k, String(utm[k]));
+  });
+
+  if (result?.metadata?.isTest) params.set('test', '1');
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const leadId = result?.leadId || '';
+  const hash = leadId ? `#leadId=${encodeURIComponent(leadId)}` : '';
+
+  return `${base}${query}${hash}`;
+}
+
+function getReviewCta(result: any) {
+  const level = Number(result?.intentLevel);
+
+  if (!Number.isNaN(level) && level >= 3) {
+    return {
+      kicker: 'PRIORITÀ ADESSO',
+      title: 'Hai una finestra di decisione aperta.',
+      body:
+        'Hai indicato che una decisione importante è una priorità adesso. La Strategic Review trasforma questa diagnosi nell\u2019ordine operativo dei prossimi 30-60 giorni: cosa correggere prima, cosa non scalare ancora, con i tuoi numeri.',
+      button: 'Prenota ora la Strategic Review'
+    };
+  }
+
+  if (!Number.isNaN(level) && level === 2) {
+    return {
+      kicker: 'STRATEGIC REVIEW',
+      title: 'Trasforma la diagnosi in ordine operativo.',
+      body:
+        'Hai indicato una decisione importante nei prossimi 6-12 mesi. L\u2019ordine degli interventi determina con quale forza ci arriverai. Una sessione di lavoro sul tuo caso: priorità, sequenza, prossime decisioni.',
+      button: 'Prenota la Strategic Review'
+    };
+  }
+
+  return {
+    kicker: 'QUANDO SARAI PRONTO',
+    title: 'Il punto di partenza è già identificato.',
+    body:
+      'Questa diagnosi resta valida nel tempo. Se vuoi trasformarla in una sequenza operativa con una sessione di lavoro sul tuo caso, la Strategic Review è il passo dopo.',
+    button: 'Scopri la Strategic Review'
+  };
+}
+
 export default function App() {
   const [step, setStep] = useState<
     'loading' | 'error' | 'info' | 'questions' | 'summary'
@@ -795,6 +847,31 @@ export default function App() {
                 Report ID: {result.leadId}
               </div>
             ) : null}
+
+            {/* [V2.5] CTA Strategic Review on-page, calibrata su intent */}
+            {(() => {
+              const cta = getReviewCta(result);
+              const reviewUrl = buildStrategicReviewUrl(result);
+              return (
+                <div className="bg-[#1A1A1A] rounded-lg p-6 mt-2">
+                  <p className="text-[11px] tracking-widest font-bold text-[rgb(184,138,42)] mb-2 uppercase">
+                    {cta.kicker}
+                  </p>
+                  <p className="text-xl font-bold text-white mb-2">
+                    {cta.title}
+                  </p>
+                  <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                    {cta.body}
+                  </p>
+                  <a
+                    href={reviewUrl}
+                    className="inline-block bg-[rgb(184,138,42)] hover:bg-[rgb(199,154,59)] text-gray-900 font-bold py-3 px-6 rounded transition"
+                  >
+                    {cta.button}
+                  </a>
+                </div>
+              );
+            })()}
 
             <button
               type="button"
