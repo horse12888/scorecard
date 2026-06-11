@@ -800,9 +800,24 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
   const strategicReviewBaseUrl = "https://davidedileo.it/strategic-review";
   const resolvedLeadId = result.leadId || result.metadata?.leadId || "";
-  const strategicReviewUrl = resolvedLeadId
-    ? `${strategicReviewBaseUrl}#leadId=${encodeURIComponent(resolvedLeadId)}`
-    : strategicReviewBaseUrl;
+
+  /* [V2.5] propaga gli UTM (e il flag test) dal payload al link review:
+     l'attribuzione canale sopravvive anche al percorso via PDF */
+  const utmMeta: Record<string, string> = (result.metadata as any)?.utm || {};
+  const reviewParams = new URLSearchParams();
+  Object.keys(utmMeta).forEach(k => {
+    if (utmMeta[k]) reviewParams.set(k, String(utmMeta[k]));
+  });
+  if ((result.metadata as any)?.isTest) reviewParams.set("test", "1");
+  const reviewQuery = reviewParams.toString() ? `?${reviewParams.toString()}` : "";
+
+  const strategicReviewUrl = `${strategicReviewBaseUrl}${reviewQuery}${
+    resolvedLeadId ? `#leadId=${encodeURIComponent(resolvedLeadId)}` : ""
+  }`;
+
+  const intentLevelNum = Number(
+    result.intentLevel ?? (result.intentInsight as any)?.level
+  );
 
   return (
     <Document
@@ -1347,7 +1362,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             <Text style={styles.ctaIntentLine}>{getIntentClosing(result)}</Text>
           ) : null}
           <Link src={strategicReviewUrl} style={styles.ctaButton}>
-            Prenota la Strategic Review
+            {!Number.isNaN(intentLevelNum) && intentLevelNum >= 3
+              ? "Prenota ora la Strategic Review"
+              : "Prenota la Strategic Review"}
           </Link>
           {resolvedLeadId ? (
             <Text style={styles.ctaSmallText}>Report ID: {resolvedLeadId}</Text>
