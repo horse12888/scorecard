@@ -2,46 +2,105 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
+ 
 import React, { useState, useEffect } from 'react';
 import { generateIMPULSEReport } from './pdf';
 import { QUESTIONS } from './questions';
 import { calculateScorecardResult } from './scoring';
 import { computeDiagnosticState } from './diagnostics';
-
+ 
 const SHOW_TESTS =
   (import.meta as any).env.DEV ||
   (import.meta as any).env.VITE_SHOW_TESTS === 'true';
-
+ 
+/* [LINK CORTO] Ponte Apps Script (stesso URL del CRM /exec). Dato ?id=,
+   restituisce via JSONP il payload "result=" preso da pdf_url nel foglio. */
+const SHORT_LINK_WEBAPP =
+  'https://script.google.com/macros/s/AKfycby09pL6InKdxK2zeZLx9Rg7bFnAEH5wieZVyn98qcRBPW8rZ5qblfIQeLxUmNYI2nxY/exec';
+ 
+/* JSONP: evita problemi di CORS verso script.google.com.
+   Risolve con il payload (gia' decodificato dall'url-encoding) o stringa vuota. */
+function fetchEncodedResultById(id: string): Promise<string> {
+  return new Promise(resolve => {
+    const cbName = '__impulseGotPayload_' + Math.random().toString(36).slice(2);
+    let done = false;
+    const script = document.createElement('script');
+ 
+    const cleanup = () => {
+      try {
+        delete (window as any)[cbName];
+      } catch (e) {
+        (window as any)[cbName] = undefined;
+      }
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+ 
+    (window as any)[cbName] = (payload: string) => {
+      done = true;
+      let decoded = '';
+      try {
+        decoded = payload ? decodeURIComponent(payload) : '';
+      } catch (e) {
+        decoded = payload || '';
+      }
+      cleanup();
+      resolve(decoded);
+    };
+ 
+    script.src =
+      SHORT_LINK_WEBAPP +
+      '?id=' +
+      encodeURIComponent(id) +
+      '&callback=' +
+      cbName;
+ 
+    script.onerror = () => {
+      if (!done) {
+        cleanup();
+        resolve('');
+      }
+    };
+ 
+    document.head.appendChild(script);
+ 
+    setTimeout(() => {
+      if (!done) {
+        cleanup();
+        resolve('');
+      }
+    }, 12000);
+  });
+}
+ 
 function makeDevLeadId() {
   const timestamp = new Date()
     .toISOString()
     .replace(/[-:.TZ]/g, '')
     .slice(0, 14);
-
+ 
   const random = Math.random().toString(36).slice(2, 8);
-
+ 
   return `dev_${timestamp}_${random}`;
 }
-
+ 
 function getLeadIdFromParsed(parsed: any) {
   return parsed?.leadId || parsed?.metadata?.leadId || '';
 }
-
+ 
 function toNullableNumber(value: any) {
   if (value === null || value === undefined || value === '') {
     return null;
   }
-
+ 
   const n = Number(value);
-
+ 
   if (Number.isNaN(n)) {
     return null;
   }
-
+ 
   return n;
 }
-
+ 
 function getIntentLevelFromParsed(parsed: any) {
   return toNullableNumber(
     parsed?.intentLevel ??
@@ -51,7 +110,7 @@ function getIntentLevelFromParsed(parsed: any) {
       null
   );
 }
-
+ 
 function getStagingScoreFromParsed(parsed: any) {
   return toNullableNumber(
     parsed?.stagingScore ??
@@ -61,7 +120,7 @@ function getStagingScoreFromParsed(parsed: any) {
       null
   );
 }
-
+ 
 function getIntentLevelFromResult(result: any) {
   return toNullableNumber(
     result?.intentLevel ??
@@ -71,7 +130,7 @@ function getIntentLevelFromResult(result: any) {
       null
   );
 }
-
+ 
 function getStagingScoreFromResult(result: any) {
   return toNullableNumber(
     result?.stagingScore ??
@@ -81,14 +140,14 @@ function getStagingScoreFromResult(result: any) {
       null
   );
 }
-
+ 
 function buildEnrichedResult(baseResult: any, state: any, leadId?: string) {
   const resolvedLeadId =
     leadId ||
     baseResult?.leadId ||
     baseResult?.metadata?.leadId ||
     '';
-
+ 
   const resolvedIntentLevel =
     baseResult?.intentLevel ??
     baseResult?.intent_level ??
@@ -96,64 +155,64 @@ function buildEnrichedResult(baseResult: any, state: any, leadId?: string) {
     baseResult?.metadata?.intent_level ??
     state?.intentInsight?.level ??
     null;
-
+ 
   const resolvedStagingScore =
     baseResult?.stagingScore ??
     baseResult?.staging_score ??
     state?.stagingScore ??
     baseResult?.overall ??
     null;
-
+ 
   return {
     ...baseResult,
-
+ 
     leadId: resolvedLeadId,
-
+ 
     metadata: {
       ...(baseResult.metadata || {}),
       leadId: resolvedLeadId,
       intentLevel: resolvedIntentLevel
     },
-
+ 
     intentLevel: resolvedIntentLevel,
     stagingScore: resolvedStagingScore,
-
+ 
     fascia: state.fascia,
-
+ 
     profile: state.profile,
     profileData: state.profileData,
-
+ 
     stage: state.stageLabel,
     stageLabel: state.stageLabel,
-
+ 
     roadmapStage: state.roadmapStage,
     roadmapInfo: state.roadmapInfo,
-
+ 
     functionConstraints: state.functionConstraints || [],
-
+ 
     strengths: state.forze,
     priorities: state.priorita,
     forze: state.forze,
     priorita: state.priorita,
-
+ 
     processedDims: state.processedDims,
     stageInfo: state.stageInfo,
-
+ 
     topGapPair: state.topGapPair,
     diagnosticPattern: state.diagnosticPattern,
     riskFlags: state.riskFlags || [],
     intentInsight: state.intentInsight,
-
+ 
     spiderDims: state.processedDims.map((d: any) => ({
       label: d.label,
       score: d.score
     }))
   };
 }
-
+ 
 function isValidParsedResult(parsed: any) {
   const dims = parsed?.dimensions;
-
+ 
   const requiredDims = [
     'clarity',
     'acquisition',
@@ -162,7 +221,7 @@ function isValidParsedResult(parsed: any) {
     'asset',
     'readiness'
   ];
-
+ 
   return (
     typeof parsed?.name === 'string' &&
     parsed.name.trim() !== '' &&
@@ -182,55 +241,55 @@ function isValidParsedResult(parsed: any) {
     )
   );
 }
-
+ 
 function decodeResultPayload(encodedResult: string) {
   const decodedString = decodeURIComponent(escape(atob(encodedResult)));
   return JSON.parse(decodedString);
 }
-
+ 
 /* [V2.5 / CONVERSIONE] CTA Strategic Review on-page, calibrata su intent.
    Prima la CTA esisteva solo dentro il PDF. */
 function buildStrategicReviewUrl(result: any) {
   const base = 'https://davidedileo.it/strategic-review';
   const utm = result?.metadata?.utm || {};
   const params = new URLSearchParams();
-
+ 
   Object.keys(utm).forEach(k => {
     if (utm[k]) params.set(k, String(utm[k]));
   });
-
+ 
   if (result?.metadata?.isTest) params.set('test', '1');
-
+ 
   const query = params.toString() ? `?${params.toString()}` : '';
   const leadId = result?.leadId || '';
   const hash = leadId ? `#leadId=${encodeURIComponent(leadId)}` : '';
-
+ 
   return `${base}${query}${hash}`;
 }
-
+ 
 function getReviewCta(result: any) {
   const level = Number(result?.intentLevel);
-
+ 
   if (!Number.isNaN(level) && level >= 3) {
     return {
       kicker: 'PRIORITÀ ADESSO',
       title: 'Hai una finestra di decisione aperta.',
       body:
-        'Hai indicato che una decisione importante è una priorità adesso. La Strategic Review trasforma questa diagnosi nell\u2019ordine operativo dei prossimi 30-60 giorni: cosa correggere prima, cosa non scalare ancora, con i tuoi numeri.',
+        'Hai indicato che una decisione importante è una priorità adesso. La Strategic Review trasforma questa diagnosi nell’ordine operativo dei prossimi 30-60 giorni: cosa correggere prima, cosa non scalare ancora, con i tuoi numeri.',
       button: 'Prenota ora la Strategic Review'
     };
   }
-
+ 
   if (!Number.isNaN(level) && level === 2) {
     return {
       kicker: 'STRATEGIC REVIEW',
       title: 'Trasforma la diagnosi in ordine operativo.',
       body:
-        'Hai indicato una decisione importante nei prossimi 6-12 mesi. L\u2019ordine degli interventi determina con quale forza ci arriverai. Una sessione di lavoro sul tuo caso: priorità, sequenza, prossime decisioni.',
+        'Hai indicato una decisione importante nei prossimi 6-12 mesi. L’ordine degli interventi determina con quale forza ci arriverai. Una sessione di lavoro sul tuo caso: priorità, sequenza, prossime decisioni.',
       button: 'Prenota la Strategic Review'
     };
   }
-
+ 
   return {
     kicker: 'QUANDO SARAI PRONTO',
     title: 'Il punto di partenza è già identificato.',
@@ -239,40 +298,40 @@ function getReviewCta(result: any) {
     button: 'Scopri la Strategic Review'
   };
 }
-
+ 
 export default function App() {
   const [step, setStep] = useState<
     'loading' | 'error' | 'info' | 'questions' | 'summary'
   >('loading');
-
+ 
   const [user, setUser] = useState({
     name: '',
     company: '',
     email: ''
   });
-
+ 
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [result, setResult] = useState<any>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
-
+ 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const encodedResult = urlParams.get('result');
-
-    if (encodedResult) {
+ 
+    /* Rende il report da un payload "result=" (codificato base64). */
+    const renderFromEncoded = (encodedResult: string): boolean => {
       try {
         const parsed = decodeResultPayload(encodedResult);
-
+ 
         if (!parsed || !isValidParsedResult(parsed)) {
           console.error('Validation failed', parsed);
           setStep('error');
-          return;
+          return false;
         }
-
+ 
         const leadId = getLeadIdFromParsed(parsed);
         const intentLevel = getIntentLevelFromParsed(parsed);
         const stagingScore = getStagingScoreFromParsed(parsed);
-
+ 
         const state = computeDiagnosticState(
           parsed.overall,
           parsed.dimensions,
@@ -281,7 +340,7 @@ export default function App() {
             stagingScore
           }
         );
-
+ 
         const enrichedResult = buildEnrichedResult(
           {
             leadId,
@@ -298,67 +357,88 @@ export default function App() {
           state,
           leadId
         );
-
+ 
         console.log('Parsed report leadId:', leadId);
-        console.log('Parsed intentLevel:', intentLevel);
-        console.log('Parsed stagingScore:', stagingScore);
         console.log('Enriched report result:', enrichedResult);
-
+ 
         setResult(enrichedResult);
         setStep('summary');
+        return true;
       } catch (e) {
         console.error('Failed to decode result parameter', e);
         setStep('error');
+        return false;
       }
-
+    };
+ 
+    const encodedResult = urlParams.get('result');
+ 
+    if (encodedResult) {
+      renderFromEncoded(encodedResult);
       return;
     }
-
+ 
+    /* [LINK CORTO] ?id=LEADID -> recupera il payload dal ponte e renderizza.
+       Resta in 'loading' (spinner) finche' il JSONP non risponde. */
+    const shortId = urlParams.get('id');
+ 
+    if (shortId) {
+      fetchEncodedResultById(shortId).then(encoded => {
+        if (encoded) {
+          renderFromEncoded(encoded);
+        } else {
+          console.error('Short link: payload non trovato per id', shortId);
+          setStep('error');
+        }
+      });
+      return;
+    }
+ 
     if (SHOW_TESTS) {
       setStep('info');
     } else {
       setStep('error');
     }
   }, []);
-
+ 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
     setStep('questions');
     setCurrentIdx(0);
   };
-
+ 
   const currentQuestion = QUESTIONS[currentIdx];
-
+ 
   const handleSelectOption = (idx: number, opt: string) => {
     const updatedAnswers = {
       ...answers,
       [currentQuestion.id]: opt
     };
-
+ 
     setAnswers(updatedAnswers);
   };
-
+ 
   const handleYesNo = (val: boolean) => {
     const updatedAnswers = {
       ...answers,
       [currentQuestion.id]: val
     };
-
+ 
     setAnswers(updatedAnswers);
     handleNext(updatedAnswers);
   };
-
+ 
   const handleNext = (currentAnswers: Record<string, any> = answers) => {
     if (currentIdx < QUESTIONS.length - 1) {
       setCurrentIdx(currentIdx + 1);
       return;
     }
-
+ 
     const finalResult = calculateScorecardResult(currentAnswers, user);
-
+ 
     const intentLevel = getIntentLevelFromResult(finalResult);
     const stagingScore = getStagingScoreFromResult(finalResult);
-
+ 
     const state = computeDiagnosticState(
       finalResult.overall,
       finalResult.dimensions,
@@ -367,9 +447,9 @@ export default function App() {
         stagingScore
       }
     );
-
+ 
     const devLeadId = finalResult.leadId || makeDevLeadId();
-
+ 
     const enrichedResult = buildEnrichedResult(
       {
         ...finalResult,
@@ -380,34 +460,34 @@ export default function App() {
       state,
       devLeadId
     );
-
+ 
     setResult(enrichedResult);
     setStep('summary');
   };
-
+ 
   const handlePrev = () => {
     if (currentIdx > 0) {
       setCurrentIdx(currentIdx - 1);
     }
   };
-
+ 
   const handleDownloadPDF = async () => {
     if (result) {
       console.log('Report result before PDF:', result);
       await generateIMPULSEReport(result);
     }
   };
-
+ 
   const runTest = async (
     label: string,
     mockAnswers: Record<string, any>,
     mockUser: any
   ) => {
     const testResult = calculateScorecardResult(mockAnswers, mockUser);
-
+ 
     const intentLevel = getIntentLevelFromResult(testResult);
     const stagingScore = getStagingScoreFromResult(testResult);
-
+ 
     const state = computeDiagnosticState(
       testResult.overall,
       testResult.dimensions,
@@ -416,9 +496,9 @@ export default function App() {
         stagingScore
       }
     );
-
+ 
     const devLeadId = testResult.leadId || makeDevLeadId();
-
+ 
     const enrichedTestResult = buildEnrichedResult(
       {
         ...testResult,
@@ -429,13 +509,13 @@ export default function App() {
       state,
       devLeadId
     );
-
+ 
     setResult(enrichedTestResult);
     setStep('summary');
-
+ 
     await generateIMPULSEReport(enrichedTestResult, label);
   };
-
+ 
   const makeAnswers = (
     clarityScore: number,
     acqScore: number,
@@ -448,10 +528,10 @@ export default function App() {
       Q1: 'Founder o co-founder',
       Q2: '€500k–€1M'
     };
-
+ 
     const mapDimension = (dimName: string, expectedScore: number) => {
       let yesCount = Math.round((expectedScore / 10) * 7);
-
+ 
       QUESTIONS.filter(q => q.dimension === dimName).forEach(q => {
         if (yesCount > 0) {
           ans[q.id] = true;
@@ -461,17 +541,17 @@ export default function App() {
         }
       });
     };
-
+ 
     mapDimension('clarity', clarityScore);
     mapDimension('acquisition', acqScore);
     mapDimension('operations', opsScore);
     mapDimension('margins', marginsScore);
     mapDimension('asset', assetScore);
     mapDimension('readiness', readinessScore);
-
+ 
     return ans;
   };
-
+ 
   const testCases = [
     {
       label: 'TEST 1 - CLARITY GAP',
@@ -510,7 +590,7 @@ export default function App() {
       answers: makeAnswers(8.2, 6.2, 6.2, 5.7, 5.7, 2.8)
     }
   ];
-
+ 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-4 font-sans text-gray-900">
       <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 max-w-2xl w-full">
@@ -518,21 +598,21 @@ export default function App() {
           <h1 className="text-2xl font-bold tracking-tight text-[rgb(39,112,143)]">
             IMPULSE Scorecard
           </h1>
-
+ 
           <div className="text-sm text-gray-500 font-mono tracking-wider">
             {step === 'info' && '1/3 PROFILE'}
             {step === 'questions' && '2/3 ASSESSMENT'}
             {step === 'summary' && 'DIAGNOSI'}
           </div>
         </div>
-
+ 
         {step === 'loading' && (
           <div className="text-center py-20 text-gray-500">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(39,112,143)] mx-auto mb-4"></div>
             <p>Caricamento diagnosi in corso...</p>
           </div>
         )}
-
+ 
         {step === 'error' && (
           <div className="text-center py-10 space-y-4">
             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -550,16 +630,16 @@ export default function App() {
                 />
               </svg>
             </div>
-
+ 
             <h2 className="text-xl font-bold text-gray-900">
               Errore di caricamento
             </h2>
-
+ 
             <p className="text-gray-600">
               Non riusciamo a generare il report perché i dati della scorecard
               sono incompleti. Torna alla scorecard e riprova.
             </p>
-
+ 
             {SHOW_TESTS && (
               <button
                 type="button"
@@ -571,14 +651,14 @@ export default function App() {
             )}
           </div>
         )}
-
+ 
         {step === 'info' && SHOW_TESTS && (
           <form onSubmit={handleStart} className="space-y-4">
             <p className="text-gray-600 mb-6 text-sm">
               Scopri dove il valore del tuo business è bloccato e quale leva
               muovere prima. Compila il form per iniziare.
             </p>
-
+ 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nome
@@ -596,7 +676,7 @@ export default function App() {
                 }
               />
             </div>
-
+ 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Azienda
@@ -614,7 +694,7 @@ export default function App() {
                 }
               />
             </div>
-
+ 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -632,20 +712,20 @@ export default function App() {
                 }
               />
             </div>
-
+ 
             <button
               type="submit"
               className="mt-6 w-full bg-[rgb(39,112,143)] text-white font-medium py-3 px-6 rounded transition hover:bg-[rgb(30,85,110)]"
             >
               Inizia Scorecard
             </button>
-
+ 
             {SHOW_TESTS && (
               <div className="mt-12 pt-6 border-t border-gray-100">
                 <p className="text-xs text-gray-400 font-mono mb-4 text-center">
                   E2E TEST PIPELINE, DEV ONLY
                 </p>
-
+ 
                 <div className="grid grid-cols-2 gap-2">
                   {testCases.map((tc, i) => (
                     <button
@@ -662,24 +742,24 @@ export default function App() {
             )}
           </form>
         )}
-
+ 
         {step === 'questions' && currentQuestion && (
           <div className="space-y-8">
             <div className="mb-6 flex justify-between items-center text-xs font-mono text-gray-400 uppercase">
               <span>
                 DOMANDA {currentIdx + 1} DI {QUESTIONS.length}
               </span>
-
+ 
               {currentQuestion.dimension && (
                 <span>{currentQuestion.dimension}</span>
               )}
             </div>
-
+ 
             <div className="border-b border-gray-100 pb-8 min-h-[160px]">
               <p className="font-semibold text-gray-900 text-xl leading-snug mb-8">
                 {currentQuestion.text}
               </p>
-
+ 
               {currentQuestion.type === 'yesno' ? (
                 <div className="flex gap-4">
                   <button
@@ -693,7 +773,7 @@ export default function App() {
                   >
                     No
                   </button>
-
+ 
                   <button
                     type="button"
                     onClick={() => handleYesNo(true)}
@@ -722,7 +802,7 @@ export default function App() {
                       {opt}
                     </button>
                   ))}
-
+ 
                   <button
                     type="button"
                     onClick={() => handleNext()}
@@ -734,7 +814,7 @@ export default function App() {
                 </div>
               )}
             </div>
-
+ 
             <div className="flex justify-between items-center text-sm">
               <button
                 type="button"
@@ -744,7 +824,7 @@ export default function App() {
               >
                 ← Indietro
               </button>
-
+ 
               {currentQuestion.type === 'yesno' &&
                 answers[currentQuestion.id] !== undefined && (
                   <button
@@ -756,7 +836,7 @@ export default function App() {
                   </button>
                 )}
             </div>
-
+ 
             <div className="w-full bg-gray-100 h-2 rounded overflow-hidden mt-4">
               <div
                 className="bg-[rgb(39,112,143)] h-full transition-all duration-300"
@@ -769,13 +849,13 @@ export default function App() {
             </div>
           </div>
         )}
-
+ 
         {step === 'summary' && result && (
           <div className="space-y-6">
             <h2 className="text-3xl font-bold tracking-tight text-[rgb(39,112,143)] text-center mb-8">
               Diagnosi Elaborata
             </h2>
-
+ 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-gray-50 rounded-lg text-center border border-gray-100 mb-6">
               <div className="flex flex-col justify-center">
                 <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
@@ -785,7 +865,7 @@ export default function App() {
                   {result.overall} / 100
                 </p>
               </div>
-
+ 
               <div className="flex flex-col justify-center">
                 <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
                   FASCIA
@@ -794,7 +874,7 @@ export default function App() {
                   {result.fascia}
                 </p>
               </div>
-
+ 
               <div className="flex flex-col justify-center">
                 <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
                   STAGE
@@ -803,7 +883,7 @@ export default function App() {
                   {result.stage}
                 </p>
               </div>
-
+ 
               <div className="flex flex-col justify-center">
                 <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
                   PROFILE
@@ -813,7 +893,7 @@ export default function App() {
                 </p>
               </div>
             </div>
-
+ 
             {result.diagnosticPattern ? (
               <div className="p-5 bg-gray-50 rounded-lg border border-gray-100">
                 <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
@@ -827,7 +907,7 @@ export default function App() {
                 </p>
               </div>
             ) : null}
-
+ 
             {result.riskFlags && result.riskFlags.length > 0 ? (
               <div className="p-5 bg-red-50 rounded-lg border border-red-100">
                 <p className="text-xs text-red-500 font-mono tracking-wider mb-2">
@@ -841,13 +921,13 @@ export default function App() {
                 </p>
               </div>
             ) : null}
-
+ 
             {result.leadId ? (
               <div className="text-center text-xs text-gray-400 font-mono">
                 Report ID: {result.leadId}
               </div>
             ) : null}
-
+ 
             {/* [V2.5] CTA Strategic Review on-page, calibrata su intent */}
             {(() => {
               const cta = getReviewCta(result);
@@ -872,7 +952,7 @@ export default function App() {
                 </div>
               );
             })()}
-
+ 
             <button
               type="button"
               onClick={handleDownloadPDF}
@@ -880,7 +960,7 @@ export default function App() {
             >
               Scarica Report PDF
             </button>
-
+ 
             {SHOW_TESTS && (
               <button
                 type="button"
@@ -900,3 +980,4 @@ export default function App() {
     </div>
   );
 }
+ 
