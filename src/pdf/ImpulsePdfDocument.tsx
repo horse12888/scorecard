@@ -23,8 +23,9 @@ import {
    LOGICA DATI E ACCESSOR: INVARIATI rispetto a v2.x.
    Cambia SOLO la presentazione.
 
-   FONT — carica questi TTF in /public/scorecard/fonts/ del
-   repo GitHub Pages (Google Fonts, licenza OFL):
+   FONT — carica questi TTF in /public/fonts/ della repo
+   (l'app è servita su report.davidedileo.it, quindi public/
+   risponde alla root del dominio). Google Fonts, licenza OFL:
      Archivo-Regular.ttf
      Archivo-Bold.ttf
      ArchivoBlack-Regular.ttf
@@ -40,19 +41,19 @@ if (USE_CUSTOM_FONTS) {
   Font.register({
     family: "Archivo",
     fonts: [
-      { src: "/scorecard/fonts/Archivo-Regular.ttf" },
-      { src: "/scorecard/fonts/Archivo-Bold.ttf", fontWeight: 700 }
+      { src: "/fonts/Archivo-Regular.ttf" },
+      { src: "/fonts/Archivo-Bold.ttf", fontWeight: 700 }
     ]
   });
   Font.register({
     family: "ArchivoBlack",
-    src: "/scorecard/fonts/ArchivoBlack-Regular.ttf"
+    src: "/fonts/ArchivoBlack-Regular.ttf"
   });
   Font.register({
     family: "PlexMono",
     fonts: [
-      { src: "/scorecard/fonts/IBMPlexMono-Regular.ttf" },
-      { src: "/scorecard/fonts/IBMPlexMono-Bold.ttf", fontWeight: 700 }
+      { src: "/fonts/IBMPlexMono-Regular.ttf" },
+      { src: "/fonts/IBMPlexMono-Bold.ttf", fontWeight: 700 }
     ]
   });
 }
@@ -2030,53 +2031,3 @@ const styles = StyleSheet.create({
     paddingVertical: 22,
     paddingHorizontal: 24,
     marginTop: 16
-  },
-  ctaLabel: {
-    fontFamily: F.mono,
-    fontSize: 6.5,
-    letterSpacing: 2,
-    color: GOLD_BRIGHT,
-    marginBottom: 10
-  },
-  ctaTitle: {
-    fontFamily: F.black,
-    fontSize: 18,
-    lineHeight: 1.1,
-    textTransform: "uppercase",
-    color: IVORY,
-    marginBottom: 8
-  },
-  ctaBody: {
-    fontSize: 8.5,
-    lineHeight: 1.55,
-    color: IVORY_SOFT,
-    marginBottom: 8
-  },
-  ctaIntentLine: {
-    fontSize: 8,
-    lineHeight: 1.5,
-    color: GOLD_BRIGHT,
-    marginBottom: 12
-  },
-  ctaButtonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4
-  },
-  ctaButton: {
-    fontFamily: F.black,
-    fontSize: 9.5,
-    letterSpacing: 0.8,
-    color: INK,
-    backgroundColor: GOLD_BRIGHT,
-    textDecoration: "none",
-    paddingVertical: 10,
-    paddingHorizontal: 16
-  },
-  ctaSmallText: {
-    fontFamily: F.mono,
-    fontSize: 6.5,
-    color: MUTED,
-    marginLeft: 14
-  }
-});
