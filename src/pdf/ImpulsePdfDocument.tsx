@@ -8,61 +8,61 @@ import {
   Font,
   Link,
   Svg,
-  Path,
   Line,
   Polygon,
   Circle
 } from "@react-pdf/renderer";
 
 /* ============================================================
-   [V2.3] FONT OPZIONALI — de-genericizzazione tipografica.
-   Helvetica resta il default sicuro (zero dipendenze).
-   Per attivare un display serif distintivo:
-   1. Scarica i TTF (es. Fraunces 600, Inter 400/700) in
-      /public/fonts/ del repo GitHub Pages.
-   2. Decommenta il blocco sotto e sostituisci i fontFamily
-      "Helvetica" dei titoli con "Display".
-   NON usare URL remoti di terzi: il PDF si genera nel browser
-   dell'utente e un font che non risponde rompe il rendering.
+   IMPULSE PDF DOCUMENT — v3.0 "MANIFESTO"
+   Redesign approvato: tipografia massiva (Archivo Black),
+   mono tecnico (IBM Plex Mono), inchiostro + gold, copertina
+   scura, box a celle (etichetta piena + corpo), matrice a
+   tacche per le dimensioni, radar + matrice a pagina 06.
 
-Font.register({
-  family: "Display",
-  src: "/scorecard/fonts/Fraunces-SemiBold.ttf"
-});
-Font.register({
-  family: "Body",
-  fonts: [
-    { src: "/scorecard/fonts/Inter-Regular.ttf" },
-    { src: "/scorecard/fonts/Inter-Bold.ttf", fontWeight: 700 }
-  ]
-});
+   LOGICA DATI E ACCESSOR: INVARIATI rispetto a v2.x.
+   Cambia SOLO la presentazione.
+
+   FONT — carica questi TTF in /public/scorecard/fonts/ del
+   repo GitHub Pages (Google Fonts, licenza OFL):
+     Archivo-Regular.ttf
+     Archivo-Bold.ttf
+     ArchivoBlack-Regular.ttf
+     IBMPlexMono-Regular.ttf
+     IBMPlexMono-Bold.ttf
+   Finché i file non sono online, imposta USE_CUSTOM_FONTS=false:
+   il PDF renderizza con Helvetica/Courier senza rompersi.
 ============================================================ */
 
-/* ============================================================
-   IMPULSE PDF DOCUMENT — v2.1 "Advisory Edition"
-   Redesign editoriale in stile advisory/Big4:
-   - Copertina scura con accenti gold (coerente con i blocchi
-     CTA del funnel), pagine interne bianche
-   - Sistema a righe sottili (hairline) al posto delle card
-     arrotondate; gerarchia tipografica netta; sezioni numerate
-   - Header e footer fissi con numerazione pagina automatica
-     e dicitura di riservatezza
-   - Disclaimer in copertina (coerente con la landing)
+const USE_CUSTOM_FONTS = true;
 
-   ALLINEAMENTI vs versione precedente (reversibili):
-   [N1] Nomi dimensioni in inglese (Clarity, Acquisition, ...)
-        come nel resto del funnel; sottotitoli in italiano.
-   [N2] normalizeStage allineato ai nomi usati in landing,
-        result page e CRM (Foundation / Traction / ...).
-        La vecchia mappa (Market Traction / Operating Stability /
-        Value Architecture) è conservata in commento.
-        NOTA: impulseKnowledge.ts usa ancora i vecchi label
-        internamente — decidere quale naming vince a livello
-        di funnel e allineare anche lì.
-   [N3] Score in copertina: "56 /100" invece di "56%"
-        (coerente con "su 100" su result page e landing).
-   LOGICA DATI E ACCESSOR: INVARIATI.
-============================================================ */
+if (USE_CUSTOM_FONTS) {
+  Font.register({
+    family: "Archivo",
+    fonts: [
+      { src: "/scorecard/fonts/Archivo-Regular.ttf" },
+      { src: "/scorecard/fonts/Archivo-Bold.ttf", fontWeight: 700 }
+    ]
+  });
+  Font.register({
+    family: "ArchivoBlack",
+    src: "/scorecard/fonts/ArchivoBlack-Regular.ttf"
+  });
+  Font.register({
+    family: "PlexMono",
+    fonts: [
+      { src: "/scorecard/fonts/IBMPlexMono-Regular.ttf" },
+      { src: "/scorecard/fonts/IBMPlexMono-Bold.ttf", fontWeight: 700 }
+    ]
+  });
+}
+
+/* Famiglie con fallback sicuro (zero dipendenze). */
+const F = {
+  black: USE_CUSTOM_FONTS ? "ArchivoBlack" : "Helvetica-Bold",
+  sans: USE_CUSTOM_FONTS ? "Archivo" : "Helvetica",
+  mono: USE_CUSTOM_FONTS ? "PlexMono" : "Courier"
+};
 
 Font.registerHyphenationCallback((word) => [word]);
 
@@ -128,8 +128,6 @@ type PdfResult = {
   intentLevel?: number | null;
 };
 
-/* [N1] Nomi dimensione allineati al funnel (inglese = nome proprio
-   del framework, come su landing, result page e CRM). */
 const dimensionNames: Record<DimensionKey, string> = {
   clarity: "Clarity",
   acquisition: "Acquisition",
@@ -153,11 +151,6 @@ function safeText(value: any, fallback = "") {
   return String(value);
 }
 
-/* [N2] Stage display allineato ai nomi del funnel.
-   Vecchia mappa (per ripristino):
-   TRACTION -> "Market Traction"
-   STABILIZATION -> "Operating Stability"
-   PRODUCTIZATION -> "Value Architecture" */
 function normalizeStage(stage: string) {
   const map: Record<string, string> = {
     FOUNDATION: "Foundation",
@@ -412,21 +405,6 @@ function getIntentInsight(result: PdfResult) {
   );
 }
 
-/* [V2.2 / P6] Chiusura calibrata su intentLevel (0-3).
-   Fonte: result.intentLevel (top-level, da buildEnrichedResult)
-   con fallback su intentInsight.level se presente.
-   Se l'intent non è disponibile, nessuna riga aggiuntiva. */
-
-/* [V2.3.1] Conteggio priorità dinamico: la diagnostics può
-   restituirne meno di 3 (es. quando solo 2 dimensioni sono
-   sotto soglia). La copy deve seguire i dati, non viceversa. */
-
-/* [V2.4.1 / CONVERSIONE] Il loop aperto prima della CTA deve
-   specchiare IL LORO gap, non quello medio dello stage.
-   Pagina 08 è la pagina del profilo: il nextProblem segue il
-   profilo (A-D), con fallback al nextProblem di stage.
-   Tutte le varianti restano WHAT-not-HOW: aprono una decisione
-   di sequenza, mai un metodo. */
 const PROFILE_NEXT_PROBLEM: Record<string, string> = {
   A: "Quando il messaggio diventa stabile, il problema cambia natura: in quale ordine propagarlo — pricing, materiali, canali — senza fermare la vendita mentre lo fai. Quella sequenza dipende dai tuoi margini e dal tuo ciclo di vendita.",
   B: "Quando il motore di crescita torna leggibile, la domanda diventa: quale leva muovere per prima — canale, qualifica o pricing — e a quale ritmo il sistema regge senza degradare la delivery. È una decisione di sequenza, non di volume.",
@@ -434,10 +412,6 @@ const PROFILE_NEXT_PROBLEM: Record<string, string> = {
   D: "Quando il business diventa leggibile dall'esterno, si apre la domanda strategica: a chi aprirlo per primo — partner, figure senior, capitale — e in quale forma. Ogni porta richiede una preparazione diversa, e l'ordine determina il tuo potere negoziale."
 };
 
-/* [V2.4.2] Il binding constraint (6 valori) è più preciso del
-   profilo (4 valori): un Profilo C con binding "asset" deve
-   leggere un loop sugli asset, non sulla delega.
-   Catena: binding -> profilo -> stage. Sempre WHAT-not-HOW. */
 const BINDING_NEXT_PROBLEM: Record<string, string> = {
   clarity: PROFILE_NEXT_PROBLEM.A,
   acquisition: PROFILE_NEXT_PROBLEM.B,
@@ -503,83 +477,41 @@ function getReportDate() {
   }
 }
 
-/* ---------- Componenti ---------- */
-
-function Bar({ score, accent }: { score: number; accent?: boolean }) {
-  const width = Math.max(0, Math.min(100, score * 10));
-
-  return (
-    <View style={styles.barTrack}>
-      <View
-        style={[
-          styles.barFill,
-          accent ? styles.barFillAccent : null,
-          { width: `${width}%` }
-        ]}
-      />
-    </View>
-  );
+/* Data breve per il registro mono della copertina (03.07.2026) */
+function getReportDateShort() {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`;
 }
-
-function PageHeader({ name }: { name?: string }) {
-  return (
-    <View style={styles.header} fixed>
-      <Text style={styles.headerText}>
-        IMPULSE SYSTEM — BUSINESS READINESS REPORT
-      </Text>
-      <Text style={styles.headerText}>{safeText(name).toUpperCase()}</Text>
-    </View>
-  );
-}
-
-function PageFooter() {
-  return (
-    <View style={styles.footer} fixed>
-      <Text style={styles.footerText}>
-        Riservato e confidenziale · IMPULSE System · davidedileo.it
-      </Text>
-      <Text
-        style={styles.footerText}
-        render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-      />
-    </View>
-  );
-}
-
-function SectionTitle({
-  number,
-  kicker,
-  title,
-  body
-}: {
-  number: string;
-  kicker?: string;
-  title: string;
-  body?: string;
-}) {
-  return (
-    <View style={styles.sectionTitleBlock}>
-      <View style={styles.sectionNumberRow}>
-        <Text style={styles.sectionNumber}>{number}</Text>
-        <View style={styles.sectionNumberRule} />
-        {kicker ? <Text style={styles.kicker}>{kicker}</Text> : null}
-      </View>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {body ? <Text style={styles.sectionBody}>{body}</Text> : null}
-      <View style={styles.sectionBottomRule} />
-    </View>
-  );
-}
-
 
 /* ============================================================
-   [V2.3] STRUMENTI DIAGNOSTICI — la firma visiva del report.
-   Stessa lingua ovunque: griglia hairline + inchiostro gold.
-   Le tacche del gauge sono le SOGLIE REALI di stage
-   (40 / 60 / 75 / 85): struttura che codifica informazione.
+   PALETTE MANIFESTO
 ============================================================ */
 
+const INK = "#16150F";
+const PAPER = "#FBF9F3";
+const BODY = "#33302A";
+const MUTED = "#8F8A7E";
+const FAINT = "#6F6A61";
+const HAIRLINE = "#E0DACA";
+const GOLD = "#B88A2A"; /* gold su carta */
+const GOLD_BRIGHT = "#C9A24B"; /* gold su scuro */
+const RED = "#B42318";
+const DARK = "#0E0D0B";
+const IVORY = "#F4EFE4";
+const IVORY_SOFT = "#CFC8B8";
+const DARK_MUTED = "#A29B8C";
+const DARK_FAINT = "#6E695E";
+const DARK_HAIRLINE = "#3E3B33";
+const GOLD_WASH = "#F5EDD8"; /* evidenza riga binding */
+const TICK_EMPTY = "#E5DFCE";
+const TICK_EMPTY_GOLD = "#E9DFC6";
+
 const STAGE_THRESHOLDS = [40, 60, 75, 85];
+
+/* ============================================================
+   STRUMENTI DIAGNOSTICI
+============================================================ */
 
 function polarPoint(cx: number, cy: number, r: number, deg: number) {
   const rad = (deg * Math.PI) / 180;
@@ -589,79 +521,42 @@ function polarPoint(cx: number, cy: number, r: number, deg: number) {
   };
 }
 
-/* Semicerchio superiore: 180° (sx) -> 0° (dx). */
-function arcPath(cx: number, cy: number, r: number, fromDeg: number, toDeg: number) {
-  const start = polarPoint(cx, cy, r, fromDeg);
-  const end = polarPoint(cx, cy, r, toDeg);
-  const largeArc = Math.abs(fromDeg - toDeg) > 180 ? 1 : 0;
-  return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
-}
-
-function CoverScoreGauge({ score }: { score: number }) {
-  const W = 168;
-  const H = 100;
-  const cx = W / 2;
-  const cy = H - 14;
-  const r = 66;
-  const clamped = Math.max(0, Math.min(100, score));
-  const scoreDeg = 180 - (clamped / 100) * 180;
-  const needle = polarPoint(cx, cy, r, scoreDeg);
+/* Matrice a tacche: 10 celle, riempimento parziale via opacity.
+   È la firma visiva del report insieme al radar. */
+function TickBar({
+  score,
+  accent,
+  h = 11
+}: {
+  score: number;
+  accent?: boolean;
+  h?: number;
+}) {
+  const clamped = Math.max(0, Math.min(10, Number(score) || 0));
+  const filled = Math.floor(clamped);
+  const frac = Math.round((clamped - filled) * 100) / 100;
+  const fillColor = accent ? GOLD : INK;
+  const emptyColor = accent ? TICK_EMPTY_GOLD : TICK_EMPTY;
 
   return (
-    <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-      {/* binario */}
-      <Path
-        d={arcPath(cx, cy, r, 180, 0)}
-        stroke={HAIRLINE}
-        strokeWidth={2.5}
-        fill="none"
-      />
-      {/* valore */}
-      {clamped > 0 ? (
-        <Path
-          d={arcPath(cx, cy, r, 180, scoreDeg)}
-          stroke={GOLD}
-          strokeWidth={3.5}
-          fill="none"
-        />
-      ) : null}
-      {/* tacche alle soglie di stage (40/60/75/85) */}
-      {STAGE_THRESHOLDS.map(t => {
-        const deg = 180 - (t / 100) * 180;
-        const inner = polarPoint(cx, cy, r - 4.5, deg);
-        const outer = polarPoint(cx, cy, r + 4.5, deg);
+    <View style={{ flexDirection: "row" }}>
+      {Array.from({ length: 10 }).map((_, i) => {
+        const isFull = i < filled;
+        const isPartial = i === filled && frac >= 0.08;
         return (
-          <Line
-            key={t}
-            x1={inner.x}
-            y1={inner.y}
-            x2={outer.x}
-            y2={outer.y}
-            stroke={MUTED}
-            strokeWidth={1}
+          <View
+            key={i}
+            style={{
+              flex: 1,
+              height: h,
+              marginRight: i < 9 ? 2.5 : 0,
+              backgroundColor: isFull || isPartial ? fillColor : emptyColor,
+              opacity: isPartial ? frac : 1
+            }}
           />
         );
       })}
-      {/* indicatore */}
-      <Circle cx={needle.x} cy={needle.y} r={3.6} fill={GOLD} />
-      {/* numero dentro il quadrante: larghezza fissa, zero collisioni */}
-      <Text
-        x={cx}
-        y={cy - 8}
-        textAnchor="middle"
-        style={{ fontSize: 34, fontFamily: "Helvetica-Bold", fill: INK }}
-      >
-        {String(clamped)}
-      </Text>
-      <Text
-        x={cx}
-        y={cy + 8}
-        textAnchor="middle"
-        style={{ fontSize: 8, fill: MUTED, letterSpacing: 1 }}
-      >
-        SU 100
-      </Text>
-    </Svg>
+    </View>
   );
 }
 
@@ -681,13 +576,13 @@ function DimensionsRadar({
   dims: Record<DimensionKey, { score: number; yes: number }>;
   bindingKey?: DimensionKey | "";
 }) {
-  const W = 300;
-  const H = 196;
+  const W = 250;
+  const H = 212;
   const cx = W / 2;
-  const cy = H / 2 + 4;
-  const R = 70;
+  const cy = H / 2 + 2;
+  const R = 76;
 
-  const angleFor = (i: number) => 90 - i * 60; /* parte in alto, orario */
+  const angleFor = (i: number) => 90 - i * 60;
 
   const ringPoints = (radius: number) =>
     RADAR_ORDER.map((_, i) => {
@@ -703,17 +598,21 @@ function DimensionsRadar({
 
   return (
     <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-      {/* griglia: 3 anelli hairline */}
-      {[R / 3, (2 * R) / 3, R].map((radius, idx) => (
+      {[R / 3, (2 * R) / 3].map((radius, idx) => (
         <Polygon
           key={idx}
           points={ringPoints(radius)}
-          stroke={HAIRLINE}
+          stroke="#D8D2C2"
           strokeWidth={0.8}
           fill="none"
         />
       ))}
-      {/* assi */}
+      <Polygon
+        points={ringPoints(R)}
+        stroke={INK}
+        strokeWidth={1.2}
+        fill="none"
+      />
       {RADAR_ORDER.map((_, i) => {
         const p = polarPoint(cx, cy, R, angleFor(i));
         return (
@@ -723,46 +622,49 @@ function DimensionsRadar({
             y1={cy}
             x2={p.x}
             y2={p.y}
-            stroke={HAIRLINE}
+            stroke="#D8D2C2"
             strokeWidth={0.8}
           />
         );
       })}
-      {/* poligono dati */}
       <Polygon
         points={dataPoints.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ")}
         fill={GOLD}
-        fillOpacity={0.16}
+        fillOpacity={0.22}
         stroke={GOLD}
         strokeWidth={1.5}
       />
-      {/* vertici; il binding è pieno e più grande */}
       {dataPoints.map(p => (
         <Circle
           key={p.key}
           cx={p.x}
           cy={p.y}
-          r={p.key === bindingKey ? 3.4 : 2}
-          fill={p.key === bindingKey ? GOLD : "#FFFFFF"}
+          r={p.key === bindingKey ? 4 : 2.4}
+          fill={p.key === bindingKey ? GOLD : PAPER}
           stroke={GOLD}
-          strokeWidth={1}
+          strokeWidth={1.2}
         />
       ))}
-      {/* etichette */}
       {RADAR_ORDER.map((key, i) => {
         const deg = angleFor(i);
         const p = polarPoint(cx, cy, R + 13, deg);
         const cos = Math.cos((deg * Math.PI) / 180);
         const anchor = cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle";
+        const isBinding = key === bindingKey;
         return (
           <Text
             key={key}
             x={p.x}
             y={p.y + 2.5}
-            style={{ fontSize: 7, fill: MUTED }}
             textAnchor={anchor as any}
+            style={{
+              fontFamily: F.mono,
+              fontSize: 6,
+              fill: isBinding ? GOLD : INK,
+              fontWeight: 700
+            }}
           >
-            {dimensionNames[key]}
+            {dimensionNames[key].toUpperCase()}
           </Text>
         );
       })}
@@ -770,12 +672,113 @@ function DimensionsRadar({
   );
 }
 
-function FieldLabel({ children }: { children: any }) {
-  return <Text style={styles.blockLabel}>{children}</Text>;
+/* ---------- Componenti editoriali ---------- */
+
+function PageHeader({ name, page }: { name?: string; page: string }) {
+  return (
+    <View style={styles.header} fixed>
+      <Text style={styles.headerWordmark}>IMPULSE</Text>
+      <Text style={styles.headerMeta}>
+        {safeText(name).toUpperCase()} — {page}/08
+      </Text>
+    </View>
+  );
+}
+
+function PageFooter() {
+  return (
+    <View style={styles.footer} fixed>
+      <Text style={styles.footerText}>
+        RISERVATO E CONFIDENZIALE · IMPULSE · DAVIDEDILEO.IT
+      </Text>
+      <Text
+        style={styles.footerText}
+        render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+      />
+    </View>
+  );
+}
+
+function SectionHead({
+  number,
+  kicker,
+  title,
+  body
+}: {
+  number: string;
+  kicker: string;
+  title: string;
+  body?: string;
+}) {
+  return (
+    <View style={styles.sectionHeadBlock}>
+      <View style={styles.sectionHeadRow}>
+        <Text style={styles.sectionNumber}>{number}</Text>
+        <View style={styles.sectionHeadCol}>
+          <Text style={styles.kicker}>{`// ${kicker}`}</Text>
+          <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+      </View>
+      {body ? <Text style={styles.sectionBody}>{body}</Text> : null}
+    </View>
+  );
+}
+
+function FieldLabel({
+  children,
+  danger
+}: {
+  children: any;
+  danger?: boolean;
+}) {
+  return (
+    <Text style={[styles.fieldLabel, danger ? styles.fieldLabelDanger : null]}>
+      {children}
+    </Text>
+  );
+}
+
+/* Box a celle: etichetta piena a sinistra + corpo.
+   variant "ink" = focus (cella scura, testo gold)
+   variant "red" = warning (cella rossa) */
+function CellBox({
+  label,
+  variant,
+  children
+}: {
+  label: string;
+  variant: "ink" | "red";
+  children: any;
+}) {
+  return (
+    <View style={styles.cellBox} wrap={false}>
+      <View
+        style={[
+          styles.cellBoxLabel,
+          variant === "red" ? styles.cellBoxLabelRed : styles.cellBoxLabelInk
+        ]}
+      >
+        <Text
+          style={[
+            styles.cellBoxLabelText,
+            variant === "red"
+              ? styles.cellBoxLabelTextRed
+              : styles.cellBoxLabelTextInk
+          ]}
+        >
+          {label}
+        </Text>
+      </View>
+      <View style={styles.cellBoxBody}>
+        <Text style={styles.cellBoxBodyText}>{children}</Text>
+      </View>
+    </View>
+  );
 }
 
 export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const score = Number(result.overall || 0);
+  const clampedScore = Math.max(0, Math.min(100, score));
   const name = safeText(result.name);
   const company = safeText(result.company);
   const firstName = getFirstName(name);
@@ -785,7 +788,6 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const stageLabel = normalizeStage(stage);
   const stageInfo = getStageInfo(result);
   const priorities = getPriorities(result);
-  const strengths = getStrengths(result);
   const dims = getProcessedDims(result);
   const bindingKey = result.bindingConstraint as DimensionKey | undefined;
   const fallbackBindingKey = priorities[0]?.key as DimensionKey | undefined;
@@ -796,13 +798,11 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const pdfStrategicWarning = getPdfStrategicWarning(diagnosticPattern);
   const riskFlags = getRiskFlags(result);
   const intentInsight = getIntentInsight(result);
-  const reportDate = getReportDate();
+  const reportDateShort = getReportDateShort();
 
   const strategicReviewBaseUrl = "https://davidedileo.it/strategic-review";
   const resolvedLeadId = result.leadId || result.metadata?.leadId || "";
 
-  /* [V2.5] propaga gli UTM (e il flag test) dal payload al link review:
-     l'attribuzione canale sopravvive anche al percorso via PDF */
   const utmMeta: Record<string, string> = (result.metadata as any)?.utm || {};
   const reviewParams = new URLSearchParams();
   Object.keys(utmMeta).forEach(k => {
@@ -819,100 +819,116 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
     result.intentLevel ?? (result.intentInsight as any)?.level
   );
 
+  const profileKickerLabel = String(safeText(result.profile))
+    .toLowerCase()
+    .startsWith("profilo")
+    ? String(safeText(result.profile)).toUpperCase()
+    : `PROFILO ${safeText(result.profile).toUpperCase()}`;
+
   return (
     <Document
       title={`IMPULSE Report ${name || "Business"}`}
       author="IMPULSE System"
       subject="Business Readiness Report"
     >
-      {/* ================= COPERTINA (scura) ================= */}
+      {/* ================= 01 — COPERTINA (scura) ================= */}
       <Page size="A4" style={styles.coverPage}>
         <View style={styles.coverTopRow}>
-          <Text style={styles.coverWordmark}>IMPULSE SYSTEM</Text>
-          <Text style={styles.coverWordmarkRight}>BUSINESS READINESS</Text>
+          <Text style={styles.coverWordmark}>IMPULSE</Text>
+          <View>
+            <Text style={styles.coverTopMeta}>
+              {resolvedLeadId ? `${resolvedLeadId} / ` : ""}
+              {reportDateShort}
+            </Text>
+            <Text style={styles.coverTopMeta}>RISERVATO E CONFIDENZIALE</Text>
+          </View>
         </View>
-        <View style={styles.coverGoldRule} />
 
         <View style={styles.coverTitleBlock}>
-          <Text style={styles.coverKicker}>DIAGNOSI OPERATIVA</Text>
-          <Text style={styles.coverTitle}>Business Readiness Report</Text>
-          <Text style={styles.coverPrepared}>
-            Preparato per {name || "il tuo business"}
-            {company ? ` · ${company}` : ""}
+          <Text style={styles.coverKicker}>{`// DIAGNOSI OPERATIVA`}</Text>
+          <Text style={styles.coverTitleLine}>BUSINESS</Text>
+          {/* Parola centrale in gold pieno: l'outline richiederebbe
+              text-stroke, non supportato in modo affidabile. */}
+          <Text style={[styles.coverTitleLine, styles.coverTitleLineGold]}>
+            READINESS
           </Text>
-          <Text style={styles.coverMetaLine}>
-            {reportDate}
-            {resolvedLeadId ? `  ·  Report ID ${resolvedLeadId}` : ""}
+          <Text style={styles.coverTitleLine}>REPORT</Text>
+        </View>
+
+        <View style={styles.coverPreparedRow}>
+          <View style={styles.coverPreparedBar} />
+          <Text style={styles.coverPreparedText}>
+            Preparato per{" "}
+            <Text style={styles.coverPreparedName}>{name || "il tuo business"}</Text>
+            {company ? ` · ${company}` : ""}
           </Text>
         </View>
 
-        <View style={styles.coverScoreRow}>
-          <View style={styles.coverScoreBlock}>
-            <Text style={styles.coverScoreLabel}>IMPULSE SCORE</Text>
-            {/* [V2.4] Quadrante con numero integrato: tacche alle
-                soglie di stage reali (40/60/75/85), larghezza fissa */}
-            <CoverScoreGauge score={score} />
+        <View style={styles.coverBand}>
+          <View style={styles.coverScoreCell}>
+            <Text style={styles.coverCellLabel}>IMPULSE SCORE</Text>
+            <View style={styles.coverScoreRow}>
+              <Text style={styles.coverScoreNumber}>{String(clampedScore)}</Text>
+              <Text style={styles.coverScoreOutOf}>/100</Text>
+            </View>
+            {/* Scala 0-100 con tacche alle soglie di stage reali */}
+            <View style={styles.coverScaleTrack}>
+              <View
+                style={[styles.coverScaleFill, { width: `${clampedScore}%` }]}
+              />
+              {STAGE_THRESHOLDS.map(t => (
+                <View
+                  key={t}
+                  style={[styles.coverScaleTick, { left: `${t}%` }]}
+                />
+              ))}
+            </View>
           </View>
-
-          <View style={styles.coverConstraintBlock}>
-            <Text style={styles.coverScoreLabel}>VINCOLO PRINCIPALE</Text>
+          <View style={styles.coverConstraintCell}>
+            <Text style={styles.coverCellLabel}>VINCOLO PRINCIPALE</Text>
             <Text style={styles.coverConstraintTitle}>{profileTitle}</Text>
             <Text style={styles.coverConstraintBody}>{profileBody}</Text>
           </View>
         </View>
 
-        <View style={styles.coverMetaGrid}>
-          <View style={styles.coverMetaItem}>
-            <Text style={styles.coverMetaLabel}>FASCIA</Text>
-            <Text style={styles.coverMetaValue}>{safeText(result.fascia)}</Text>
-          </View>
-          <View style={styles.coverMetaItem}>
-            <Text style={styles.coverMetaLabel}>PROFILO</Text>
+        <View style={styles.coverMetaRow}>
+          <Text style={styles.coverMetaItem}>
+            FASCIA{" "}
             <Text style={styles.coverMetaValue}>
-              {String(safeText(result.profile)).toLowerCase().startsWith("profilo")
-                ? safeText(result.profile)
-                : `Profilo ${safeText(result.profile)}`}
+              {safeText(result.fascia).toUpperCase()}
             </Text>
-          </View>
-          <View style={[styles.coverMetaItem, styles.coverMetaItemLast]}>
-            <Text style={styles.coverMetaLabel}>STAGE</Text>
-            <Text style={styles.coverMetaValue}>{stageLabel}</Text>
-          </View>
-        </View>
-
-        <View style={styles.coverIndex}>
-          <Text style={styles.coverIndexTitle}>CONTENUTI</Text>
-          {[
-            "Lo stage operativo",
-            "Il pattern diagnostico",
-            `Le ${priorityCountWord(priorities.length)} priorità operative`,
-            "La mappa delle 6 dimensioni",
-            "Forze e vincoli",
-            "I vincoli funzionali",
-            "Profilo e prossimo passo"
-          ].map((item, index) => (
-            <View key={index} style={styles.coverIndexRow}>
-              <Text style={styles.coverIndexNum}>
-                {String(index + 2).padStart(2, "0")}
-              </Text>
-              <Text style={styles.coverIndexText}>{item}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.coverFooter}>
-          <Text style={styles.coverFooterText}>
-            Riservato e confidenziale. Questo report è una diagnosi operativa
-            generata dalle risposte fornite. Non costituisce consulenza
-            finanziaria, legale o fiscale.
           </Text>
+          <Text style={styles.coverMetaItem}>
+            PROFILO{" "}
+            <Text style={styles.coverMetaValue}>
+              {safeText(result.profile).toUpperCase()}
+            </Text>
+          </Text>
+          <Text style={styles.coverMetaItem}>
+            STAGE{" "}
+            <Text style={styles.coverMetaValue}>{stageLabel.toUpperCase()}</Text>
+          </Text>
+          {displayedBindingKey ? (
+            <Text style={styles.coverMetaItem}>
+              BINDING{" "}
+              <Text style={styles.coverMetaValueGold}>
+                {(dimensionNames[displayedBindingKey] || "").toUpperCase()}
+              </Text>
+            </Text>
+          ) : null}
         </View>
+
+        <Text style={styles.coverDisclaimer}>
+          Riservato e confidenziale. Questo report è una diagnosi operativa
+          generata dalle risposte fornite. Non costituisce consulenza
+          finanziaria, legale o fiscale.
+        </Text>
       </Page>
 
       {/* ================= 02 — STAGE ================= */}
       <Page size="A4" style={styles.page}>
-        <PageHeader name={name} />
-        <SectionTitle
+        <PageHeader name={name} page="02" />
+        <SectionHead
           number="02"
           kicker="LO STAGE OPERATIVO"
           title={stageLabel}
@@ -922,41 +938,39 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           }
         />
 
-        <View style={styles.twoCol}>
-          <View style={styles.colRuled}>
+        <View style={styles.twoColBlock}>
+          <View style={styles.col}>
             <FieldLabel>RUOLO</FieldLabel>
-            <Text style={styles.blockText}>
+            <Text style={styles.emphasisText}>
               {stageInfo.role || "Founder as system builder"}
             </Text>
           </View>
-          <View style={styles.colRuled}>
+          <View style={styles.col}>
             <FieldLabel>FOCUS</FieldLabel>
-            <Text style={styles.blockText}>
+            <Text style={styles.emphasisText}>
               {stageInfo.strategicReviewFocus ||
                 "Chiarire il vincolo principale e la sequenza operativa."}
             </Text>
           </View>
         </View>
 
-        <View style={styles.ruledBlock}>
+        <View style={styles.fieldBlock}>
           <FieldLabel>VINCOLO DI STAGE</FieldLabel>
-          <Text style={styles.longText}>
+          <Text style={styles.bodyText}>
             {stageInfo.bottomLineConstraint ||
               "Il business deve rendere più leggibili sistemi, numeri, responsabilità e margini prima di aumentare complessità."}
           </Text>
         </View>
 
-        {/* [V2.2 / P2] Costo dell'inazione: meccanismo, mai numeri.
-            Render condizionale: se il campo non c'è, il layout resta v2.1. */}
         {stageInfo.costOfInaction ? (
-          <View style={styles.ruledBlock}>
+          <View style={styles.fieldBlock}>
             <FieldLabel>IL COSTO DELL'INAZIONE</FieldLabel>
-            <Text style={styles.longText}>{stageInfo.costOfInaction}</Text>
+            <Text style={styles.bodyText}>{stageInfo.costOfInaction}</Text>
           </View>
         ) : null}
 
-        <View style={styles.ruledBlock}>
-          <Text style={styles.cardTitle}>Criteri per il prossimo salto</Text>
+        <View style={styles.listBlock}>
+          <Text style={styles.blockTitle}>Criteri per il prossimo salto</Text>
           {(stageInfo.graduationCriteria || [])
             .slice(0, 5)
             .map((item: string, index: number) => (
@@ -969,22 +983,19 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             ))}
         </View>
 
-        <View style={styles.warningBox} wrap={false}>
-          <Text style={styles.warningTitle}>COSA NON SCALARE ANCORA</Text>
-          <Text style={styles.warningText}>
-            {stageInfo.nonFare ||
-              stageInfo.troppoPresto ||
-              "Non aumentare complessità prima di aver reso chiaro il vincolo operativo principale."}
-          </Text>
-        </View>
+        <CellBox label="NON SCALARE ANCORA" variant="red">
+          {stageInfo.nonFare ||
+            stageInfo.troppoPresto ||
+            "Non aumentare complessità prima di aver reso chiaro il vincolo operativo principale."}
+        </CellBox>
 
         <PageFooter />
       </Page>
 
       {/* ================= 03 — PATTERN ================= */}
       <Page size="A4" style={styles.page}>
-        <PageHeader name={name} />
-        <SectionTitle
+        <PageHeader name={name} page="03" />
+        <SectionHead
           number="03"
           kicker="IL PATTERN DIAGNOSTICO"
           title={safeText(diagnosticPattern.topGapPairTitle, "Pattern diagnostico")}
@@ -994,7 +1005,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           )}
         />
 
-        <View style={styles.ruledBlock}>
+        <View style={styles.fieldBlockFirst}>
           <FieldLabel>PROFILO + FASE</FieldLabel>
           <Text style={styles.patternTitle}>
             {safeText(
@@ -1002,7 +1013,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               "Profilo e fase da leggere insieme"
             )}
           </Text>
-          <Text style={styles.longText}>
+          <Text style={styles.bodyText}>
             {safeText(
               diagnosticPattern.profileStageBody,
               "Il profilo mostra il tipo di vincolo. La fase mostra quanto il business è pronto a reggere il prossimo salto."
@@ -1010,22 +1021,20 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           </Text>
         </View>
 
-        <View style={styles.focusBox}>
-          <Text style={styles.focusLabel}>FOCUS RACCOMANDATO</Text>
-          <Text style={styles.focusText}>{pdfRecommendedFocus}</Text>
-        </View>
+        <CellBox label="FOCUS RACCOMANDATO" variant="ink">
+          {pdfRecommendedFocus}
+        </CellBox>
 
-        <View style={styles.warningBox} wrap={false}>
-          <Text style={styles.warningTitle}>ATTENZIONE STRATEGICA</Text>
-          <Text style={styles.warningText}>{pdfStrategicWarning}</Text>
-        </View>
+        <CellBox label="ATTENZIONE STRATEGICA" variant="red">
+          {pdfStrategicWarning}
+        </CellBox>
 
-        <View style={styles.ruledBlock}>
+        <View style={styles.fieldBlock}>
           <FieldLabel>INTENT</FieldLabel>
           <Text style={styles.patternTitle}>
             {safeText(intentInsight.label, "Intent non rilevato")}
           </Text>
-          <Text style={styles.longText}>
+          <Text style={styles.bodyText}>
             {safeText(
               intentInsight.body,
               "L'urgenza strategica non è disponibile in questa diagnosi."
@@ -1034,21 +1043,21 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         </View>
 
         {riskFlags.length > 0 ? (
-          <View style={styles.ruledBlock}>
-            <Text style={styles.cardTitle}>Risk flags principali</Text>
+          <View style={styles.listBlock}>
+            <Text style={styles.blockTitle}>Risk flags principali</Text>
             {riskFlags.map((risk: RiskFlag, index: number) => (
               <View key={risk.id || index} style={styles.riskRow}>
                 <Text style={styles.riskTitle}>
-                  {safeText(risk.title, `Risk flag ${index + 1}`)}
+                  {safeText(risk.title, `Risk flag ${index + 1}`).toUpperCase()}
                 </Text>
                 <Text style={styles.riskBody}>{safeText(risk.body)}</Text>
               </View>
             ))}
           </View>
         ) : (
-          <View style={styles.ruledBlock}>
+          <View style={styles.fieldBlock}>
             <FieldLabel>RISK FLAGS</FieldLabel>
-            <Text style={styles.longText}>
+            <Text style={styles.bodyText}>
               Nessun risk flag critico aggiuntivo è stato rilevato oltre ai
               vincoli principali della diagnosi.
             </Text>
@@ -1060,8 +1069,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
       {/* ================= 04 — PRIORITÀ ================= */}
       <Page size="A4" style={styles.page}>
-        <PageHeader name={name} />
-        <SectionTitle
+        <PageHeader name={name} page="04" />
+        <SectionHead
           number="04"
           kicker={`LE ${priorityCountWord(priorities.length).toUpperCase()} PRIORITÀ OPERATIVE`}
           title="Cosa va chiarito prima"
@@ -1069,8 +1078,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         />
 
         {priorities.map((item: any, index: number) => (
-          <View key={item.key || index} style={styles.priorityBlock}>
-            <View style={styles.priorityHeader}>
+          <View key={item.key || index} style={styles.priorityBlock} wrap={false}>
+            <View style={styles.priorityHeadRow}>
               <Text style={styles.priorityRank}>
                 {String(index + 1).padStart(2, "0")}
               </Text>
@@ -1080,32 +1089,35 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               </Text>
             </View>
 
-            <View style={styles.priorityBody}>
+            <View style={styles.priorityField}>
               <FieldLabel>VINCOLO</FieldLabel>
-              <Text style={styles.longText}>
+              <Text style={styles.bodyText}>
                 {item.vincolo ||
                   item.cosaIndica ||
                   dimensionShortCopy[item.key as DimensionKey] ||
                   ""}
               </Text>
+            </View>
 
-              <FieldLabel>DA CHIARIRE</FieldLabel>
-              <Text style={styles.longText}>
-                {item.lavoro ||
-                  "Rendere più chiari numeri, responsabilità, criteri e sequenza operativa."}
-              </Text>
-
-              <FieldLabel>EVITARE</FieldLabel>
-              <Text style={styles.longText}>
-                {item.nonFare ||
-                  "Non aumentare complessità prima di avere una lettura più stabile di questa area."}
-              </Text>
+            <View style={styles.twoColTight}>
+              <View style={styles.col}>
+                <FieldLabel>DA CHIARIRE</FieldLabel>
+                <Text style={styles.bodyText}>
+                  {item.lavoro ||
+                    "Rendere più chiari numeri, responsabilità, criteri e sequenza operativa."}
+                </Text>
+              </View>
+              <View style={styles.col}>
+                <FieldLabel danger>EVITARE</FieldLabel>
+                <Text style={styles.bodyText}>
+                  {item.nonFare ||
+                    "Non aumentare complessità prima di avere una lettura più stabile di questa area."}
+                </Text>
+              </View>
             </View>
           </View>
         ))}
 
-        {/* [V2.2 / P4] De-prioritizzazione esplicita: ciò che non è
-            in lista è rumore per questa fase. */}
         <Text style={styles.deprioritizeNote}>
           {`Tutto ciò che non è in queste ${priorityCountWord(priorities.length)} priorità è, per questa fase, rumore: non perché non conti, ma perché conta dopo. L'ordine di intervento tra queste priorità — cosa prima, cosa dopo, a quale ritmo — è il lavoro della Strategic Review (pagina 08).`}
         </Text>
@@ -1113,180 +1125,209 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <PageFooter />
       </Page>
 
-      {/* ================= 05 — MAPPA 6 DIMENSIONI ================= */}
+      {/* ================= 05 — MATRICE 6 DIMENSIONI ================= */}
       <Page size="A4" style={styles.page}>
-        <PageHeader name={name} />
-        <SectionTitle
+        <PageHeader name={name} page="05" />
+        <SectionHead
           number="05"
           kicker="LA MAPPA DIAGNOSTICA"
-          title="Le 6 dimensioni"
-          body="Questa pagina mostra la relazione tra le aree del business. Le dimensioni più basse indicano dove il valore resta bloccato prima ancora di cercare più clienti, più automazione o più capitale."
+          title="Le sei dimensioni"
+          body="Le dimensioni più basse indicano dove il valore resta bloccato prima ancora di cercare più clienti, più automazione o più capitale."
         />
 
-        <View style={styles.dimTableHead}>
-          <Text style={styles.dimTableHeadLeft}>DIMENSIONE</Text>
-          <Text style={styles.dimTableHeadRight}>SCORE</Text>
+        <View style={styles.matrixHead}>
+          <Text style={[styles.matrixHeadText, { width: 128 }]}>DIMENSIONE</Text>
+          <Text style={[styles.matrixHeadText, { flex: 1 }]}>0 ————— 10</Text>
+          <Text style={[styles.matrixHeadText, styles.matrixHeadScore]}>
+            SCORE
+          </Text>
         </View>
 
         {dims.map((dim: any) => {
           const isBinding = dim.key === displayedBindingKey;
+          const status =
+            getBracketLabel(dim.bracket) || getScoreLabel(Number(dim.score || 0));
           return (
-            <View key={dim.key} style={styles.dimRow}>
-              <View style={styles.dimRowTop}>
-                <View style={styles.dimRowNameWrap}>
-                  <Text style={styles.dimensionTitle}>
-                    {getDimensionLabel(dim)}
-                  </Text>
-                  <Text style={styles.dimensionStatus}>
-                    {getBracketLabel(dim.bracket) ||
-                      getScoreLabel(Number(dim.score || 0))}
-                    {isBinding ? "  ·  VINCOLO BINDING" : ""}
-                  </Text>
-                </View>
-                <Text style={styles.dimensionScore}>
-                  {Number(dim.score || 0).toFixed(1)} / 10
+            <View
+              key={dim.key}
+              style={[styles.matrixRow, isBinding ? styles.matrixRowBinding : null]}
+            >
+              <View style={{ width: 128 }}>
+                <Text
+                  style={[
+                    styles.matrixName,
+                    isBinding ? styles.matrixNameBinding : null
+                  ]}
+                >
+                  {getDimensionLabel(dim).toUpperCase()}
+                  {isBinding ? " ◆" : ""}
+                </Text>
+                <Text
+                  style={[
+                    styles.matrixSub,
+                    isBinding ? styles.matrixSubBinding : null
+                  ]}
+                >
+                  {isBinding
+                    ? `VINCOLO BINDING — ${dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}`
+                    : `${status} — ${dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}`}
                 </Text>
               </View>
-              <Bar score={Number(dim.score || 0)} accent={isBinding} />
-              <Text style={styles.dimensionText}>
-                {dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}
+              <View style={{ flex: 1, justifyContent: "center" }}>
+                <TickBar score={Number(dim.score || 0)} accent={isBinding} />
+              </View>
+              <Text
+                style={[
+                  styles.matrixScore,
+                  isBinding ? styles.matrixScoreBinding : null
+                ]}
+              >
+                {Number(dim.score || 0).toFixed(1)}
               </Text>
             </View>
           );
         })}
 
-        <View style={styles.focusBox}>
-          <Text style={styles.focusLabel}>LETTURA OPERATIVA</Text>
-          <Text style={styles.insightText}>
-            Il punto non è solo migliorare il punteggio di ogni area. Il salto
-            avviene quando offerta, acquisizione, delivery, margini, asset e
-            leggibilità esterna iniziano a funzionare come un sistema unico.
+        <View style={styles.legendRow}>
+          <Text style={styles.legendItem}>0–3.9 VINCOLO</Text>
+          <Text style={styles.legendItem}>4.0–6.9 IN SVILUPPO</Text>
+          <Text style={styles.legendItem}>7.0+ FORZA</Text>
+          <Text style={[styles.legendItem, { color: GOLD }]}>
+            ◆ BINDING CONSTRAINT
+          </Text>
+        </View>
+
+        <View style={styles.darkBox} wrap={false}>
+          <Text style={styles.darkBoxLabel}>LETTURA OPERATIVA</Text>
+          <Text style={styles.darkBoxText}>
+            Il salto non è migliorare ogni punteggio: avviene quando le sei aree
+            iniziano a funzionare come un sistema unico.
           </Text>
         </View>
 
         <PageFooter />
       </Page>
 
-      {/* ================= 06 — FORZE E VINCOLI ================= */}
+      {/* ================= 06 — RADAR + MATRICE ================= */}
       <Page size="A4" style={styles.page}>
-        <PageHeader name={name} />
-        <SectionTitle
+        <PageHeader name={name} page="06" />
+        <SectionHead
           number="06"
           kicker="LE COORDINATE"
           title="Forze e vincoli"
-          body="Questa pagina separa le aree più solide da quelle che limitano il prossimo salto."
+          body="Il radar mostra la forma del sistema. La matrice mostra la distanza esatta di ogni dimensione dalle soglie: sotto 4.0 vincolo, sopra 7.0 forza."
         />
 
-        {/* [V2.3] Radar delle 6 dimensioni — lo strumento diagnostico */}
-        <View style={styles.radarWrap}>
+        <View style={styles.radarRow}>
           <DimensionsRadar
             dims={result.dimensions}
             bindingKey={displayedBindingKey as DimensionKey}
           />
-        </View>
 
-        <View style={styles.twoColLarge}>
-          <View style={styles.columnRuled}>
-            <Text style={styles.cardTitle}>Le tue forze</Text>
-            {/* [V2.3.2] Coerenza col bracket di pagina 05: sotto 4.0
-                una dimensione è etichettata VINCOLO e non può
-                comparire qui come forza. */}
-            {(() => {
-              const realStrengths = (strengths || []).filter(
-                (item: any) => Number(item.score || 0) >= 4.0
-              );
-
-              if (realStrengths.length === 0) {
-                return (
-                  <Text style={styles.longText}>
-                    In questa fase nessuna dimensione è ancora un punto
-                    d'appoggio consolidato. Non è un giudizio: è la
-                    fotografia di un sistema che va alzato alla base
-                    prima di poter fare leva su un punto di forza.
-                  </Text>
-                );
-              }
-
-              return realStrengths.map((item: any, index: number) => (
-                <View key={item.key || index} style={styles.scoreRow}>
-                  <Text style={styles.scoreRowName}>
-                    {getDimensionLabel(item)}
-                  </Text>
-                  <Text style={styles.scoreRowValue}>
-                    {Number(item.score || 0).toFixed(1)}
-                  </Text>
+          <View style={styles.radarSideCol}>
+            <View style={styles.miniMatrixHead}>
+              <Text style={styles.matrixHeadText}>DIMENSIONE / 0–10</Text>
+              <Text style={styles.matrixHeadText}>SCORE</Text>
+            </View>
+            {dims.map((dim: any) => {
+              const isBinding = dim.key === displayedBindingKey;
+              return (
+                <View
+                  key={dim.key}
+                  style={[
+                    styles.miniMatrixRow,
+                    isBinding ? styles.miniMatrixRowBinding : null
+                  ]}
+                >
+                  <View style={styles.miniMatrixNameRow}>
+                    <Text
+                      style={[
+                        styles.miniMatrixName,
+                        isBinding ? styles.matrixNameBinding : null
+                      ]}
+                    >
+                      {getDimensionLabel(dim).toUpperCase()}
+                      {isBinding ? " ◆" : ""}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.miniMatrixScore,
+                        isBinding ? styles.matrixScoreBinding : null
+                      ]}
+                    >
+                      {Number(dim.score || 0).toFixed(1)}
+                    </Text>
+                  </View>
+                  <TickBar score={Number(dim.score || 0)} accent={isBinding} h={8} />
                 </View>
-              ));
-            })()}
-          </View>
-
-          <View style={styles.columnRuled}>
-            <Text style={styles.cardTitle}>Le tue priorità</Text>
-            {priorities.map((item: any, index: number) => (
-              <View key={item.key || index} style={styles.scoreRow}>
-                <Text style={styles.scoreRowName}>
-                  {getDimensionLabel(item)}
-                </Text>
-                <Text style={styles.scoreRowValue}>
-                  {Number(item.score || 0).toFixed(1)}
-                </Text>
-              </View>
-            ))}
+              );
+            })}
+            <View style={styles.legendRowTight}>
+              <Text style={styles.legendItem}>0–3.9 VINCOLO</Text>
+              <Text style={styles.legendItem}>7.0+ FORZA</Text>
+              <Text style={[styles.legendItem, { color: GOLD }]}>◆ BINDING</Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.focusBox}>
-          <Text style={styles.focusLabel}>VINCOLO BINDING</Text>
-          <Text style={styles.insightText}>
-            {displayedBindingKey
-              ? `La dimensione che oggi limita di più lo stage è ${
-                  dimensionNames[displayedBindingKey] || displayedBindingKey
-                }.`
-              : "Il vincolo principale emerge dalla combinazione delle dimensioni più deboli."}
-          </Text>
-        </View>
+        <CellBox label="VINCOLO BINDING" variant="ink">
+          {displayedBindingKey
+            ? `La dimensione che oggi limita di più lo stage è ${
+                dimensionNames[displayedBindingKey] || displayedBindingKey
+              } — ogni intervento sulle altre aree rende meno finché questa resta illeggibile.`
+            : "Il vincolo principale emerge dalla combinazione delle dimensioni più deboli."}
+        </CellBox>
 
         <PageFooter />
       </Page>
 
       {/* ================= 07 — VINCOLI FUNZIONALI ================= */}
       <Page size="A4" style={styles.page}>
-        <PageHeader name={name} />
-        <SectionTitle
+        <PageHeader name={name} page="07" />
+        <SectionHead
           number="07"
           kicker="I VINCOLI FUNZIONALI"
-          title="Dove il sistema può perdere leva"
+          title="Dove il sistema perde leva"
           body="Questi sono i vincoli funzionali più probabili in base alla fase del business e alle dimensioni più deboli emerse dalla scorecard."
         />
 
         {functionConstraints.length > 0 ? (
           <View>
             {functionConstraints.slice(0, 3).map((item: any, index: number) => (
-              <View key={item.id || index} style={styles.priorityBlock}>
-                <View style={styles.priorityHeader}>
+              <View
+                key={item.id || index}
+                style={styles.priorityBlock}
+                wrap={false}
+              >
+                <View style={styles.priorityHeadRow}>
                   <Text style={styles.priorityRank}>
                     {String(index + 1).padStart(2, "0")}
                   </Text>
                   <Text style={styles.priorityTitle}>{item.label}</Text>
                 </View>
 
-                <View style={styles.priorityBody}>
+                <View style={styles.priorityField}>
                   <FieldLabel>COSA INDICA</FieldLabel>
-                  <Text style={styles.longText}>{item.implication}</Text>
+                  <Text style={styles.bodyText}>{item.implication}</Text>
+                </View>
 
-                  <FieldLabel>DA CHIARIRE</FieldLabel>
-                  <Text style={styles.longText}>{item.work}</Text>
-
-                  <FieldLabel>EVITARE</FieldLabel>
-                  <Text style={styles.longText}>{item.avoid}</Text>
+                <View style={styles.twoColTight}>
+                  <View style={styles.col}>
+                    <FieldLabel>DA CHIARIRE</FieldLabel>
+                    <Text style={styles.bodyText}>{item.work}</Text>
+                  </View>
+                  <View style={styles.col}>
+                    <FieldLabel danger>EVITARE</FieldLabel>
+                    <Text style={styles.bodyText}>{item.avoid}</Text>
+                  </View>
                 </View>
               </View>
             ))}
           </View>
         ) : (
-          <View style={styles.ruledBlock}>
+          <View style={styles.fieldBlockFirst}>
             <FieldLabel>NESSUN VINCOLO FUNZIONALE SPECIFICO</FieldLabel>
-            <Text style={styles.longText}>
+            <Text style={styles.bodyText}>
               La diagnosi principale emerge dalle sei dimensioni e dal vincolo
               binding.
             </Text>
@@ -1298,44 +1339,42 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
       {/* ================= 08 — PROFILO + CTA ================= */}
       <Page size="A4" style={styles.page}>
-        <PageHeader name={name} />
-        <SectionTitle
+        <PageHeader name={name} page="08" />
+        <SectionHead
           number="08"
-          kicker={
-            String(safeText(result.profile)).toLowerCase().startsWith("profilo")
-              ? String(safeText(result.profile)).toUpperCase()
-              : `PROFILO ${safeText(result.profile)}`
-          }
+          kicker={profileKickerLabel}
           title={profileTitle}
           body={profileBody}
         />
 
-        <View style={styles.ruledBlock}>
+        <View style={styles.fieldBlockFirst}>
           <FieldLabel>COME SI MANIFESTA</FieldLabel>
-          <Text style={styles.longText}>
+          <Text style={styles.bodyText}>
             {result.profileData?.manifesta ||
               "Il vincolo si manifesta quando il business deve essere capito, delegato o valutato senza la presenza costante del founder."}
           </Text>
+        </View>
 
-          <FieldLabel>RISCHIO SE IGNORATO</FieldLabel>
-          <Text style={styles.longText}>
+        <View style={styles.fieldBlock}>
+          <FieldLabel danger>RISCHIO SE IGNORATO</FieldLabel>
+          <Text style={styles.bodyText}>
             {result.profileData?.rischio ||
               "Il rischio è aumentare volume, complessità o esposizione esterna senza aver prima chiarito il sistema."}
           </Text>
+        </View>
 
+        <View style={styles.fieldBlock}>
           <FieldLabel>LA DECISIONE CHE VIENE PRIMA</FieldLabel>
-          <Text style={styles.longText}>
+          <Text style={styles.bodyText}>
             {result.profileData?.decisione ||
               "Rendere più chiari numeri, responsabilità, offerta e vincolo operativo principale."}
           </Text>
         </View>
 
-        {/* [V2.2 / P5] Il problema rivelato: il loop che la Strategic
-            Review chiude. Render condizionale. */}
         {getNextProblem(result, stageInfo) ? (
-          <View style={styles.ruledBlock}>
+          <View style={styles.fieldBlock}>
             <FieldLabel>IL PROBLEMA CHE SI APRE DOPO</FieldLabel>
-            <Text style={styles.longText}>
+            <Text style={styles.bodyText}>
               {getNextProblem(result, stageInfo)}
             </Text>
           </View>
@@ -1348,7 +1387,6 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               ? `${firstName}, trasforma la diagnosi in ordine operativo.`
               : "Trasforma la diagnosi in ordine operativo."}
           </Text>
-          {/* [V2.2 / 4.3] Registro "descrivi, non spiegare". */}
           <Text style={styles.ctaBody}>
             {`Questo report ti ha dato il COSA: il vincolo, la posta in gioco, i criteri per riconoscere quando è risolto. Quello che non può darti è la sequenza applicata al tuo caso: cosa viene prima tra ${
               priorities.length > 0
@@ -1361,14 +1399,18 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           {getIntentClosing(result) ? (
             <Text style={styles.ctaIntentLine}>{getIntentClosing(result)}</Text>
           ) : null}
-          <Link src={strategicReviewUrl} style={styles.ctaButton}>
-            {!Number.isNaN(intentLevelNum) && intentLevelNum >= 3
-              ? "Prenota ora la Strategic Review"
-              : "Prenota la Strategic Review"}
-          </Link>
-          {resolvedLeadId ? (
-            <Text style={styles.ctaSmallText}>Report ID: {resolvedLeadId}</Text>
-          ) : null}
+          <View style={styles.ctaButtonRow}>
+            <Link src={strategicReviewUrl} style={styles.ctaButton}>
+              {!Number.isNaN(intentLevelNum) && intentLevelNum >= 3
+                ? "PRENOTA ORA LA STRATEGIC REVIEW →"
+                : "PRENOTA LA STRATEGIC REVIEW →"}
+            </Link>
+            {resolvedLeadId ? (
+              <Text style={styles.ctaSmallText}>
+                REPORT ID: {resolvedLeadId}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         <PageFooter />
@@ -1378,231 +1420,214 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 }
 
 /* ============================================================
-   STILI — sistema editoriale "advisory"
-   Token allineati al funnel:
-   ink #171717 · body #33302A · muted #6F6A61 · hairline #DDD3C4
-   teal #27708F · teal-dark #1F5B75 · gold #B88A2A
+   STILI — sistema "MANIFESTO"
+   ink #16150F · paper #FBF9F3 · gold #B88A2A (carta) /
+   #C9A24B (scuro) · red #B42318 · hairline #E0DACA
 ============================================================ */
-
-const INK = "#171717";
-const BODY = "#33302A";
-const MUTED = "#6F6A61";
-const HAIRLINE = "#DDD3C4";
-const TEAL = "#27708F";
-const TEAL_DARK = "#1F5B75";
-const GOLD = "#B88A2A";
-const DANGER = "#B42318";
-const CREAM = "#FAF6EC";
-const COVER_BG = "#1A1A1A";
 
 const styles = StyleSheet.create({
   /* ---- Copertina ---- */
   coverPage: {
-    paddingTop: 42,
-    paddingBottom: 42,
-    paddingHorizontal: 46,
-    backgroundColor: "#FFFDF7",
-    color: INK,
-    fontFamily: "Helvetica"
+    paddingTop: 44,
+    paddingBottom: 40,
+    paddingHorizontal: 48,
+    backgroundColor: DARK,
+    color: IVORY,
+    fontFamily: F.sans
   },
   coverTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 12
+    alignItems: "flex-start"
   },
   coverWordmark: {
-    fontSize: 9,
-    color: INK,
-    letterSpacing: 2.2,
-    fontWeight: 700
+    fontFamily: F.black,
+    fontSize: 17,
+    letterSpacing: 2.5,
+    color: IVORY
   },
-  coverWordmarkRight: {
-    fontSize: 9,
+  coverTopMeta: {
+    fontFamily: F.mono,
+    fontSize: 6.5,
     color: MUTED,
-    letterSpacing: 2.2
-  },
-  coverGoldRule: {
-    height: 2,
-    backgroundColor: GOLD,
-    width: 44,
-    marginBottom: 40
+    textAlign: "right",
+    lineHeight: 1.8
   },
   coverTitleBlock: {
-    marginBottom: 32
+    marginTop: 62
   },
   coverKicker: {
-    fontSize: 8.5,
-    color: GOLD,
-    letterSpacing: 2.2,
-    fontWeight: 700,
-    marginBottom: 14
+    fontFamily: F.mono,
+    fontSize: 7.5,
+    letterSpacing: 3,
+    color: GOLD_BRIGHT,
+    marginBottom: 18
   },
-  coverTitle: {
-    fontSize: 38,
-    lineHeight: 1.02,
-    color: INK,
-    fontWeight: 700,
-    letterSpacing: -0.8,
-    marginBottom: 16,
-    maxWidth: 400
+  coverTitleLine: {
+    fontFamily: F.black,
+    fontSize: 64,
+    lineHeight: 1,
+    letterSpacing: -1,
+    color: IVORY
   },
-  coverPrepared: {
-    fontSize: 12,
-    color: BODY,
-    marginBottom: 5
+  coverTitleLineGold: {
+    color: GOLD_BRIGHT
   },
-  coverMetaLine: {
-    fontSize: 9,
-    color: MUTED
+  coverPreparedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 30
+  },
+  coverPreparedBar: {
+    width: 38,
+    height: 2.5,
+    backgroundColor: GOLD_BRIGHT,
+    marginRight: 12
+  },
+  coverPreparedText: {
+    fontSize: 10,
+    color: IVORY_SOFT
+  },
+  coverPreparedName: {
+    color: IVORY,
+    fontWeight: 700
+  },
+  coverBand: {
+    flexDirection: "row",
+    marginTop: "auto",
+    borderWidth: 1,
+    borderColor: DARK_HAIRLINE
+  },
+  coverScoreCell: {
+    flex: 1.2,
+    padding: 18,
+    borderRightWidth: 1,
+    borderRightColor: DARK_HAIRLINE
+  },
+  coverCellLabel: {
+    fontFamily: F.mono,
+    fontSize: 6.5,
+    letterSpacing: 2,
+    color: GOLD_BRIGHT,
+    marginBottom: 8
   },
   coverScoreRow: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: HAIRLINE,
-    borderBottomWidth: 1,
-    borderBottomColor: HAIRLINE,
-    paddingVertical: 20,
-    marginBottom: 22,
-    gap: 30
-  },
-  coverScoreBlock: {
-    width: "36%",
-    borderRightWidth: 1,
-    borderRightColor: HAIRLINE,
-    paddingRight: 24,
-    justifyContent: "center"
-  },
-  coverScoreLabel: {
-    fontSize: 7.5,
-    color: MUTED,
-    letterSpacing: 1.8,
-    fontWeight: 700,
-    marginBottom: 10
-  },
-  coverScoreLine: {
     flexDirection: "row",
     alignItems: "flex-end"
   },
   coverScoreNumber: {
-    fontSize: 64,
+    fontFamily: F.black,
+    fontSize: 58,
     lineHeight: 1,
-    color: INK,
-    fontWeight: 700,
-    letterSpacing: -2
+    color: IVORY
   },
   coverScoreOutOf: {
-    fontSize: 14,
-    color: MUTED
+    fontFamily: F.mono,
+    fontSize: 11,
+    color: MUTED,
+    marginLeft: 6,
+    marginBottom: 4
   },
-  coverConstraintBlock: {
-    flex: 1,
+  coverScaleTrack: {
+    position: "relative",
+    height: 4.5,
+    backgroundColor: DARK_HAIRLINE,
+    marginTop: 12
+  },
+  coverScaleFill: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    height: 4.5,
+    backgroundColor: GOLD_BRIGHT
+  },
+  coverScaleTick: {
+    position: "absolute",
+    top: -2.5,
+    width: 1.5,
+    height: 9.5,
+    backgroundColor: DARK_FAINT
+  },
+  coverConstraintCell: {
+    flex: 1.6,
+    padding: 18,
     justifyContent: "center"
   },
   coverConstraintTitle: {
-    fontSize: 23,
+    fontFamily: F.black,
+    fontSize: 19,
     lineHeight: 1.05,
-    color: INK,
-    fontWeight: 700,
-    letterSpacing: -0.4,
-    marginBottom: 8
-  },
-  coverConstraintBody: {
-    fontSize: 10,
-    lineHeight: 1.5,
-    color: MUTED
-  },
-  coverMetaGrid: {
-    flexDirection: "row",
-    marginBottom: 30
-  },
-  coverMetaItem: {
-    flex: 1,
-    borderRightWidth: 1,
-    borderRightColor: HAIRLINE,
-    paddingRight: 16,
-    marginRight: 16
-  },
-  coverMetaItemLast: {
-    borderRightWidth: 0,
-    marginRight: 0,
-    paddingRight: 0
-  },
-  coverMetaLabel: {
-    fontSize: 7.5,
-    color: MUTED,
-    letterSpacing: 1.8,
-    fontWeight: 700,
+    textTransform: "uppercase",
+    color: IVORY,
     marginBottom: 6
   },
-  coverMetaValue: {
-    fontSize: 13,
-    color: INK,
-    fontWeight: 700
-  },
-  coverIndex: {
-    marginTop: "auto",
-    marginBottom: 28
-  },
-  coverIndexTitle: {
-    fontSize: 7.5,
-    color: GOLD,
-    letterSpacing: 2,
-    fontWeight: 700,
-    marginBottom: 12
-  },
-  coverIndexRow: {
-    flexDirection: "row",
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: HAIRLINE
-  },
-  coverIndexNum: {
-    width: 30,
+  coverConstraintBody: {
     fontSize: 8.5,
-    color: GOLD,
+    lineHeight: 1.5,
+    color: DARK_MUTED
+  },
+  coverMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 16,
+    paddingTop: 13,
+    borderTopWidth: 1,
+    borderTopColor: DARK_HAIRLINE
+  },
+  coverMetaItem: {
+    fontFamily: F.mono,
+    fontSize: 7,
+    color: MUTED
+  },
+  coverMetaValue: {
+    color: IVORY,
     fontWeight: 700
   },
-  coverIndexText: {
-    fontSize: 9.5,
-    color: BODY
+  coverMetaValueGold: {
+    color: GOLD_BRIGHT,
+    fontWeight: 700
   },
-  coverFooter: {
-    borderTopWidth: 1,
-    borderTopColor: HAIRLINE,
-    paddingTop: 12
-  },
-  coverFooterText: {
-    fontSize: 7.5,
-    lineHeight: 1.5,
-    color: MUTED
+  coverDisclaimer: {
+    fontSize: 6.5,
+    lineHeight: 1.6,
+    color: DARK_FAINT,
+    marginTop: 12
   },
 
   /* ---- Pagine interne ---- */
   page: {
-    paddingTop: 30,
-    paddingBottom: 46,
+    paddingTop: 38,
+    paddingBottom: 52,
     paddingHorizontal: 46,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: PAPER,
     color: INK,
-    fontFamily: "Helvetica"
+    fontFamily: F.sans
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 28,
+    alignItems: "center",
     paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: HAIRLINE
+    borderBottomWidth: 2.5,
+    borderBottomColor: INK,
+    marginBottom: 24
   },
-  headerText: {
-    fontSize: 7,
-    color: MUTED,
-    letterSpacing: 1.6,
-    textTransform: "uppercase"
+  headerWordmark: {
+    fontFamily: F.black,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    color: INK
+  },
+  headerMeta: {
+    fontFamily: F.mono,
+    fontSize: 6,
+    letterSpacing: 1.5,
+    color: MUTED
   },
   footer: {
     position: "absolute",
-    bottom: 24,
+    bottom: 26,
     left: 46,
     right: 46,
     flexDirection: "row",
@@ -1612,401 +1637,446 @@ const styles = StyleSheet.create({
     paddingTop: 8
   },
   footerText: {
-    fontSize: 7,
-    color: MUTED,
-    letterSpacing: 0.6
+    fontFamily: F.mono,
+    fontSize: 6,
+    color: MUTED
   },
 
-  /* ---- Titoli di sezione ---- */
-  sectionTitleBlock: {
-    marginBottom: 24
+  /* ---- Testata di sezione ---- */
+  sectionHeadBlock: {
+    marginBottom: 6
   },
-  sectionNumberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12
+  sectionHeadRow: {
+    flexDirection: "row"
   },
   sectionNumber: {
-    fontSize: 11,
-    color: GOLD,
-    fontWeight: 700,
-    letterSpacing: 1
+    fontFamily: F.black,
+    fontSize: 38,
+    lineHeight: 1,
+    color: GOLD_BRIGHT,
+    marginRight: 16
   },
-  sectionNumberRule: {
-    width: 26,
-    height: 1,
-    backgroundColor: HAIRLINE,
-    marginHorizontal: 10
+  sectionHeadCol: {
+    flex: 1,
+    justifyContent: "flex-end"
   },
   kicker: {
-    fontSize: 7.5,
-    color: TEAL_DARK,
-    letterSpacing: 1.8,
-    textTransform: "uppercase",
-    fontWeight: 700
+    fontFamily: F.mono,
+    fontSize: 6.5,
+    letterSpacing: 2.2,
+    color: MUTED,
+    marginBottom: 6
   },
   sectionTitle: {
-    fontSize: 30,
-    lineHeight: 1.04,
-    fontWeight: 700,
-    color: INK,
-    letterSpacing: -0.6,
-    marginBottom: 10
-  },
-  sectionBody: {
-    fontSize: 10.5,
-    lineHeight: 1.5,
-    color: MUTED,
-    maxWidth: 440
-  },
-  sectionBottomRule: {
-    height: 1,
-    backgroundColor: HAIRLINE,
-    marginTop: 18
-  },
-
-  /* ---- Blocchi a righe ---- */
-  ruledBlock: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: HAIRLINE,
-    marginBottom: 2
-  },
-  twoCol: {
-    flexDirection: "row",
-    gap: 28,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: HAIRLINE,
-    marginBottom: 4
-  },
-  colRuled: {
-    flex: 1
-  },
-  blockLabel: {
-    fontSize: 7.5,
-    color: TEAL_DARK,
-    fontWeight: 700,
-    letterSpacing: 1.6,
-    marginTop: 7,
-    marginBottom: 3,
-    textTransform: "uppercase"
-  },
-  blockText: {
-    fontSize: 10.5,
-    lineHeight: 1.45,
+    fontFamily: F.black,
+    fontSize: 26,
+    lineHeight: 1,
+    letterSpacing: -0.3,
+    textTransform: "uppercase",
     color: INK
   },
-  longText: {
-    fontSize: 9.5,
-    lineHeight: 1.42,
+  sectionBody: {
+    fontSize: 8.5,
+    lineHeight: 1.55,
+    color: FAINT,
+    maxWidth: 400,
+    marginTop: 10
+  },
+
+  /* ---- Blocchi campo ---- */
+  fieldBlockFirst: {
+    borderTopWidth: 2,
+    borderTopColor: INK,
+    marginTop: 18,
+    paddingTop: 11
+  },
+  fieldBlock: {
+    borderTopWidth: 1,
+    borderTopColor: HAIRLINE,
+    marginTop: 12,
+    paddingTop: 11
+  },
+  twoColBlock: {
+    flexDirection: "row",
+    borderTopWidth: 2,
+    borderTopColor: INK,
+    marginTop: 18,
+    paddingTop: 11
+  },
+  twoColTight: {
+    flexDirection: "row",
+    marginTop: 8
+  },
+  col: {
+    flex: 1,
+    marginRight: 20
+  },
+  fieldLabel: {
+    fontFamily: F.mono,
+    fontSize: 6.5,
+    letterSpacing: 2,
+    color: GOLD,
+    marginBottom: 4
+  },
+  fieldLabelDanger: {
+    color: RED
+  },
+  bodyText: {
+    fontSize: 9,
+    lineHeight: 1.5,
     color: BODY
   },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: 700,
+  emphasisText: {
+    fontSize: 9.5,
+    lineHeight: 1.5,
     color: INK,
-    letterSpacing: -0.2,
-    marginBottom: 10
+    fontWeight: 700
+  },
+  blockTitle: {
+    fontFamily: F.black,
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    color: INK,
+    marginBottom: 6
+  },
+  listBlock: {
+    marginTop: 18
   },
   listRow: {
     flexDirection: "row",
-    gap: 12,
-    paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EFEAE0"
-  },
-  listNumber: {
-    width: 22,
-    fontSize: 9,
-    color: GOLD,
-    fontWeight: 700
-  },
-  listText: {
-    flex: 1,
-    fontSize: 10,
-    lineHeight: 1.4,
-    color: BODY
-  },
-
-  /* ---- Box accentati ---- */
-  focusBox: {
-    backgroundColor: CREAM,
-    borderLeftWidth: 2,
-    borderLeftColor: GOLD,
-    padding: 14,
-    marginTop: 14,
-    marginBottom: 4
-  },
-  focusLabel: {
-    fontSize: 7.5,
-    color: TEAL_DARK,
-    fontWeight: 700,
-    letterSpacing: 1.6,
-    marginBottom: 6,
-    textTransform: "uppercase"
-  },
-  focusText: {
-    fontSize: 10.5,
-    lineHeight: 1.5,
-    color: TEAL_DARK,
-    fontWeight: 700
-  },
-  warningBox: {
-    borderLeftWidth: 2,
-    borderLeftColor: DANGER,
-    backgroundColor: "#FBF1EF",
-    padding: 11,
-    marginTop: 10,
-    marginBottom: 2
-  },
-  warningTitle: {
-    fontSize: 7.5,
-    color: DANGER,
-    fontWeight: 700,
-    letterSpacing: 1.6,
-    marginBottom: 6
-  },
-  warningText: {
-    fontSize: 10,
-    lineHeight: 1.5,
-    color: DANGER
-  },
-  patternTitle: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: INK,
-    marginBottom: 6
-  },
-  insightText: {
-    fontSize: 10,
-    lineHeight: 1.5,
-    color: BODY
-  },
-  riskRow: {
-    borderLeftWidth: 2,
-    borderLeftColor: DANGER,
-    paddingLeft: 12,
     paddingVertical: 6,
-    marginBottom: 8
-  },
-  riskTitle: {
-    fontSize: 10.5,
-    color: DANGER,
-    fontWeight: 700,
-    marginBottom: 3
-  },
-  riskBody: {
-    fontSize: 9,
-    lineHeight: 1.4,
-    color: DANGER
-  },
-
-  /* ---- Priorità ---- */
-  priorityBlock: {
-    borderBottomWidth: 1,
-    borderBottomColor: HAIRLINE,
-    paddingBottom: 10,
-    marginBottom: 10
-  },
-  priorityHeader: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 12,
-    marginBottom: 4
-  },
-  priorityRank: {
-    fontSize: 16,
-    color: GOLD,
-    fontWeight: 700,
-    width: 30
-  },
-  priorityTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: 700,
-    color: INK,
-    letterSpacing: -0.3
-  },
-  priorityScore: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: TEAL
-  },
-  priorityBody: {
-    paddingLeft: 42
-  },
-
-  /* ---- Tabella dimensioni ---- */
-  dimTableHead: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingBottom: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: INK,
-    marginBottom: 2
-  },
-  dimTableHeadLeft: {
-    fontSize: 7.5,
-    color: MUTED,
-    letterSpacing: 1.6,
-    fontWeight: 700
-  },
-  dimTableHeadRight: {
-    fontSize: 7.5,
-    color: MUTED,
-    letterSpacing: 1.6,
-    fontWeight: 700
-  },
-  dimRow: {
-    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: HAIRLINE
   },
-  dimRowTop: {
+  listNumber: {
+    fontFamily: F.mono,
+    fontSize: 7.5,
+    fontWeight: 700,
+    color: GOLD,
+    width: 20
+  },
+  listText: {
+    flex: 1,
+    fontSize: 9,
+    lineHeight: 1.45,
+    color: BODY
+  },
+
+  /* ---- Box a celle ---- */
+  cellBox: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    borderWidth: 2,
+    borderColor: INK,
+    marginTop: 14
+  },
+  cellBoxLabel: {
+    width: 88,
+    padding: 12,
+    justifyContent: "center"
+  },
+  cellBoxLabelInk: {
+    backgroundColor: INK
+  },
+  cellBoxLabelRed: {
+    backgroundColor: RED
+  },
+  cellBoxLabelText: {
+    fontFamily: F.black,
+    fontSize: 8,
+    lineHeight: 1.25,
+    letterSpacing: 0.8,
+    textTransform: "uppercase"
+  },
+  cellBoxLabelTextInk: {
+    color: GOLD_BRIGHT
+  },
+  cellBoxLabelTextRed: {
+    color: PAPER
+  },
+  cellBoxBody: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    justifyContent: "center"
+  },
+  cellBoxBodyText: {
+    fontSize: 9,
+    lineHeight: 1.5,
+    color: INK
+  },
+
+  /* ---- Pattern / risk ---- */
+  patternTitle: {
+    fontFamily: F.black,
+    fontSize: 11,
+    textTransform: "uppercase",
+    color: INK,
+    marginBottom: 5
+  },
+  riskRow: {
+    borderLeftWidth: 2.5,
+    borderLeftColor: RED,
+    paddingLeft: 12,
+    paddingVertical: 5,
+    marginBottom: 9
+  },
+  riskTitle: {
+    fontFamily: F.mono,
+    fontSize: 7.5,
+    fontWeight: 700,
+    letterSpacing: 0.8,
+    color: RED,
+    marginBottom: 3
+  },
+  riskBody: {
+    fontSize: 8.5,
+    lineHeight: 1.45,
+    color: BODY
+  },
+
+  /* ---- Priorità / vincoli funzionali ---- */
+  priorityBlock: {
+    borderTopWidth: 2,
+    borderTopColor: INK,
+    marginTop: 16,
+    paddingTop: 10
+  },
+  priorityHeadRow: {
+    flexDirection: "row",
+    alignItems: "flex-end"
+  },
+  priorityRank: {
+    fontFamily: F.black,
+    fontSize: 20,
+    lineHeight: 1,
+    color: GOLD_BRIGHT,
+    marginRight: 12
+  },
+  priorityTitle: {
+    flex: 1,
+    fontFamily: F.black,
+    fontSize: 14,
+    lineHeight: 1,
+    textTransform: "uppercase",
+    color: INK
+  },
+  priorityScore: {
+    fontFamily: F.mono,
+    fontSize: 9.5,
+    fontWeight: 700,
+    color: GOLD
+  },
+  priorityField: {
+    marginTop: 8
+  },
+  deprioritizeNote: {
+    fontSize: 7.5,
+    lineHeight: 1.55,
+    color: FAINT,
+    fontStyle: "italic",
+    borderTopWidth: 1,
+    borderTopColor: HAIRLINE,
+    paddingTop: 10,
+    marginTop: 16
+  },
+
+  /* ---- Matrice a tacche (pagina 05) ---- */
+  matrixHead: {
+    flexDirection: "row",
     alignItems: "flex-end",
-    marginBottom: 7
+    paddingBottom: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: INK,
+    marginTop: 16
   },
-  dimRowNameWrap: {
-    flexDirection: "column"
+  matrixHeadText: {
+    fontFamily: F.mono,
+    fontSize: 6,
+    letterSpacing: 1.5,
+    color: MUTED
   },
-  dimensionTitle: {
-    fontSize: 12.5,
+  matrixHeadScore: {
+    width: 40,
+    textAlign: "right"
+  },
+  matrixRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: HAIRLINE
+  },
+  matrixRowBinding: {
+    backgroundColor: GOLD_WASH,
+    paddingHorizontal: 8,
+    marginHorizontal: -8
+  },
+  matrixName: {
+    fontSize: 9.5,
+    fontWeight: 700,
+    letterSpacing: 0.4,
+    color: INK
+  },
+  matrixNameBinding: {
+    color: GOLD
+  },
+  matrixSub: {
+    fontFamily: F.mono,
+    fontSize: 5.5,
+    lineHeight: 1.4,
+    color: MUTED,
+    marginTop: 2,
+    paddingRight: 8
+  },
+  matrixSubBinding: {
+    color: GOLD
+  },
+  matrixScore: {
+    width: 40,
+    textAlign: "right",
+    fontFamily: F.mono,
+    fontSize: 11,
     fontWeight: 700,
     color: INK
   },
-  dimensionStatus: {
-    fontSize: 7,
+  matrixScoreBinding: {
+    color: GOLD
+  },
+  legendRow: {
+    flexDirection: "row",
+    marginTop: 10
+  },
+  legendRowTight: {
+    flexDirection: "row",
+    marginTop: 8
+  },
+  legendItem: {
+    fontFamily: F.mono,
+    fontSize: 5.5,
+    letterSpacing: 0.8,
     color: MUTED,
-    letterSpacing: 1.2,
-    marginTop: 3
-  },
-  dimensionScore: {
-    fontSize: 11.5,
-    fontWeight: 700,
-    color: TEAL
-  },
-  dimensionText: {
-    fontSize: 9,
-    lineHeight: 1.35,
-    color: MUTED,
-    marginTop: 6
-  },
-  barTrack: {
-    height: 4,
-    backgroundColor: "#EFEAE0",
-    overflow: "hidden"
-  },
-  barFill: {
-    height: 4,
-    backgroundColor: TEAL
-  },
-  barFillAccent: {
-    backgroundColor: GOLD
+    marginRight: 14
   },
 
-  /* ---- Colonne forze/vincoli ---- */
-  twoColLarge: {
+  /* ---- Box scuro (lettura operativa) ---- */
+  darkBox: {
+    backgroundColor: INK,
+    padding: 16,
+    marginTop: 16
+  },
+  darkBoxLabel: {
+    fontFamily: F.mono,
+    fontSize: 6.5,
+    letterSpacing: 2,
+    color: GOLD_BRIGHT,
+    marginBottom: 6
+  },
+  darkBoxText: {
+    fontSize: 9.5,
+    lineHeight: 1.5,
+    color: IVORY
+  },
+
+  /* ---- Pagina 06: radar + matrice ---- */
+  radarRow: {
     flexDirection: "row",
-    gap: 28,
-    marginBottom: 4
+    alignItems: "center",
+    marginTop: 14
   },
-  columnRuled: {
+  radarSideCol: {
     flex: 1,
-    borderTopWidth: 1,
-    borderTopColor: INK,
-    paddingTop: 12
+    marginLeft: 18
   },
-  scoreRow: {
+  miniMatrixHead: {
     flexDirection: "row",
     justifyContent: "space-between",
+    paddingBottom: 5,
+    borderBottomWidth: 2,
+    borderBottomColor: INK
+  },
+  miniMatrixRow: {
+    paddingVertical: 7,
     borderBottomWidth: 1,
-    borderBottomColor: HAIRLINE,
-    paddingVertical: 8
+    borderBottomColor: HAIRLINE
   },
-  scoreRowName: {
-    fontSize: 10.5,
-    color: BODY
+  miniMatrixRowBinding: {
+    backgroundColor: GOLD_WASH,
+    paddingHorizontal: 7,
+    marginHorizontal: -7
   },
-  scoreRowValue: {
-    fontSize: 10.5,
-    color: TEAL,
-    fontWeight: 700
+  miniMatrixNameRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 5
+  },
+  miniMatrixName: {
+    fontSize: 8,
+    fontWeight: 700,
+    letterSpacing: 0.4,
+    color: INK
+  },
+  miniMatrixScore: {
+    fontFamily: F.mono,
+    fontSize: 9,
+    fontWeight: 700,
+    color: INK
   },
 
   /* ---- CTA finale ---- */
   ctaBox: {
-    backgroundColor: COVER_BG,
-    padding: 18,
-    marginTop: 12
+    backgroundColor: INK,
+    paddingVertical: 22,
+    paddingHorizontal: 24,
+    marginTop: 16
   },
   ctaLabel: {
-    fontSize: 7.5,
-    color: GOLD,
+    fontFamily: F.mono,
+    fontSize: 6.5,
     letterSpacing: 2,
-    textTransform: "uppercase",
-    fontWeight: 700,
+    color: GOLD_BRIGHT,
     marginBottom: 10
   },
   ctaTitle: {
-    fontSize: 19,
-    lineHeight: 1.08,
-    color: "#FFFFFF",
-    fontWeight: 700,
-    letterSpacing: -0.4,
+    fontFamily: F.black,
+    fontSize: 18,
+    lineHeight: 1.1,
+    textTransform: "uppercase",
+    color: IVORY,
     marginBottom: 8
   },
   ctaBody: {
-    fontSize: 9.5,
-    lineHeight: 1.45,
-    color: "#CDCDCD",
-    marginBottom: 10
+    fontSize: 8.5,
+    lineHeight: 1.55,
+    color: IVORY_SOFT,
+    marginBottom: 8
+  },
+  ctaIntentLine: {
+    fontSize: 8,
+    lineHeight: 1.5,
+    color: GOLD_BRIGHT,
+    marginBottom: 12
+  },
+  ctaButtonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4
   },
   ctaButton: {
-    fontSize: 12,
-    color: COVER_BG,
-    fontWeight: 700,
+    fontFamily: F.black,
+    fontSize: 9.5,
+    letterSpacing: 0.8,
+    color: INK,
+    backgroundColor: GOLD_BRIGHT,
     textDecoration: "none",
-    backgroundColor: GOLD,
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingHorizontal: 16,
-    alignSelf: "flex-start"
+    paddingVertical: 10,
+    paddingHorizontal: 16
   },
   ctaSmallText: {
-    fontSize: 7.5,
-    color: "#818181",
-    marginTop: 10
-  },
-  /* [V2.3] Riga numero + gauge in copertina */
-  coverScoreGaugeRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 16
-  },
-  /* [V2.3] Contenitore radar, pagina 06 */
-  radarWrap: {
-    alignItems: "center",
-    marginTop: 6,
-    marginBottom: 4
-  },
-  /* [V2.2] Nota di de-prioritizzazione, pagina 04 */
-  deprioritizeNote: {
-    fontSize: 8.5,
-    lineHeight: 1.45,
+    fontFamily: F.mono,
+    fontSize: 6.5,
     color: MUTED,
-    marginTop: 8,
-    paddingTop: 6,
-    borderTopWidth: 0.75,
-    borderTopColor: HAIRLINE
-  },
-  /* [V2.2] Riga di chiusura calibrata su intent, dentro la ctaBox */
-  ctaIntentLine: {
-    fontSize: 9,
-    lineHeight: 1.45,
-    color: GOLD,
-    marginBottom: 10
+    marginLeft: 14
   }
 });
