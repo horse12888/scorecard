@@ -464,21 +464,21 @@ function getReportDateShort() {
    PALETTE MANIFESTO
 ============================================================ */
 
-const INK = "#16150F";
+const INK = "#13273B"; /* blu notte — testo e box */
 const PAPER = "#FBF9F3";
-const BODY = "#33302A";
-const MUTED = "#8F8A7E";
-const FAINT = "#6F6A61";
+const BODY = "#2C3A49";
+const MUTED = "#77828F";
+const FAINT = "#57626F";
 const HAIRLINE = "#E0DACA";
 const GOLD = "#B88A2A"; /* gold su carta */
 const GOLD_BRIGHT = "#C9A24B"; /* gold su scuro */
 const RED = "#B42318";
-const DARK = "#0E0D0B";
+const DARK = "#0B1928"; /* blu profondo copertina */
 const IVORY = "#F4EFE4";
 const IVORY_SOFT = "#CFC8B8";
-const DARK_MUTED = "#A29B8C";
-const DARK_FAINT = "#6E695E";
-const DARK_HAIRLINE = "#3E3B33";
+const DARK_MUTED = "#96A3B0";
+const DARK_FAINT = "#5F6D7B";
+const DARK_HAIRLINE = "#2A3B4C";
 const GOLD_WASH = "#F5EDD8"; /* evidenza riga binding */
 const TICK_EMPTY = "#E5DFCE";
 const TICK_EMPTY_GOLD = "#E9DFC6";
@@ -526,13 +526,39 @@ function TickBar({
               flex: 1,
               height: h,
               marginRight: i < 9 ? 2.5 : 0,
-              backgroundColor: isFull || isPartial ? fillColor : emptyColor,
-              opacity: isPartial ? frac : 1
+              backgroundColor: isFull ? fillColor : emptyColor
             }}
-          />
+          >
+            {isPartial ? (
+              <View
+                style={{
+                  width: `${Math.round(frac * 100)}%`,
+                  height: h,
+                  backgroundColor: fillColor
+                }}
+              />
+            ) : null}
+          </View>
         );
       })}
     </View>
+  );
+}
+
+/* Rombo gold disegnato (il glifo ◆ non esiste nei font caricati
+   e verrebbe reso col carattere di fallback). */
+function BindingMark({ size = 5, right = false }: { size?: number; right?: boolean }) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: GOLD,
+        transform: "rotate(45deg)",
+        marginLeft: right ? 0 : 5,
+        marginRight: right ? 4 : 0
+      }}
+    />
   );
 }
 
@@ -959,6 +985,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             ))}
         </View>
 
+        <View style={{ flexGrow: 1 }} />
+
         <CellBox label="NON SCALARE ANCORA" variant="red">
           {stageInfo.nonFare ||
             stageInfo.troppoPresto ||
@@ -1129,15 +1157,17 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               style={[styles.matrixRow, isBinding ? styles.matrixRowBinding : null]}
             >
               <View style={{ width: 128 }}>
-                <Text
-                  style={[
-                    styles.matrixName,
-                    isBinding ? styles.matrixNameBinding : null
-                  ]}
-                >
-                  {getDimensionLabel(dim).toUpperCase()}
-                  {isBinding ? " ◆" : ""}
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text
+                    style={[
+                      styles.matrixName,
+                      isBinding ? styles.matrixNameBinding : null
+                    ]}
+                  >
+                    {getDimensionLabel(dim).toUpperCase()}
+                  </Text>
+                  {isBinding ? <BindingMark /> : null}
+                </View>
                 <Text
                   style={[
                     styles.matrixSub,
@@ -1168,10 +1198,15 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={styles.legendItem}>0–3.9 VINCOLO</Text>
           <Text style={styles.legendItem}>4.0–6.9 IN SVILUPPO</Text>
           <Text style={styles.legendItem}>7.0+ FORZA</Text>
-          <Text style={[styles.legendItem, { color: GOLD }]}>
-            ◆ BINDING CONSTRAINT
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <BindingMark size={4} right />
+            <Text style={[styles.legendItem, { color: GOLD }]}>
+              BINDING CONSTRAINT
+            </Text>
+          </View>
         </View>
+
+        <View style={{ flexGrow: 1 }} />
 
         <View style={styles.darkBox} wrap={false}>
           <Text style={styles.darkBoxLabel}>LETTURA OPERATIVA</Text>
@@ -1216,15 +1251,17 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
                   ]}
                 >
                   <View style={styles.miniMatrixNameRow}>
-                    <Text
-                      style={[
-                        styles.miniMatrixName,
-                        isBinding ? styles.matrixNameBinding : null
-                      ]}
-                    >
-                      {getDimensionLabel(dim).toUpperCase()}
-                      {isBinding ? " ◆" : ""}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Text
+                        style={[
+                          styles.miniMatrixName,
+                          isBinding ? styles.matrixNameBinding : null
+                        ]}
+                      >
+                        {getDimensionLabel(dim).toUpperCase()}
+                      </Text>
+                      {isBinding ? <BindingMark size={4} /> : null}
+                    </View>
                     <Text
                       style={[
                         styles.miniMatrixScore,
@@ -1241,10 +1278,15 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             <View style={styles.legendRowTight}>
               <Text style={styles.legendItem}>0–3.9 VINCOLO</Text>
               <Text style={styles.legendItem}>7.0+ FORZA</Text>
-              <Text style={[styles.legendItem, { color: GOLD }]}>◆ BINDING</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <BindingMark size={4} right />
+                <Text style={[styles.legendItem, { color: GOLD }]}>BINDING</Text>
+              </View>
             </View>
           </View>
         </View>
+
+        <View style={{ flexGrow: 1 }} />
 
         <CellBox label="VINCOLO BINDING" variant="ink">
           {displayedBindingKey
@@ -1355,6 +1397,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             </Text>
           </View>
         ) : null}
+
+        <View style={{ flexGrow: 1 }} />
 
         <View style={styles.ctaBox} wrap={false}>
           <Text style={styles.ctaLabel}>STRATEGIC REVIEW</Text>
@@ -1747,8 +1791,9 @@ const styles = StyleSheet.create({
     marginTop: 14
   },
   cellBoxLabel: {
-    width: 88,
-    padding: 12,
+    width: 106,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     justifyContent: "center"
   },
   cellBoxLabelInk: {
@@ -1759,9 +1804,9 @@ const styles = StyleSheet.create({
   },
   cellBoxLabelText: {
     fontFamily: F.black,
-    fontSize: 8,
-    lineHeight: 1.25,
-    letterSpacing: 0.8,
+    fontSize: 7,
+    lineHeight: 1.3,
+    letterSpacing: 0.6,
     textTransform: "uppercase"
   },
   cellBoxLabelTextInk: {
