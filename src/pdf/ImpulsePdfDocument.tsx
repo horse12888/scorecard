@@ -29,8 +29,10 @@ import {
      Archivo-Regular.ttf
      Archivo-Bold.ttf
      ArchivoBlack-Regular.ttf
-     IBMPlexMono-Regular.ttf
-     IBMPlexMono-Bold.ttf
+     SpaceMono-Regular.ttf
+     SpaceMono-Bold.ttf
+   NB: NON usare IBM Plex Mono — i suoi TTF mandano in errore
+   fontkit (il parser di @react-pdf): "Out of bounds access".
    Finché i file non sono online, imposta USE_CUSTOM_FONTS=false:
    il PDF renderizza con Helvetica/Courier senza rompersi.
 ============================================================ */
@@ -50,10 +52,10 @@ if (USE_CUSTOM_FONTS) {
     src: "/fonts/ArchivoBlack-Regular.ttf"
   });
   Font.register({
-    family: "PlexMono",
+    family: "SpaceMono",
     fonts: [
-      { src: "/fonts/IBMPlexMono-Regular.ttf" },
-      { src: "/fonts/IBMPlexMono-Bold.ttf", fontWeight: 700 }
+      { src: "/fonts/SpaceMono-Regular.ttf" },
+      { src: "/fonts/SpaceMono-Bold.ttf", fontWeight: 700 }
     ]
   });
 }
@@ -62,7 +64,7 @@ if (USE_CUSTOM_FONTS) {
 const F = {
   black: USE_CUSTOM_FONTS ? "ArchivoBlack" : "Helvetica-Bold",
   sans: USE_CUSTOM_FONTS ? "Archivo" : "Helvetica",
-  mono: USE_CUSTOM_FONTS ? "PlexMono" : "Courier"
+  mono: USE_CUSTOM_FONTS ? "SpaceMono" : "Courier"
 };
 
 Font.registerHyphenationCallback((word) => [word]);
