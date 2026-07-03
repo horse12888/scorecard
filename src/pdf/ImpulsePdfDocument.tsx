@@ -849,11 +849,20 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <View style={styles.coverTitleBlock}>
           <Text style={styles.coverKicker}>{`// DIAGNOSI OPERATIVA`}</Text>
           <Text style={styles.coverTitleLine}>BUSINESS</Text>
-          {/* Parola centrale in gold pieno: l'outline richiederebbe
-              text-stroke, non supportato in modo affidabile. */}
-          <Text style={[styles.coverTitleLine, styles.coverTitleLineGold]}>
-            READINESS
-          </Text>
+          {/* Parola centrale outlined: stroke via SVG (il text-stroke
+              CSS non esiste in react-pdf, ma l'SVG interno s\u00ec). */}
+          <Svg width={500} height={64}>
+            <Text
+              x={0}
+              y={56}
+              style={{ fontFamily: F.black, fontSize: 64, letterSpacing: -1 }}
+              fill="none"
+              stroke={GOLD_BRIGHT}
+              strokeWidth={1.6}
+            >
+              READINESS
+            </Text>
+          </Svg>
           <Text style={styles.coverTitleLine}>REPORT</Text>
         </View>
 
