@@ -225,21 +225,6 @@ function getPriorities(result: PdfResult) {
     .slice(0, 3);
 }
 
-function getStrengths(result: PdfResult) {
-  const items = result.forze || result.strengths || [];
-
-  if (items.length > 0) return items.slice(0, 3);
-
-  return Object.keys(result.dimensions)
-    .map((key) => ({
-      key,
-      label: dimensionNames[key as DimensionKey],
-      score: result.dimensions[key as DimensionKey].score
-    }))
-    .sort((a, b) => Number(b.score) - Number(a.score))
-    .slice(0, 3);
-}
-
 function getProcessedDims(result: PdfResult) {
   if (result.processedDims && result.processedDims.length > 0) {
     return result.processedDims;
@@ -464,18 +449,6 @@ function getIntentClosing(result: PdfResult): string | null {
   }
 
   return "L'urgenza dichiarata è bassa. La diagnosi resta valida: quando deciderai di muoverti, il punto di partenza è già identificato.";
-}
-
-function getReportDate() {
-  try {
-    return new Date().toLocaleDateString("it-IT", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric"
-    });
-  } catch (e) {
-    return new Date().toISOString().slice(0, 10);
-  }
 }
 
 /* Data breve per il registro mono della copertina (03.07.2026) */
@@ -2031,3 +2004,53 @@ const styles = StyleSheet.create({
     paddingVertical: 22,
     paddingHorizontal: 24,
     marginTop: 16
+  },
+  ctaLabel: {
+    fontFamily: F.mono,
+    fontSize: 6.5,
+    letterSpacing: 2,
+    color: GOLD_BRIGHT,
+    marginBottom: 10
+  },
+  ctaTitle: {
+    fontFamily: F.black,
+    fontSize: 18,
+    lineHeight: 1.1,
+    textTransform: "uppercase",
+    color: IVORY,
+    marginBottom: 8
+  },
+  ctaBody: {
+    fontSize: 8.5,
+    lineHeight: 1.55,
+    color: IVORY_SOFT,
+    marginBottom: 8
+  },
+  ctaIntentLine: {
+    fontSize: 8,
+    lineHeight: 1.5,
+    color: GOLD_BRIGHT,
+    marginBottom: 12
+  },
+  ctaButtonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4
+  },
+  ctaButton: {
+    fontFamily: F.black,
+    fontSize: 9.5,
+    letterSpacing: 0.8,
+    color: INK,
+    backgroundColor: GOLD_BRIGHT,
+    textDecoration: "none",
+    paddingVertical: 10,
+    paddingHorizontal: 16
+  },
+  ctaSmallText: {
+    fontFamily: F.mono,
+    fontSize: 6.5,
+    color: MUTED,
+    marginLeft: 14
+  }
+});
