@@ -849,20 +849,33 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <View style={styles.coverTitleBlock}>
           <Text style={styles.coverKicker}>{`// DIAGNOSI OPERATIVA`}</Text>
           <Text style={styles.coverTitleLine}>BUSINESS</Text>
-          {/* Parola centrale outlined: stroke via SVG (il text-stroke
-              CSS non esiste in react-pdf, ma l'SVG interno s\u00ec). */}
-          <Svg width={500} height={64}>
+          {/* Parola outlined: 8 copie gold sfalsate + copia color
+              sfondo sopra (né text-stroke né fill SVG "none" sono
+              affidabili in react-pdf). */}
+          <View style={{ position: "relative", height: 64 }}>
+            {[
+              [-1.6, 0], [1.6, 0], [0, -1.6], [0, 1.6],
+              [-1.1, -1.1], [1.1, -1.1], [-1.1, 1.1], [1.1, 1.1]
+            ].map(([dx, dy], i) => (
+              <Text
+                key={i}
+                style={[
+                  styles.coverTitleLine,
+                  { position: "absolute", left: dx, top: dy, color: GOLD_BRIGHT }
+                ]}
+              >
+                READINESS
+              </Text>
+            ))}
             <Text
-              x={0}
-              y={56}
-              style={{ fontFamily: F.black, fontSize: 64, letterSpacing: -1 }}
-              fill="none"
-              stroke={GOLD_BRIGHT}
-              strokeWidth={1.6}
+              style={[
+                styles.coverTitleLine,
+                { position: "absolute", left: 0, top: 0, color: DARK }
+              ]}
             >
               READINESS
             </Text>
-          </Svg>
+          </View>
           <Text style={styles.coverTitleLine}>REPORT</Text>
         </View>
 
