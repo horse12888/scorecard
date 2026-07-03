@@ -1848,7 +1848,6 @@ const styles = StyleSheet.create({
     fontSize: 7.5,
     lineHeight: 1.55,
     color: FAINT,
-    fontStyle: "italic",
     borderTopWidth: 1,
     borderTopColor: HAIRLINE,
     paddingTop: 10,
