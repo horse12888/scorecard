@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", -apple-system, Arial, sans-serif;
+  --default-font-family: "Poppins", -apple-system, Arial, sans-serif;
+}
+
+html, body { font-family: "Poppins", -apple-system, Arial, sans-serif; }

@@ -592,14 +592,14 @@ export default function App() {
   ];
  
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center p-4 font-sans text-gray-900">
-      <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 max-w-2xl w-full">
+    <div className="min-h-screen bg-[#FBF9F3] flex flex-col items-center p-4 font-sans text-gray-900">
+      <div className="bg-white p-8 rounded-none shadow-sm border border-gray-200 max-w-2xl w-full">
         <div className="flex justify-between items-center mb-8 border-b pb-4">
-          <h1 className="text-2xl font-bold tracking-tight text-[rgb(39,112,143)]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#0B1928]">
             IMPULSE Scorecard
           </h1>
  
-          <div className="text-sm text-gray-500 font-mono tracking-wider">
+          <div className="text-sm text-gray-500 tracking-wider">
             {step === 'info' && '1/3 PROFILE'}
             {step === 'questions' && '2/3 ASSESSMENT'}
             {step === 'summary' && 'DIAGNOSI'}
@@ -608,7 +608,7 @@ export default function App() {
  
         {step === 'loading' && (
           <div className="text-center py-20 text-gray-500">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(39,112,143)] mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0B1928] mx-auto mb-4"></div>
             <p>Caricamento diagnosi in corso...</p>
           </div>
         )}
@@ -644,7 +644,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setStep('info')}
-                className="mt-6 text-sm text-[rgb(39,112,143)] underline"
+                className="mt-6 text-sm text-[#0B1928] underline"
               >
                 Dev mode: mostra scorecard manuale
               </button>
@@ -666,7 +666,7 @@ export default function App() {
               <input
                 required
                 type="text"
-                className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-[rgb(39,112,143)] outline-none"
+                className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-[#0B1928] outline-none"
                 value={user.name}
                 onChange={e =>
                   setUser({
@@ -684,7 +684,7 @@ export default function App() {
               <input
                 required
                 type="text"
-                className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-[rgb(39,112,143)] outline-none"
+                className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-[#0B1928] outline-none"
                 value={user.company}
                 onChange={e =>
                   setUser({
@@ -702,7 +702,7 @@ export default function App() {
               <input
                 required
                 type="email"
-                className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-[rgb(39,112,143)] outline-none"
+                className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-[#0B1928] outline-none"
                 value={user.email}
                 onChange={e =>
                   setUser({
@@ -715,14 +715,14 @@ export default function App() {
  
             <button
               type="submit"
-              className="mt-6 w-full bg-[rgb(39,112,143)] text-white font-medium py-3 px-6 rounded transition hover:bg-[rgb(30,85,110)]"
+              className="mt-6 w-full bg-[#0B1928] text-white font-medium py-3 px-6 rounded transition hover:bg-[#13273B]"
             >
               Inizia Scorecard
             </button>
  
             {SHOW_TESTS && (
               <div className="mt-12 pt-6 border-t border-gray-100">
-                <p className="text-xs text-gray-400 font-mono mb-4 text-center">
+                <p className="text-xs text-gray-400 mb-4 text-center">
                   E2E TEST PIPELINE, DEV ONLY
                 </p>
  
@@ -745,7 +745,7 @@ export default function App() {
  
         {step === 'questions' && currentQuestion && (
           <div className="space-y-8">
-            <div className="mb-6 flex justify-between items-center text-xs font-mono text-gray-400 uppercase">
+            <div className="mb-6 flex justify-between items-center text-xs text-gray-400 uppercase">
               <span>
                 DOMANDA {currentIdx + 1} DI {QUESTIONS.length}
               </span>
@@ -765,9 +765,9 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => handleYesNo(false)}
-                    className={`flex-1 py-4 text-lg font-medium rounded-lg border-2 transition ${
+                    className={`flex-1 py-4 text-lg font-medium rounded-none border-2 transition ${
                       answers[currentQuestion.id] === false
-                        ? 'bg-gray-900 text-white border-gray-900'
+                        ? 'bg-[#0B1928] text-white border-gray-900'
                         : 'bg-white text-gray-600 border-gray-200 hover:border-gray-500'
                     }`}
                   >
@@ -777,10 +777,10 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => handleYesNo(true)}
-                    className={`flex-1 py-4 text-lg font-medium rounded-lg border-2 transition ${
+                    className={`flex-1 py-4 text-lg font-medium rounded-none border-2 transition ${
                       answers[currentQuestion.id] === true
-                        ? 'bg-[rgb(39,112,143)] text-white border-[rgb(39,112,143)]'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-500 hover:bg-[rgb(240,248,255)]'
+                        ? 'bg-[#0B1928] text-white border-[#0B1928]'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-500 hover:bg-[#F5EDD8]'
                     }`}
                   >
                     Sì
@@ -793,9 +793,9 @@ export default function App() {
                       key={i}
                       type="button"
                       onClick={() => handleSelectOption(i, opt)}
-                      className={`block w-full text-left px-5 py-4 text-base font-medium rounded-lg border-2 transition ${
+                      className={`block w-full text-left px-5 py-4 text-base font-medium rounded-none border-2 transition ${
                         answers[currentQuestion.id] === opt
-                          ? 'bg-[rgb(39,112,143)] text-white border-[rgb(39,112,143)]'
+                          ? 'bg-[#0B1928] text-white border-[#0B1928]'
                           : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
                       }`}
                     >
@@ -807,7 +807,7 @@ export default function App() {
                     type="button"
                     onClick={() => handleNext()}
                     disabled={answers[currentQuestion.id] === undefined}
-                    className="w-full mt-4 bg-[rgb(39,112,143)] text-white font-medium py-3 px-6 rounded transition disabled:opacity-50"
+                    className="w-full mt-4 bg-[#0B1928] text-white font-medium py-3 px-6 rounded transition disabled:opacity-50"
                   >
                     Avanti
                   </button>
@@ -830,7 +830,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => handleNext()}
-                    className="bg-[rgb(39,112,143)] text-white py-2 px-6 rounded text-sm hover:bg-[rgb(30,85,110)] transition"
+                    className="bg-[#0B1928] text-white py-2 px-6 rounded text-sm hover:bg-[#13273B] transition"
                   >
                     Avanti →
                   </button>
@@ -839,7 +839,7 @@ export default function App() {
  
             <div className="w-full bg-gray-100 h-2 rounded overflow-hidden mt-4">
               <div
-                className="bg-[rgb(39,112,143)] h-full transition-all duration-300"
+                className="bg-[#0B1928] h-full transition-all duration-300"
                 style={{
                   width: `${Math.round(
                     ((currentIdx + 1) / QUESTIONS.length) * 100
@@ -852,13 +852,13 @@ export default function App() {
  
         {step === 'summary' && result && (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold tracking-tight text-[rgb(39,112,143)] text-center mb-8">
+            <h2 className="text-3xl font-bold tracking-tight text-[#0B1928] text-center mb-8">
               Diagnosi Elaborata
             </h2>
  
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-gray-50 rounded-lg text-center border border-gray-100 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-[#FBF9F3] rounded-none text-center border border-gray-100 mb-6">
               <div className="flex flex-col justify-center">
-                <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
+                <p className="text-xs text-gray-500 tracking-wider mb-2">
                   SCORE
                 </p>
                 <p className="text-lg md:text-xl font-bold break-words leading-tight">
@@ -867,7 +867,7 @@ export default function App() {
               </div>
  
               <div className="flex flex-col justify-center">
-                <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
+                <p className="text-xs text-gray-500 tracking-wider mb-2">
                   FASCIA
                 </p>
                 <p className="text-lg md:text-xl font-bold break-words leading-tight">
@@ -876,7 +876,7 @@ export default function App() {
               </div>
  
               <div className="flex flex-col justify-center">
-                <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
+                <p className="text-xs text-gray-500 tracking-wider mb-2">
                   STAGE
                 </p>
                 <p className="text-lg md:text-xl font-bold break-words leading-tight">
@@ -885,7 +885,7 @@ export default function App() {
               </div>
  
               <div className="flex flex-col justify-center">
-                <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
+                <p className="text-xs text-gray-500 tracking-wider mb-2">
                   PROFILE
                 </p>
                 <p className="text-lg md:text-xl font-bold break-words leading-tight">
@@ -895,8 +895,8 @@ export default function App() {
             </div>
  
             {result.diagnosticPattern ? (
-              <div className="p-5 bg-gray-50 rounded-lg border border-gray-100">
-                <p className="text-xs text-gray-500 font-mono tracking-wider mb-2">
+              <div className="p-5 bg-[#FBF9F3] rounded-none border border-gray-100">
+                <p className="text-xs text-gray-500 tracking-wider mb-2">
                   DIAGNOSTIC PATTERN
                 </p>
                 <p className="text-lg font-bold text-gray-900 mb-2">
@@ -909,8 +909,8 @@ export default function App() {
             ) : null}
  
             {result.riskFlags && result.riskFlags.length > 0 ? (
-              <div className="p-5 bg-red-50 rounded-lg border border-red-100">
-                <p className="text-xs text-red-500 font-mono tracking-wider mb-2">
+              <div className="p-5 bg-red-50 rounded-none border border-red-100">
+                <p className="text-xs text-red-500 tracking-wider mb-2">
                   RISK FLAG
                 </p>
                 <p className="text-lg font-bold text-red-700 mb-2">
@@ -923,7 +923,7 @@ export default function App() {
             ) : null}
  
             {result.leadId ? (
-              <div className="text-center text-xs text-gray-400 font-mono">
+              <div className="text-center text-xs text-gray-400">
                 Report ID: {result.leadId}
               </div>
             ) : null}
@@ -933,7 +933,7 @@ export default function App() {
               const cta = getReviewCta(result);
               const reviewUrl = buildStrategicReviewUrl(result);
               return (
-                <div className="bg-[#1A1A1A] rounded-lg p-6 mt-2">
+                <div className="bg-[#0B1928] rounded-none p-6 mt-2">
                   <p className="text-[11px] tracking-widest font-bold text-[rgb(184,138,42)] mb-2 uppercase">
                     {cta.kicker}
                   </p>
@@ -945,7 +945,7 @@ export default function App() {
                   </p>
                   <a
                     href={reviewUrl}
-                    className="inline-block bg-[rgb(184,138,42)] hover:bg-[rgb(199,154,59)] text-gray-900 font-bold py-3 px-6 rounded transition"
+                    className="inline-block bg-[rgb(184,138,42)] hover:bg-[#B88A2A] text-gray-900 font-bold py-3 px-6 rounded transition"
                   >
                     {cta.button}
                   </a>
@@ -956,7 +956,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleDownloadPDF}
-              className="w-full bg-[rgb(212,175,55)] hover:bg-[rgb(192,155,35)] text-gray-900 font-bold py-4 px-6 rounded mt-8 mb-4 transition"
+              className="w-full bg-[#C9A24B] hover:bg-[rgb(192,155,35)] text-gray-900 font-bold py-4 px-6 rounded mt-8 mb-4 transition"
             >
               Scarica Report PDF
             </button>
@@ -969,7 +969,7 @@ export default function App() {
                   setAnswers({});
                   setResult(null);
                 }}
-                className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 font-medium py-3 px-6 rounded transition"
+                className="w-full bg-white hover:bg-[#FBF9F3] border border-gray-200 text-gray-600 font-medium py-3 px-6 rounded transition"
               >
                 Nuovo Test, Dev Only
               </button>

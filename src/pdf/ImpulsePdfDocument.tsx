@@ -15,7 +15,7 @@ import {
 
 /* ============================================================
    IMPULSE PDF DOCUMENT — v3.0 "MANIFESTO"
-   Redesign approvato: tipografia massiva (Archivo Black),
+   Redesign approvato: tipografia massiva (Poppins ExtraBold),
    mono tecnico (IBM Plex Mono), inchiostro + gold, copertina
    scura, box a celle (etichetta piena + corpo), matrice a
    tacche per le dimensioni, radar + matrice a pagina 06.
@@ -26,11 +26,9 @@ import {
    FONT — carica questi TTF in /public/fonts/ della repo
    (l'app è servita su report.davidedileo.it, quindi public/
    risponde alla root del dominio). Google Fonts, licenza OFL:
-     Archivo-Regular.ttf
-     Archivo-Bold.ttf
-     ArchivoBlack-Regular.ttf
-     SpaceMono-Regular.ttf
-     SpaceMono-Bold.ttf
+     Poppins-Regular.ttf
+     Poppins-Bold.ttf
+     Poppins-ExtraBold.ttf
    NB: NON usare IBM Plex Mono — i suoi TTF mandano in errore
    fontkit (il parser di @react-pdf): "Out of bounds access".
    Finché i file non sono online, imposta USE_CUSTOM_FONTS=false:
@@ -40,31 +38,27 @@ import {
 const USE_CUSTOM_FONTS = true;
 
 if (USE_CUSTOM_FONTS) {
+  /* [2026-07-09] Tipografia unificata Poppins (decisione design system:
+     una sola famiglia in tutto il funnel; Archivo/Space Mono ritirati). */
   Font.register({
-    family: "Archivo",
+    family: "Poppins",
     fonts: [
-      { src: "/fonts/Archivo-Regular.ttf" },
-      { src: "/fonts/Archivo-Bold.ttf", fontWeight: 700 }
+      { src: "/fonts/Poppins-Regular.ttf" },
+      { src: "/fonts/Poppins-Bold.ttf", fontWeight: 700 }
     ]
   });
   Font.register({
-    family: "ArchivoBlack",
-    src: "/fonts/ArchivoBlack-Regular.ttf"
-  });
-  Font.register({
-    family: "SpaceMono",
-    fonts: [
-      { src: "/fonts/SpaceMono-Regular.ttf" },
-      { src: "/fonts/SpaceMono-Bold.ttf", fontWeight: 700 }
-    ]
+    family: "PoppinsBlack",
+    src: "/fonts/Poppins-ExtraBold.ttf"
   });
 }
 
-/* Famiglie con fallback sicuro (zero dipendenze). */
+/* Famiglie con fallback sicuro (zero dipendenze).
+   mono -> Poppins: il ruolo (etichette/numeri) resta, il monospazio no. */
 const F = {
-  black: USE_CUSTOM_FONTS ? "ArchivoBlack" : "Helvetica-Bold",
-  sans: USE_CUSTOM_FONTS ? "Archivo" : "Helvetica",
-  mono: USE_CUSTOM_FONTS ? "SpaceMono" : "Courier"
+  black: USE_CUSTOM_FONTS ? "PoppinsBlack" : "Helvetica-Bold",
+  sans: USE_CUSTOM_FONTS ? "Poppins" : "Helvetica",
+  mono: USE_CUSTOM_FONTS ? "Poppins" : "Helvetica"
 };
 
 Font.registerHyphenationCallback((word) => [word]);
