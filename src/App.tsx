@@ -5,6 +5,7 @@
  
 import React, { useState, useEffect } from 'react';
 import { generateIMPULSEReport } from './pdf';
+import { pickCostlyAnswers, FIRST_MOVES, STAGE_NEXT, retestDate } from './insights';
 import { QUESTIONS } from './questions';
 import { calculateScorecardResult } from './scoring';
 import { computeDiagnosticState } from './diagnostics';
@@ -357,6 +358,10 @@ export default function App() {
           state,
           leadId
         );
+
+        /* [ANSWERS v3] risposte compatte dal quiz (30 char, Q3–Q32) */
+        (enrichedResult as any).ans =
+          typeof (parsed as any).ans === "string" ? (parsed as any).ans : null;
  
         console.log('Parsed report leadId:', leadId);
         console.log('Enriched report result:', enrichedResult);
@@ -922,6 +927,60 @@ export default function App() {
               </div>
             ) : null}
  
+            {/* [ANSWERS v3] le 3 risposte che pesano di più — answer-level */}
+            {(() => {
+              const picks = pickCostlyAnswers((result as any).ans, result.bindingConstraint, result.dimensions);
+              if (!picks.length) return null;
+              return (
+                <div className="p-5 bg-white rounded-none border-2 border-[#13273B]">
+                  <p className="text-xs text-[#8F6B20] font-semibold tracking-wider mb-3">
+                    LE RISPOSTE CHE TI COSTANO DI PI&Ugrave;
+                  </p>
+                  {picks.map((pk) => (
+                    <div key={pk.id} className="mb-4 last:mb-0">
+                      <p className="text-sm font-bold text-gray-900">{pk.text}</p>
+                      <p className="text-sm italic text-[#57626E] mt-1">Hai risposto: &laquo;{pk.chosenText}&raquo;</p>
+                      <p className="text-sm text-gray-600 mt-1 leading-relaxed">{pk.why}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* [ANSWERS v3] la prima mossa (48h) + ponte Kit */}
+            {result.bindingConstraint && FIRST_MOVES[result.bindingConstraint] ? (
+              <div className="p-5 bg-[#F5EDD8] rounded-none border-2 border-[#B88A2A]">
+                <p className="text-xs text-[#8F6B20] font-semibold tracking-wider mb-2">
+                  LA TUA PRIMA MOSSA &mdash; ENTRO 48 ORE
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {FIRST_MOVES[result.bindingConstraint]}
+                </p>
+                <p className="text-sm text-gray-600 mt-3">
+                  &Egrave; la prima di tre. Le altre due &mdash; e l&rsquo;ordine giusto &mdash; sono il metodo:{' '}
+                  <a
+                    href="https://davidedileo.it/kit?utm_source=report&utm_medium=web&utm_campaign=kit_report"
+                    className="font-bold text-[#8F6B20] underline"
+                  >
+                    Priority Map Kit &rarr;
+                  </a>
+                </p>
+              </div>
+            ) : null}
+
+            {/* [ANSWERS v3] cosa distingue chi passa oltre + ricalibrazione */}
+            {result.stage && STAGE_NEXT[String(result.stage).toUpperCase()] ? (
+              <div className="p-5 bg-[#FBF9F3] rounded-none border border-gray-200">
+                <p className="text-xs text-gray-500 tracking-wider mb-2">
+                  COSA DISTINGUE CHI PASSA OLTRE
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">{STAGE_NEXT[String(result.stage).toUpperCase()]}</p>
+                <p className="text-xs text-gray-500 mt-3">
+                  Ricalibrazione consigliata: <span className="font-bold text-gray-700">{retestDate()}</span> &mdash; rifai lo scorecard e confronta.
+                </p>
+              </div>
+            ) : null}
+
             {result.leadId ? (
               <div className="text-center text-xs text-gray-400">
                 Report ID: {result.leadId}

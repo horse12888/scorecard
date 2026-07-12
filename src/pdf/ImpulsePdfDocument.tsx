@@ -12,6 +12,7 @@ import {
   Polygon,
   Circle
 } from "@react-pdf/renderer";
+import { pickCostlyAnswers, FIRST_MOVES, CLOSING_LETTER, retestDate } from "../insights";
 
 /* ============================================================
    IMPULSE PDF DOCUMENT — v3.0 "MANIFESTO"
@@ -465,6 +466,7 @@ const MUTED = "#77828F";
 const FAINT = "#57626F";
 const HAIRLINE = "#E0DACA";
 const GOLD = "#B88A2A"; /* gold su carta */
+const WASH = "#F5EDD8"; /* sabbia — box prima mossa */
 const GOLD_BRIGHT = "#C9A24B"; /* gold su scuro */
 const RED = "#B42318";
 const DARK = "#0B1928"; /* blu profondo copertina */
@@ -675,7 +677,7 @@ function PageHeader({ name, page }: { name?: string; page: string }) {
     <View style={styles.header} fixed>
       <Text style={styles.headerWordmark}>IMPULSE</Text>
       <Text style={styles.headerMeta}>
-        {safeText(name).toUpperCase()} — {page}/08
+        {safeText(name).toUpperCase()} — {page}/09
       </Text>
     </View>
   );
@@ -776,6 +778,16 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const score = Number(result.overall || 0);
   const clampedScore = Math.max(0, Math.min(100, score));
   const name = safeText(result.name);
+  /* [ANSWERS v3] risposte piu' costose, dal payload compatto del quiz */
+  const costlyAnswers = pickCostlyAnswers(
+    (result as any).ans,
+    result.bindingConstraint,
+    result.dimensions
+  );
+  const firstMove =
+    result.bindingConstraint && FIRST_MOVES[result.bindingConstraint]
+      ? FIRST_MOVES[result.bindingConstraint]
+      : null;
   const company = safeText(result.company);
   const firstName = getFirstName(name);
   const profileTitle = getProfileTitle(result);
@@ -1451,6 +1463,57 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <PageFooter />
       </Page>
+
+      {/* ============ PAGE 09 — LE RISPOSTE CHE PESANO + PRIMA MOSSA ============ */}
+      <Page size="A4" style={styles.page}>
+        <PageHeader name={name} page="09" />
+        <SectionHead
+          number="09"
+          kicker="LE TUE RISPOSTE, ALLA LETTERA"
+          title="Dove si nasconde il punteggio."
+          body="Le risposte che ti costano di più, citate parola per parola — e perché pesano sul risultato."
+        />
+
+        {costlyAnswers.length > 0 ? (
+          costlyAnswers.map((ca, index) => (
+            <View key={ca.id} style={styles.fieldBlock}>
+              <FieldLabel>{String(index + 1).padStart(2, "0")} — {ca.dimension.toUpperCase()}</FieldLabel>
+              <Text style={styles.emphasisText}>{ca.text}</Text>
+              <Text style={styles.answersChosen}>Hai risposto: {'\u00AB'}{ca.chosenText}{'\u00BB'}</Text>
+              <Text style={styles.bodyText}>{ca.why}</Text>
+            </View>
+          ))
+        ) : (
+          <View style={styles.fieldBlock}>
+            <Text style={styles.bodyText}>
+              Le risposte puntuali non sono disponibili per questo report: rifai lo scorecard per la versione completa.
+            </Text>
+          </View>
+        )}
+
+        {firstMove ? (
+          <View style={styles.firstMoveBox}>
+            <FieldLabel>LA TUA PRIMA MOSSA — ENTRO 48 ORE</FieldLabel>
+            <Text style={styles.bodyText}>{firstMove}</Text>
+            <Text style={styles.answersBridge}>
+              È la prima di tre. Le altre due — e l'ordine giusto — sono il metodo:{" "}
+              <Link
+                src="https://davidedileo.it/kit?utm_source=report&utm_medium=pdf&utm_campaign=kit_report"
+                style={styles.answersBridgeLink}
+              >
+                davidedileo.it/kit
+              </Link>
+            </Text>
+          </View>
+        ) : null}
+
+        <View style={styles.letterBlock}>
+          <FieldLabel>UNA NOTA PERSONALE</FieldLabel>
+          <Text style={styles.bodyText}>{CLOSING_LETTER}</Text>
+          <Text style={styles.letterSign}>— Davide</Text>
+          <Text style={styles.letterRetest}>Ricalibrazione consigliata: {retestDate()} — stesso test, numeri a confronto.</Text>
+        </View>
+      </Page>
     </Document>
   );
 }
@@ -2114,5 +2177,51 @@ const styles = StyleSheet.create({
     fontSize: 6.5,
     color: MUTED,
     marginLeft: 14
+  },
+  answersChosen: {
+    fontFamily: F.sans,
+    fontWeight: 700,
+    fontSize: 8.5,
+    color: GOLD,
+    marginTop: 3,
+    marginBottom: 3
+  },
+  answersBridge: {
+    fontFamily: F.sans,
+    fontSize: 8.5,
+    color: MUTED,
+    marginTop: 6
+  },
+  answersBridgeLink: {
+    fontFamily: F.sans,
+    fontWeight: 700,
+    fontSize: 8.5,
+    color: GOLD,
+    textDecoration: "none"
+  },
+  firstMoveBox: {
+    backgroundColor: WASH,
+    borderWidth: 1.5,
+    borderColor: GOLD,
+    padding: 12,
+    marginTop: 10
+  },
+  letterBlock: {
+    marginTop: 14,
+    borderTopWidth: 2,
+    borderTopColor: INK,
+    paddingTop: 10
+  },
+  letterSign: {
+    fontFamily: F.black,
+    fontSize: 10,
+    color: INK,
+    marginTop: 4
+  },
+  letterRetest: {
+    fontFamily: F.sans,
+    fontSize: 7.5,
+    color: MUTED,
+    marginTop: 8
   }
 });
