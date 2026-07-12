@@ -1519,6 +1519,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <FieldLabel>UNA NOTA PERSONALE</FieldLabel>
           <Text style={styles.bodyText}>{CLOSING_LETTER}</Text>
           <Text style={styles.letterSign}>— Davide</Text>
+          <Text style={styles.letterCred}>COO & co-founder di una fintech di tokenizzazione · IMPULSE è il mio criterio operativo, reso strumento — costruito con l'''AI.</Text>
           <Text style={styles.letterRetest}>Ricalibrazione consigliata: {retestDate()} — stesso test, numeri a confronto.</Text>
         </View>
       </Page>
@@ -2256,5 +2257,11 @@ const styles = StyleSheet.create({
     fontSize: 7.5,
     color: "#ADB9C6",
     marginTop: 5
+  },
+  letterCred: {
+    fontFamily: F.sans,
+    fontSize: 7,
+    color: MUTED,
+    marginTop: 3
   }
 });
