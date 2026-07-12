@@ -874,7 +874,7 @@ export default function App() {
         {step === 'summary' && result && (
           <div className="space-y-6">
             <h2 className="text-3xl font-bold tracking-tight text-[#0B1928] text-center mb-8">
-              Diagnosi Elaborata
+              Il tuo Constraint Profile
             </h2>
  
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-[#FBF9F3] rounded-none text-center border border-gray-100 mb-6">

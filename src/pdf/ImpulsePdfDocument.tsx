@@ -853,7 +853,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         </View>
 
         <View style={styles.coverTitleBlock}>
-          <Text style={styles.coverKicker}>{`// DIAGNOSI OPERATIVA`}</Text>
+          <Text style={styles.coverKicker}>{`// IMPULSE · CONSTRAINT PROFILE`}</Text>
           <Text style={styles.coverTitleLine}>BUSINESS</Text>
           {/* Parola outlined: 8 copie gold sfalsate + copia color
               sfondo sopra (né text-stroke né fill SVG "none" sono
