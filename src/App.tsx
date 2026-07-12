@@ -38,14 +38,24 @@ function fetchEncodedResultById(id: string): Promise<string> {
  
     (window as any)[cbName] = (payload: string) => {
       done = true;
+      /* [SFIDA] il ponte puo' rispondere con una stringa (CRM v2.2)
+         o con {r, c} (CRM v2.3+: payload + sfida dichiarata). */
+      let raw = '';
+      let challenge = '';
+      if (payload && typeof payload === 'object') {
+        raw = payload.r ? String(payload.r) : '';
+        challenge = payload.c ? String(payload.c) : '';
+      } else {
+        raw = payload ? String(payload) : '';
+      }
       let decoded = '';
       try {
-        decoded = payload ? decodeURIComponent(payload) : '';
+        decoded = raw ? decodeURIComponent(raw) : '';
       } catch (e) {
-        decoded = payload || '';
+        decoded = raw || '';
       }
       cleanup();
-      resolve(decoded);
+      resolve({ encoded: decoded, challenge });
     };
  
     script.src =
@@ -58,7 +68,7 @@ function fetchEncodedResultById(id: string): Promise<string> {
     script.onerror = () => {
       if (!done) {
         cleanup();
-        resolve('');
+        resolve({ encoded: '', challenge: '' });
       }
     };
  
@@ -67,7 +77,7 @@ function fetchEncodedResultById(id: string): Promise<string> {
     setTimeout(() => {
       if (!done) {
         cleanup();
-        resolve('');
+        resolve({ encoded: '', challenge: '' });
       }
     }, 12000);
   });
@@ -314,12 +324,13 @@ export default function App() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [result, setResult] = useState<any>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [shareCopied, setShareCopied] = useState(false);
  
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
  
     /* Rende il report da un payload "result=" (codificato base64). */
-    const renderFromEncoded = (encodedResult: string): boolean => {
+    const renderFromEncoded = (encodedResult: string, challenge?: string): boolean => {
       try {
         const parsed = decodeResultPayload(encodedResult);
  
@@ -362,6 +373,11 @@ export default function App() {
         /* [ANSWERS v3] risposte compatte dal quiz (30 char, Q3–Q32) */
         (enrichedResult as any).ans =
           typeof (parsed as any).ans === "string" ? (parsed as any).ans : null;
+
+        /* [SFIDA] parole del lead, arrivano SOLO dal ponte ?id= (mai
+           dall'URL condivisibile: privacy by design) */
+        (enrichedResult as any).challenge =
+          challenge && String(challenge).trim() ? String(challenge).trim().slice(0, 300) : null;
  
         console.log('Parsed report leadId:', leadId);
         console.log('Enriched report result:', enrichedResult);
@@ -388,9 +404,9 @@ export default function App() {
     const shortId = urlParams.get('id');
  
     if (shortId) {
-      fetchEncodedResultById(shortId).then(encoded => {
+      fetchEncodedResultById(shortId).then(({ encoded, challenge }: any) => {
         if (encoded) {
-          renderFromEncoded(encoded);
+          renderFromEncoded(encoded, challenge);
         } else {
           console.error('Short link: payload non trovato per id', shortId);
           setStep('error');
@@ -927,6 +943,21 @@ export default function App() {
               </div>
             ) : null}
  
+            {/* [SFIDA] eco delle parole del lead (solo flusso ?id=) */}
+            {(result as any).challenge ? (
+              <div className="p-5 bg-[#0B1928] rounded-none">
+                <p className="text-xs text-[#DFBE6F] font-semibold tracking-wider mb-2">
+                  LA SFIDA CHE HAI DICHIARATO
+                </p>
+                <p className="text-base font-bold text-[#F4EFE4] leading-relaxed">
+                  &laquo;{(result as any).challenge}&raquo;
+                </p>
+                <p className="text-sm text-[#ADB9C6] mt-2 leading-relaxed">
+                  Parole tue. Questa diagnosi ti dice da dove cominciare a scioglierla: dal vincolo, non da tutto insieme.
+                </p>
+              </div>
+            ) : null}
+
             {/* [ANSWERS v3] le 3 risposte che pesano di più — answer-level */}
             {(() => {
               const picks = pickCostlyAnswers((result as any).ans, result.bindingConstraint, result.dimensions);
@@ -1019,6 +1050,30 @@ export default function App() {
             >
               Scarica Report PDF
             </button>
+
+            {/* [SHARE] riquadro-condivisione: il passaparola del metodo */}
+            <div className="mt-6 p-5 bg-[#0B1928] rounded-none text-center">
+              <p className="text-xs text-[#DFBE6F] font-semibold tracking-wider mb-2">
+                CONOSCI UN FOUNDER CHE DOVREBBE VEDERLO?
+              </p>
+              <p className="text-sm text-[#ADB9C6] mb-4">
+                Ogni business ha un vincolo. Lo scorecard &egrave; gratuito e ci vogliono 4 minuti.
+              </p>
+              <button
+                onClick={() => {
+                  const url = 'https://davidedileo.it/scorecard?utm_source=share&utm_medium=report&utm_campaign=passaparola';
+                  const nav: any = navigator;
+                  if (nav.share) {
+                    nav.share({ title: 'IMPULSE Business Readiness', text: 'Un business cresce alla velocit\u00e0 del suo vincolo. Scopri il tuo in 4 minuti:', url }).catch(() => {});
+                  } else if (nav.clipboard && nav.clipboard.writeText) {
+                    nav.clipboard.writeText(url).then(() => setShareCopied(true));
+                  }
+                }}
+                className="px-6 py-3 bg-[#C9A24B] text-[#0B1928] font-bold text-sm rounded-none"
+              >
+                {shareCopied ? 'Link copiato \u2713' : 'Condividi lo scorecard'}
+              </button>
+            </div>
  
             {SHOW_TESTS && (
               <button

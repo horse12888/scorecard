@@ -1474,6 +1474,14 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           body="Le risposte che ti costano di più, citate parola per parola — e perché pesano sul risultato."
         />
 
+        {(result as any).challenge ? (
+          <View style={styles.challengeBox}>
+            <Text style={styles.challengeLabel}>LA SFIDA CHE HAI DICHIARATO</Text>
+            <Text style={styles.challengeQuote}>{'\u00AB'}{String((result as any).challenge)}{'\u00BB'}</Text>
+            <Text style={styles.challengeNote}>Parole tue. La diagnosi dice da dove cominciare a scioglierla: dal vincolo, non da tutto insieme.</Text>
+          </View>
+        ) : null}
+
         {costlyAnswers.length > 0 ? (
           costlyAnswers.map((ca, index) => (
             <View key={ca.id} style={styles.fieldBlock}>
@@ -2223,5 +2231,30 @@ const styles = StyleSheet.create({
     fontSize: 7.5,
     color: MUTED,
     marginTop: 8
+  },
+  challengeBox: {
+    backgroundColor: DARK,
+    padding: 12,
+    marginBottom: 12
+  },
+  challengeLabel: {
+    fontFamily: F.sans,
+    fontWeight: 700,
+    fontSize: 6.5,
+    letterSpacing: 1.5,
+    color: GOLD_BRIGHT,
+    marginBottom: 4
+  },
+  challengeQuote: {
+    fontFamily: F.black,
+    fontSize: 11,
+    color: IVORY,
+    lineHeight: 1.35
+  },
+  challengeNote: {
+    fontFamily: F.sans,
+    fontSize: 7.5,
+    color: "#ADB9C6",
+    marginTop: 5
   }
 });
