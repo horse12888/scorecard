@@ -1,7 +1,6 @@
 import React from "react";
 import { pdf } from "@react-pdf/renderer";
 import { ImpulsePdfDocument } from "./pdf/ImpulsePdfDocument";
-import { computeDiagnosticState } from "./diagnostics";
 
 function safeFileName(value: string) {
   return (
@@ -15,32 +14,9 @@ function safeFileName(value: string) {
 }
 
 function enrichResultForPdf(result: any) {
-  if (!result) return result;
-
-  const hasFunctionConstraints =
-    Array.isArray(result.functionConstraints) &&
-    result.functionConstraints.length > 0;
-
-  if (hasFunctionConstraints) {
-    return result;
-  }
-
-  if (!result.dimensions || typeof result.overall !== "number") {
-    return result;
-  }
-
-  const diagnostic = computeDiagnosticState(result.overall, result.dimensions);
-
-  return {
-    ...result,
-    ...diagnostic,
-    dimensions: result.dimensions,
-    name: result.name,
-    company: result.company,
-    email: result.email,
-    metadata: result.metadata,
-    overall: result.overall
-  };
+  /* [SERVER-SIDE v2] lo stato diagnostico arriva gia' assemblato dal
+     server ed e' presente nel result: nessun ricalcolo lato client. */
+  return result;
 }
 
 export async function generateIMPULSEReport(result: any, label?: string) {

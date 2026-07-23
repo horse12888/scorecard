@@ -12,7 +12,6 @@ import {
   Polygon,
   Circle
 } from "@react-pdf/renderer";
-import { pickCostlyAnswers, FIRST_MOVES, CLOSING_LETTER, retestDate } from "../insights";
 
 /* ============================================================
    IMPULSE PDF DOCUMENT — v3.0 "MANIFESTO"
@@ -779,15 +778,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const clampedScore = Math.max(0, Math.min(100, score));
   const name = safeText(result.name);
   /* [ANSWERS v3] risposte piu' costose, dal payload compatto del quiz */
-  const costlyAnswers = pickCostlyAnswers(
-    (result as any).ans,
-    result.bindingConstraint,
-    result.dimensions
-  );
-  const firstMove =
-    result.bindingConstraint && FIRST_MOVES[result.bindingConstraint]
-      ? FIRST_MOVES[result.bindingConstraint]
-      : null;
+  const costlyAnswers = ((result as any).assembled?.costlyAnswers) || [];
+  const firstMove = (result as any).assembled?.firstMove || null;
   const company = safeText(result.company);
   const firstName = getFirstName(name);
   const profileTitle = getProfileTitle(result);
@@ -1517,10 +1509,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <View style={styles.letterBlock}>
           <FieldLabel>UNA NOTA PERSONALE</FieldLabel>
-          <Text style={styles.bodyText}>{CLOSING_LETTER}</Text>
+          <Text style={styles.bodyText}>{(result as any).assembled?.letter || ""}</Text>
           <Text style={styles.letterSign}>— Davide</Text>
           <Text style={styles.letterCred}>COO & co-founder di una fintech di tokenizzazione · IMPULSE è il mio criterio operativo, reso strumento — costruito con l'''AI.</Text>
-          <Text style={styles.letterRetest}>Ricalibrazione consigliata: {retestDate()} — stesso test, numeri a confronto.</Text>
+          <Text style={styles.letterRetest}>Ricalibrazione consigliata: {(result as any).assembled?.retestDate || ""} — stesso test, numeri a confronto.</Text>
         </View>
       </Page>
     </Document>

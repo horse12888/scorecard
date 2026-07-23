@@ -1,5 +1,4 @@
 import { QUESTIONS } from './questions';
-import { computeDiagnosticState } from './diagnostics';
 
 export function calculateScorecardResult(answers: Record<string, any>, user: { name: string, company: string, email: string }) {
   const dims: Record<string, { yes: number, total: number }> = {
@@ -44,8 +43,8 @@ export function calculateScorecardResult(answers: Record<string, any>, user: { n
 
   const overall = Number(((overallFraction / 10) * 100).toFixed(0));
 
-  const state = computeDiagnosticState(overall, dimensions);
-  
+  /* [SERVER-SIDE v2] lo stato diagnostico non si calcola piu' qui:
+     arriva dal server. Questa funzione (solo dev) torna i punteggi. */
   return {
     name: user.name,
     company: user.company,
@@ -55,17 +54,6 @@ export function calculateScorecardResult(answers: Record<string, any>, user: { n
       revenueRange: answers['Q2'] || ''
     },
     overall: overall,
-    fascia: state.fascia,
-    profile: state.profile,
-    stage: state.stageLabel,
-    stageLabel: state.stageLabel,
-    dimensions: dimensions,
-    strengths: state.forze,
-    priorities: state.priorita,
-    forze: state.forze,
-    priorita: state.priorita,
-    processedDims: state.processedDims,
-    stageInfo: state.stageInfo,
-    spiderDims: state.processedDims.map((d: any) => ({ label: d.label, score: d.score }))
+    dimensions: dimensions
   };
 }

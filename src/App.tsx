@@ -5,10 +5,8 @@
  
 import React, { useState, useEffect } from 'react';
 import { generateIMPULSEReport } from './pdf';
-import { pickCostlyAnswers, FIRST_MOVES, STAGE_NEXT, retestDate } from './insights';
 import { QUESTIONS } from './questions';
 import { calculateScorecardResult } from './scoring';
-import { computeDiagnosticState } from './diagnostics';
  
 const SHOW_TESTS =
   (import.meta as any).env.DEV ||
@@ -18,6 +16,55 @@ const SHOW_TESTS =
    restituisce via JSONP il payload "result=" preso da pdf_url nel foglio. */
 const SHORT_LINK_WEBAPP =
   'https://script.google.com/macros/s/AKfycby09pL6InKdxK2zeZLx9Rg7bFnAEH5wieZVyn98qcRBPW8rZ5qblfIQeLxUmNYI2nxY/exec';
+
+/* [SERVER-SIDE v1] La banca testuale (perche'-pesa, prime mosse,
+   stage-next, lettera) vive sull'assembler, non nel bundle. Dato il
+   payload del lead, torna via JSONP solo la sua fetta. Se fallisce
+   -> null e il report degrada senza le sezioni premium (nessun errore). */
+const ASSEMBLER_WEBAPP =
+  'https://script.google.com/macros/s/AKfycbxn0duukqyMP5Dvw4DTTGyKddnfAKucRBN4mt9-dMtJdWGv_Sjb3pXSSYlA_pJ1VGAB/exec';
+const ASSEMBLER_DIM_ORDER = ['clarity', 'acquisition', 'operations', 'margins', 'asset', 'readiness'];
+
+function fetchAssembledContent(
+  overall: number | null | undefined,
+  dimensions: any,
+  ans: string | null | undefined,
+  bind: string | null | undefined,
+  intentLevel: number | null | undefined,
+  stagingScore: number | null | undefined
+): Promise<any> {
+  return new Promise(resolve => {
+    const dims = ASSEMBLER_DIM_ORDER
+      .map(d => {
+        const dim = dimensions && dimensions[d];
+        const sc = (dim && typeof dim.score === 'number') ? dim.score : '';
+        const ye = (dim && typeof dim.yes === 'number') ? dim.yes : 0;
+        return sc + ':' + ye;
+      })
+      .join(',');
+    const cbName = '__impulseAssembled_' + Math.random().toString(36).slice(2);
+    let done = false;
+    const script = document.createElement('script');
+    const cleanup = () => {
+      try { delete (window as any)[cbName]; } catch (e) { (window as any)[cbName] = undefined; }
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+    const finish = (val: any) => { if (done) return; done = true; cleanup(); resolve(val); };
+    (window as any)[cbName] = (data: any) => finish(data || null);
+    script.onerror = () => finish(null);
+    setTimeout(() => finish(null), 8000);
+    script.src =
+      ASSEMBLER_WEBAPP +
+      '?callback=' + cbName +
+      '&ans=' + encodeURIComponent(ans || '') +
+      '&bind=' + encodeURIComponent(bind || '') +
+      '&overall=' + encodeURIComponent(String(overall == null ? '' : overall)) +
+      '&intent=' + encodeURIComponent(String(intentLevel == null ? '' : intentLevel)) +
+      '&staging=' + encodeURIComponent(String(stagingScore == null ? '' : stagingScore)) +
+      '&dims=' + encodeURIComponent(dims);
+    document.body.appendChild(script);
+  });
+}
  
 /* JSONP: evita problemi di CORS verso script.google.com.
    Risolve con il payload (gia' decodificato dall'url-encoding) o stringa vuota. */
@@ -214,7 +261,7 @@ function buildEnrichedResult(baseResult: any, state: any, leadId?: string) {
     riskFlags: state.riskFlags || [],
     intentInsight: state.intentInsight,
  
-    spiderDims: state.processedDims.map((d: any) => ({
+    spiderDims: (state.processedDims || []).map((d: any) => ({
       label: d.label,
       score: d.score
     }))
@@ -330,8 +377,9 @@ export default function App() {
     const urlParams = new URLSearchParams(window.location.search);
  
     /* Rende il report da un payload "result=" (codificato base64). */
-    const renderFromEncoded = (encodedResult: string, challenge?: string): boolean => {
+    const renderFromEncoded = async (encodedResult: string, challenge?: string): Promise<boolean> => {
       try {
+        setStep('loading');
         const parsed = decodeResultPayload(encodedResult);
  
         if (!parsed || !isValidParsedResult(parsed)) {
@@ -344,14 +392,13 @@ export default function App() {
         const intentLevel = getIntentLevelFromParsed(parsed);
         const stagingScore = getStagingScoreFromParsed(parsed);
  
-        const state = computeDiagnosticState(
-          parsed.overall,
-          parsed.dimensions,
-          {
-            intentLevel,
-            stagingScore
-          }
+        const ansStr = typeof (parsed as any).ans === "string" ? (parsed as any).ans : null;
+        /* [SERVER-SIDE v2] stato diagnostico + fetta testuale: tutto dal server */
+        const assembled = await fetchAssembledContent(
+          parsed.overall, parsed.dimensions, ansStr,
+          parsed.bindingConstraint, intentLevel, stagingScore
         );
+        const state = (assembled && assembled.state) ? assembled.state : {};
  
         const enrichedResult = buildEnrichedResult(
           {
@@ -370,9 +417,7 @@ export default function App() {
           leadId
         );
 
-        /* [ANSWERS v3] risposte compatte dal quiz (30 char, Q3–Q32) */
-        (enrichedResult as any).ans =
-          typeof (parsed as any).ans === "string" ? (parsed as any).ans : null;
+        (enrichedResult as any).ans = ansStr;
 
         /* [SFIDA] parole del lead, arrivano SOLO dal ponte ?id= (mai
            dall'URL condivisibile: privacy by design) */
@@ -382,6 +427,8 @@ export default function App() {
         console.log('Parsed report leadId:', leadId);
         console.log('Enriched report result:', enrichedResult);
  
+        (enrichedResult as any).assembled = assembled;
+
         setResult(enrichedResult);
         setStep('summary');
         return true;
@@ -449,7 +496,7 @@ export default function App() {
     handleNext(updatedAnswers);
   };
  
-  const handleNext = (currentAnswers: Record<string, any> = answers) => {
+  const handleNext = async (currentAnswers: Record<string, any> = answers) => {
     if (currentIdx < QUESTIONS.length - 1) {
       setCurrentIdx(currentIdx + 1);
       return;
@@ -460,14 +507,11 @@ export default function App() {
     const intentLevel = getIntentLevelFromResult(finalResult);
     const stagingScore = getStagingScoreFromResult(finalResult);
  
-    const state = computeDiagnosticState(
-      finalResult.overall,
-      finalResult.dimensions,
-      {
-        intentLevel,
-        stagingScore
-      }
+    const assembled = await fetchAssembledContent(
+      finalResult.overall, finalResult.dimensions, null,
+      (finalResult as any).bindingConstraint, intentLevel, stagingScore
     );
+    const state = (assembled && assembled.state) ? assembled.state : {};
  
     const devLeadId = finalResult.leadId || makeDevLeadId();
  
@@ -482,6 +526,7 @@ export default function App() {
       devLeadId
     );
  
+    (enrichedResult as any).assembled = assembled;
     setResult(enrichedResult);
     setStep('summary');
   };
@@ -509,14 +554,11 @@ export default function App() {
     const intentLevel = getIntentLevelFromResult(testResult);
     const stagingScore = getStagingScoreFromResult(testResult);
  
-    const state = computeDiagnosticState(
-      testResult.overall,
-      testResult.dimensions,
-      {
-        intentLevel,
-        stagingScore
-      }
+    const assembled = await fetchAssembledContent(
+      testResult.overall, testResult.dimensions, null,
+      (testResult as any).bindingConstraint, intentLevel, stagingScore
     );
+    const state = (assembled && assembled.state) ? assembled.state : {};
  
     const devLeadId = testResult.leadId || makeDevLeadId();
  
@@ -531,6 +573,7 @@ export default function App() {
       devLeadId
     );
  
+    (enrichedTestResult as any).assembled = assembled;
     setResult(enrichedTestResult);
     setStep('summary');
  
@@ -960,7 +1003,7 @@ export default function App() {
 
             {/* [ANSWERS v3] le 3 risposte che pesano di più — answer-level */}
             {(() => {
-              const picks = pickCostlyAnswers((result as any).ans, result.bindingConstraint, result.dimensions);
+              const picks = ((result as any).assembled?.costlyAnswers) || [];
               if (!picks.length) return null;
               return (
                 <div className="p-5 bg-white rounded-none border-2 border-[#13273B]">
@@ -979,13 +1022,13 @@ export default function App() {
             })()}
 
             {/* [ANSWERS v3] la prima mossa (48h) + ponte Kit */}
-            {result.bindingConstraint && FIRST_MOVES[result.bindingConstraint] ? (
+            {(result as any).assembled?.firstMove ? (
               <div className="p-5 bg-[#F5EDD8] rounded-none border-2 border-[#B88A2A]">
                 <p className="text-xs text-[#8F6B20] font-semibold tracking-wider mb-2">
                   LA TUA PRIMA MOSSA &mdash; ENTRO 48 ORE
                 </p>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  {FIRST_MOVES[result.bindingConstraint]}
+                  {(result as any).assembled.firstMove}
                 </p>
                 <p className="text-sm text-gray-600 mt-3">
                   &Egrave; la prima di tre. Le altre due &mdash; e l&rsquo;ordine giusto &mdash; sono il metodo:{' '}
@@ -1000,14 +1043,14 @@ export default function App() {
             ) : null}
 
             {/* [ANSWERS v3] cosa distingue chi passa oltre + ricalibrazione */}
-            {result.stage && STAGE_NEXT[String(result.stage).toUpperCase()] ? (
+            {(result as any).assembled?.stageNext ? (
               <div className="p-5 bg-[#FBF9F3] rounded-none border border-gray-200">
                 <p className="text-xs text-gray-500 tracking-wider mb-2">
                   COSA DISTINGUE CHI PASSA OLTRE
                 </p>
-                <p className="text-sm text-gray-600 leading-relaxed">{STAGE_NEXT[String(result.stage).toUpperCase()]}</p>
+                <p className="text-sm text-gray-600 leading-relaxed">{(result as any).assembled.stageNext}</p>
                 <p className="text-xs text-gray-500 mt-3">
-                  Ricalibrazione consigliata: <span className="font-bold text-gray-700">{retestDate()}</span> &mdash; rifai lo scorecard e confronta.
+                  Ricalibrazione consigliata: <span className="font-bold text-gray-700">{(result as any).assembled?.retestDate}</span> &mdash; rifai lo scorecard e confronta.
                 </p>
               </div>
             ) : null}
