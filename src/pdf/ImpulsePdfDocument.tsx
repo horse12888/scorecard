@@ -257,116 +257,27 @@ function getScoreLabel(score: number) {
 }
 
 function getDiagnosticPattern(result: PdfResult, priorities: any[]) {
+  /* [SERVER-SIDE v3] il pattern (con tutto il testo-analisi) arriva dallo
+     state del server. Fallback minimo, senza analisi, se lo state manca. */
   if (result.diagnosticPattern) {
     return result.diagnosticPattern;
   }
-
   const first = priorities[0];
   const second = priorities[1];
-
   const firstLabel = first ? getDimensionLabel(first) : "Vincolo principale";
   const secondLabel = second ? getDimensionLabel(second) : "Secondo vincolo";
-
-  return {
-    profileStageTitle: "Profilo e fase da leggere insieme",
-    profileStageBody:
-      "Il profilo mostra il tipo di vincolo. La fase mostra quanto il business è pronto a reggere il prossimo salto.",
-    topGapPairTitle: `${firstLabel} + ${secondLabel}`,
-    topGapPairBody:
-      "Il pattern diagnostico nasce dalla combinazione delle due dimensioni più deboli. Queste aree vanno lette insieme prima di decidere cosa scalare.",
-    strategicWarning:
-      "Intervenire su una sola area può lasciare intatto il vincolo reale.",
-    recommendedFocus:
-      "Leggere insieme i primi due gap e trasformarli in una sequenza operativa."
-  };
+  return { topGapPairTitle: `${firstLabel} + ${secondLabel}` };
 }
 
-function getFallbackFocusFromPatternTitle(title?: string) {
-  const clean = safeText(title).toLowerCase();
 
-  if (clean.includes("clarity") && clean.includes("acquisition")) {
-    return "Chiarire offerta, promessa, cliente ideale e canale prioritario prima di aumentare volume commerciale.";
-  }
-
-  if (clean.includes("clarity") && clean.includes("operations")) {
-    return "Standardizzare offerta e delivery nello stesso intervento, così che ogni cliente non diventi un caso speciale.";
-  }
-
-  if (clean.includes("clarity") && clean.includes("margins")) {
-    return "Ricollegare pricing, valore percepito, promessa e margine prima di aumentare acquisizione.";
-  }
-
-  if (clean.includes("clarity") && clean.includes("asset")) {
-    return "Identificare quali parti del valore possono diventare asset documentabili, trasferibili o difendibili.";
-  }
-
-  if (clean.includes("clarity") && clean.includes("readiness")) {
-    return "Rendere narrativa, numeri essenziali e materiali comprensibili anche senza spiegazione diretta del founder.";
-  }
-
-  if (clean.includes("acquisition") && clean.includes("operations")) {
-    return "Stabilizzare processo commerciale e delivery prima di aumentare volume.";
-  }
-
-  if (clean.includes("acquisition") && clean.includes("margins")) {
-    return "Misurare canali, conversione e qualità cliente in base al margine, non solo al volume.";
-  }
-
-  if (clean.includes("acquisition") && clean.includes("asset")) {
-    return "Trasformare acquisizione, clienti e delivery in dati, case study, IP, community o contratti.";
-  }
-
-  if (clean.includes("acquisition") && clean.includes("readiness")) {
-    return "Costruire una lettura chiara di domanda, funnel, conversione e qualità clienti.";
-  }
-
-  if (clean.includes("operations") && clean.includes("margins")) {
-    return "Mappare delivery economics, tempi, costi nascosti e ownership.";
-  }
-
-  if (clean.includes("operations") && clean.includes("asset")) {
-    return "Documentare processi, metodologie, asset e responsabilità.";
-  }
-
-  if (clean.includes("operations") && clean.includes("readiness")) {
-    return "Separare ruoli, processi, numeri e materiali.";
-  }
-
-  if (clean.includes("margins") && clean.includes("asset")) {
-    return "Capire quali offerte, clienti o canali creano margine e asset.";
-  }
-
-  if (clean.includes("margins") && clean.includes("readiness")) {
-    return "Rendere margini, cash flow e unit economics leggibili.";
-  }
-
-  if (clean.includes("asset") && clean.includes("readiness")) {
-    return "Documentare asset, evidenze, contratti, IP, dati, rischi e materiali esterni.";
-  }
-
-  return "Leggere insieme i primi due gap e trasformarli in una sequenza operativa.";
-}
 
 function getPdfRecommendedFocus(diagnosticPattern: DiagnosticPattern) {
-  const focus = safeText(diagnosticPattern.recommendedFocus).trim();
-  const warning = safeText(diagnosticPattern.strategicWarning).trim();
-
-  if (!focus) {
-    return getFallbackFocusFromPatternTitle(diagnosticPattern.topGapPairTitle);
-  }
-
-  if (warning && focus === warning) {
-    return getFallbackFocusFromPatternTitle(diagnosticPattern.topGapPairTitle);
-  }
-
-  return focus;
+  /* [SERVER-SIDE v3] il focus arriva dallo state; niente fallback-analisi locale. */
+  return safeText(diagnosticPattern.recommendedFocus).trim();
 }
 
 function getPdfStrategicWarning(diagnosticPattern: DiagnosticPattern) {
-  return safeText(
-    diagnosticPattern.strategicWarning,
-    "Intervenire su una sola area può lasciare intatto il vincolo reale."
-  );
+  return safeText(diagnosticPattern.strategicWarning);
 }
 
 function getRiskFlags(result: PdfResult) {
@@ -378,48 +289,15 @@ function getRiskFlags(result: PdfResult) {
 }
 
 function getIntentInsight(result: PdfResult) {
-  return (
-    result.intentInsight || {
-      label: "Intent non rilevato",
-      body:
-        "L'urgenza strategica non è disponibile in questa diagnosi. La priorità viene quindi calcolata da score, stage e vincoli dimensionali."
-    }
-  );
+  /* [SERVER-SIDE v3] arriva dallo state; fallback minimo senza analisi. */
+  return result.intentInsight || { label: "", body: "" };
 }
 
-const PROFILE_NEXT_PROBLEM: Record<string, string> = {
-  A: "Quando il messaggio diventa stabile, il problema cambia natura: in quale ordine propagarlo — pricing, materiali, canali — senza fermare la vendita mentre lo fai. Quella sequenza dipende dai tuoi margini e dal tuo ciclo di vendita.",
-  B: "Quando il motore di crescita torna leggibile, la domanda diventa: quale leva muovere per prima — canale, qualifica o pricing — e a quale ritmo il sistema regge senza degradare la delivery. È una decisione di sequenza, non di volume.",
-  C: "Quando le regole ricorrenti sono scritte, si apre il problema successivo: cosa delegare per primo e cosa tenere. Delega e standard nell'ordine sbagliato creano più supervisione, non meno — e l'ordine giusto dipende dal tuo team reale.",
-  D: "Quando il business diventa leggibile dall'esterno, si apre la domanda strategica: a chi aprirlo per primo — partner, figure senior, capitale — e in quale forma. Ogni porta richiede una preparazione diversa, e l'ordine determina il tuo potere negoziale."
-};
 
-const BINDING_NEXT_PROBLEM: Record<string, string> = {
-  clarity: PROFILE_NEXT_PROBLEM.A,
-  acquisition: PROFILE_NEXT_PROBLEM.B,
-  operations: PROFILE_NEXT_PROBLEM.C,
-  margins:
-    "Quando il margine torna leggibile, si apre la decisione successiva: quale leva muovere per prima — pricing, mix di offerte o struttura dei costi — senza toccare la qualità che i clienti migliori stanno comprando. Leve giuste in ordine sbagliato si annullano a vicenda.",
-  asset:
-    "Quando il valore inizia a cristallizzarsi, la domanda diventa: quale asset documentare per primo — metodo, dati, brand, contratti — e in quale forma. Dipende da quale porta vuoi aprire: ogni interlocutore legge asset diversi, e prepararli tutti insieme equivale a non prepararne nessuno.",
-  readiness: PROFILE_NEXT_PROBLEM.D
-};
 
-function getNextProblem(result: PdfResult, stageInfo: any): string | "" {
-  const binding = String(result.bindingConstraint || "").trim().toLowerCase();
-  if (binding && BINDING_NEXT_PROBLEM[binding]) {
-    return BINDING_NEXT_PROBLEM[binding];
-  }
 
-  const raw = String(safeText(result.profile) || "").toUpperCase();
-  const match = raw.match(/[ABCD]\s*$/);
-  const letter = match ? match[0].trim() : "";
-  return (
-    (letter && PROFILE_NEXT_PROBLEM[letter]) ||
-    stageInfo?.nextProblem ||
-    ""
-  );
-}
+
+
 
 function priorityCountWord(n: number) {
   if (n === 1) return "una";
@@ -427,25 +305,7 @@ function priorityCountWord(n: number) {
   return "tre";
 }
 
-function getIntentClosing(result: PdfResult): string | null {
-  const raw =
-    result.intentLevel ?? (result.intentInsight as any)?.level ?? null;
-  const level = Number(raw);
 
-  if (raw === null || raw === undefined || Number.isNaN(level)) {
-    return null;
-  }
-
-  if (level >= 3) {
-    return "Hai indicato una priorità immediata. In questa finestra, la sequenza conta più dello sforzo: gli interventi fatti nell'ordine sbagliato consumano la finestra senza prepararla.";
-  }
-
-  if (level === 2) {
-    return "Hai indicato una decisione importante nei prossimi 6-12 mesi. L'ordine degli interventi determina con quale forza arriverai a quella decisione.";
-  }
-
-  return "L'urgenza dichiarata è bassa. La diagnosi resta valida: quando deciderai di muoverti, il punto di partenza è già identificato.";
-}
 
 /* Data breve per il registro mono della copertina (03.07.2026) */
 function getReportDateShort() {
@@ -1023,10 +883,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           number="03"
           kicker="IL PATTERN DIAGNOSTICO"
           title={safeText(diagnosticPattern.topGapPairTitle, "Pattern diagnostico")}
-          body={safeText(
-            diagnosticPattern.topGapPairBody,
-            "Il pattern diagnostico nasce dalla relazione tra le dimensioni più deboli del business."
-          )}
+          body={safeText(diagnosticPattern.topGapPairBody)}
         />
 
         <View style={styles.fieldBlockFirst}>
@@ -1056,13 +913,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <View style={styles.fieldBlock}>
           <FieldLabel>INTENT</FieldLabel>
           <Text style={styles.patternTitle}>
-            {safeText(intentInsight.label, "Intent non rilevato")}
+            {safeText(intentInsight.label)}
           </Text>
           <Text style={styles.bodyText}>
-            {safeText(
-              intentInsight.body,
-              "L'urgenza strategica non è disponibile in questa diagnosi."
-            )}
+            {safeText(intentInsight.body)}
           </Text>
         </View>
 
@@ -1409,11 +1263,11 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           </Text>
         </View>
 
-        {getNextProblem(result, stageInfo) ? (
+        {(result as any).assembled?.nextProblem ? (
           <View style={styles.fieldBlock}>
             <FieldLabel>IL PROBLEMA CHE SI APRE DOPO</FieldLabel>
             <Text style={styles.bodyText}>
-              {getNextProblem(result, stageInfo)}
+              {(result as any).assembled.nextProblem}
             </Text>
           </View>
         ) : null}
@@ -1436,8 +1290,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
                 : "le tue priorità"
             }, con i tuoi margini, la tua capacità e la tua finestra di decisione. La Strategic Review serve esattamente a questo: trasformare la diagnosi in un ordine operativo dei prossimi 30-60 giorni.`}
           </Text>
-          {getIntentClosing(result) ? (
-            <Text style={styles.ctaIntentLine}>{getIntentClosing(result)}</Text>
+          {(result as any).assembled?.intentClosing ? (
+            <Text style={styles.ctaIntentLine}>{(result as any).assembled.intentClosing}</Text>
           ) : null}
           <View style={styles.ctaButtonRow}>
             <Link src={strategicReviewUrl} style={styles.ctaButton}>
