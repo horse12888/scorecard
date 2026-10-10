@@ -37,28 +37,44 @@ import {
 
 const USE_CUSTOM_FONTS = true;
 
+/* [DESIGN A v3.1 - 10/10/2026] Tipografia allineata a sito, scorecard e
+   report web: Cormorant (testi e titoli) + Jost (etichette). File WOFF da
+   @fontsource (licenza OFL) in /public/fonts. FONT_DIR si puo' cambiare
+   solo per i test fuori dal browser. */
+const FONT_DIR: string = (globalThis as any).__IMPULSE_FONT_DIR || "/fonts";
+
 if (USE_CUSTOM_FONTS) {
-  /* [2026-07-09] Tipografia unificata Poppins (decisione design system:
-     una sola famiglia in tutto il funnel; Archivo/Space Mono ritirati). */
   Font.register({
-    family: "Poppins",
+    family: "Cormorant",
     fonts: [
-      { src: "/fonts/Poppins-Regular.ttf" },
-      { src: "/fonts/Poppins-Bold.ttf", fontWeight: 700 }
+      { src: FONT_DIR + "/Cormorant-Regular.woff" },
+      { src: FONT_DIR + "/Cormorant-Italic.woff", fontStyle: "italic" },
+      { src: FONT_DIR + "/Cormorant-SemiBold.woff", fontWeight: 600 },
+      { src: FONT_DIR + "/Cormorant-SemiBold.woff", fontWeight: 700 }
     ]
   });
   Font.register({
-    family: "PoppinsBlack",
-    src: "/fonts/Poppins-ExtraBold.ttf"
+    family: "CormorantDisplay",
+    fonts: [
+      { src: FONT_DIR + "/Cormorant-Medium.woff" },
+      { src: FONT_DIR + "/Cormorant-Italic.woff", fontStyle: "italic" }
+    ]
+  });
+  Font.register({
+    family: "Jost",
+    fonts: [
+      { src: FONT_DIR + "/Jost-Medium.woff" },
+      { src: FONT_DIR + "/Jost-Medium.woff", fontWeight: 700 }
+    ]
   });
 }
 
-/* Famiglie con fallback sicuro (zero dipendenze).
-   mono -> Poppins: il ruolo (etichette/numeri) resta, il monospazio no. */
+/* black = titoli (Cormorant Medium), sans = testo (Cormorant),
+   mono = etichette e numeri piccoli (Jost) */
 const F = {
-  black: USE_CUSTOM_FONTS ? "PoppinsBlack" : "Helvetica-Bold",
-  sans: USE_CUSTOM_FONTS ? "Poppins" : "Helvetica",
-  mono: USE_CUSTOM_FONTS ? "Poppins" : "Helvetica"
+  black: USE_CUSTOM_FONTS ? "CormorantDisplay" : "Times-Roman",
+  sans: USE_CUSTOM_FONTS ? "Cormorant" : "Times-Roman",
+  mono: USE_CUSTOM_FONTS ? "Jost" : "Helvetica"
 };
 
 Font.registerHyphenationCallback((word) => [word]);
@@ -319,11 +335,11 @@ function getReportDateShort() {
 ============================================================ */
 
 const INK = "#13273B"; /* blu notte — testo e box */
-const PAPER = "#FBF9F3";
+const PAPER = "#F8F5EE";
 const BODY = "#2C3A49";
 const MUTED = "#77828F";
 const FAINT = "#57626F";
-const HAIRLINE = "#E0DACA";
+const HAIRLINE = "#DCD6C8";
 const GOLD = "#B88A2A"; /* gold su carta */
 const WASH = "#F5EDD8"; /* sabbia — box prima mossa */
 const GOLD_BRIGHT = "#C9A24B"; /* gold su scuro */
@@ -536,7 +552,7 @@ function PageHeader({ name, page }: { name?: string; page: string }) {
     <View style={styles.header} fixed>
       <Text style={styles.headerWordmark}>IMPULSE</Text>
       <Text style={styles.headerMeta}>
-        {safeText(name).toUpperCase()} — {page}/09
+        {safeText(name).toUpperCase()} · {page}/09
       </Text>
     </View>
   );
@@ -792,7 +808,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           </Text>
           {displayedBindingKey ? (
             <Text style={styles.coverMetaItem}>
-              BINDING{" "}
+              VINCOLO{" "}
               <Text style={styles.coverMetaValueGold}>
                 {(dimensionNames[displayedBindingKey] || "").toUpperCase()}
               </Text>
@@ -997,7 +1013,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         ))}
 
         <Text style={styles.deprioritizeNote}>
-          {`Tutto ciò che non è in queste ${priorityCountWord(priorities.length)} priorità è, per questa fase, rumore: non perché non conti, ma perché conta dopo. L'ordine di intervento tra queste priorità — cosa prima, cosa dopo, a quale ritmo — è il lavoro della Strategic Review (pagina 08).`}
+          {`Tutto ciò che non è in queste ${priorityCountWord(priorities.length)} priorità è, per questa fase, rumore. Conta, ma conta dopo. In che ordine e a che ritmo affrontare queste priorità lo decidiamo nella Strategic Review (pagina 08).`}
         </Text>
 
         <PageFooter />
@@ -1015,7 +1031,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <View style={styles.matrixHead}>
           <Text style={[styles.matrixHeadText, { width: 128 }]}>DIMENSIONE</Text>
-          <Text style={[styles.matrixHeadText, { flex: 1 }]}>0 ————— 10</Text>
+          <Text style={[styles.matrixHeadText, { flex: 1 }]}>DA 0 A 10</Text>
           <Text style={[styles.matrixHeadText, styles.matrixHeadScore]}>
             SCORE
           </Text>
@@ -1049,8 +1065,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
                   ]}
                 >
                   {isBinding
-                    ? `VINCOLO BINDING — ${dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}`
-                    : `${status} — ${dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}`}
+                    ? `VINCOLO PRINCIPALE · ${dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}`
+                    : `${status} · ${dim.subtitle || dimensionShortCopy[dim.key as DimensionKey]}`}
                 </Text>
               </View>
               <View style={{ flex: 1, justifyContent: "center" }}>
@@ -1075,7 +1091,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <BindingMark size={4} right />
             <Text style={[styles.legendItem, { color: GOLD }]}>
-              BINDING CONSTRAINT
+              VINCOLO PRINCIPALE
             </Text>
           </View>
         </View>
@@ -1154,7 +1170,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               <Text style={styles.legendItem}>7.0+ FORZA</Text>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <BindingMark size={4} right />
-                <Text style={[styles.legendItem, { color: GOLD }]}>BINDING</Text>
+                <Text style={[styles.legendItem, { color: GOLD }]}>VINCOLO</Text>
               </View>
             </View>
           </View>
@@ -1162,11 +1178,11 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <View style={{ flexGrow: 1 }} />
 
-        <CellBox label="VINCOLO BINDING" variant="ink">
+        <CellBox label="VINCOLO PRINCIPALE" variant="ink">
           {displayedBindingKey
             ? `La dimensione che oggi limita di più lo stage è ${
                 dimensionNames[displayedBindingKey] || displayedBindingKey
-              } — ogni intervento sulle altre aree rende meno finché questa resta illeggibile.`
+              }. Finché resta debole, ogni intervento sulle altre aree rende meno.`
             : "Il vincolo principale emerge dalla combinazione delle dimensioni più deboli."}
         </CellBox>
 
@@ -1278,17 +1294,17 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={styles.ctaLabel}>STRATEGIC REVIEW</Text>
           <Text style={styles.ctaTitle}>
             {firstName
-              ? `${firstName}, trasforma la diagnosi in ordine operativo.`
-              : "Trasforma la diagnosi in ordine operativo."}
+              ? `${firstName}, dalla diagnosi a un piano.`
+              : "Dalla diagnosi a un piano."}
           </Text>
           <Text style={styles.ctaBody}>
-            {`Questo report ti ha dato il COSA: il vincolo, la posta in gioco, i criteri per riconoscere quando è risolto. Quello che non può darti è la sequenza applicata al tuo caso: cosa viene prima tra ${
+            {`Questo report ti dice cosa frena il business, cosa rischi e come capire quando il problema è risolto. Non può dirti in che ordine muoverti nel tuo caso: cosa viene prima tra ${
               priorities.length > 0
                 ? priorities
                     .map((item: any) => getDimensionLabel(item))
                     .join(", ")
                 : "le tue priorità"
-            }, con i tuoi margini, la tua capacità e la tua finestra di decisione. La Strategic Review serve esattamente a questo: trasformare la diagnosi in un ordine operativo dei prossimi 30-60 giorni.`}
+            }, con i tuoi margini e il tempo che hai. Nella Strategic Review lo decidiamo insieme: un piano per i prossimi 30-60 giorni.`}
           </Text>
           {(result as any).assembled?.intentClosing ? (
             <Text style={styles.ctaIntentLine}>{(result as any).assembled.intentClosing}</Text>
@@ -1296,8 +1312,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <View style={styles.ctaButtonRow}>
             <Link src={strategicReviewUrl} style={styles.ctaButton}>
               {!Number.isNaN(intentLevelNum) && intentLevelNum >= 3
-                ? "PRENOTA ORA LA STRATEGIC REVIEW →"
-                : "PRENOTA LA STRATEGIC REVIEW →"}
+                ? "PRENOTA ORA LA STRATEGIC REVIEW"
+                : "PRENOTA LA STRATEGIC REVIEW"}
             </Link>
             {resolvedLeadId ? (
               <Text style={styles.ctaSmallText}>
@@ -1317,21 +1333,21 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           number="09"
           kicker="LE TUE RISPOSTE, ALLA LETTERA"
           title="Dove si nasconde il punteggio."
-          body="Le risposte che ti costano di più, citate parola per parola — e perché pesano sul risultato."
+          body="Le risposte che ti costano di più, parola per parola, e perché pesano sul risultato."
         />
 
         {(result as any).challenge ? (
           <View style={styles.challengeBox}>
-            <Text style={styles.challengeLabel}>LA SFIDA CHE HAI DICHIARATO</Text>
+            <Text style={styles.challengeLabel}>LA SFIDA CHE HAI SCRITTO</Text>
             <Text style={styles.challengeQuote}>{'\u00AB'}{String((result as any).challenge)}{'\u00BB'}</Text>
-            <Text style={styles.challengeNote}>Parole tue. La diagnosi dice da dove cominciare a scioglierla: dal vincolo, non da tutto insieme.</Text>
+            <Text style={styles.challengeNote}>Parole tue. La diagnosi ti dice da dove partire: dal vincolo, non da tutto insieme.</Text>
           </View>
         ) : null}
 
         {costlyAnswers.length > 0 ? (
           costlyAnswers.map((ca, index) => (
             <View key={ca.id} style={styles.fieldBlock}>
-              <FieldLabel>{String(index + 1).padStart(2, "0")} — {ca.dimension.toUpperCase()}</FieldLabel>
+              <FieldLabel>{String(index + 1).padStart(2, "0")} · {ca.dimension.toUpperCase()}</FieldLabel>
               <Text style={styles.emphasisText}>{ca.text}</Text>
               <Text style={styles.answersChosen}>Hai risposto: {'\u00AB'}{ca.chosenText}{'\u00BB'}</Text>
               <Text style={styles.bodyText}>{ca.why}</Text>
@@ -1347,10 +1363,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         {firstMove ? (
           <View style={styles.firstMoveBox}>
-            <FieldLabel>LA TUA PRIMA MOSSA — ENTRO 48 ORE</FieldLabel>
+            <FieldLabel>LA TUA PRIMA MOSSA, ENTRO 48 ORE</FieldLabel>
             <Text style={styles.bodyText}>{firstMove}</Text>
             <Text style={styles.answersBridge}>
-              È la prima di tre. Le altre due — e l'ordine giusto — sono il metodo:{" "}
+              È la prima di tre. Le altre due, e l'ordine in cui farle, sono nel Kit:{" "}
               <Link
                 src="https://davidedileo.it/kit?utm_source=report&utm_medium=pdf&utm_campaign=kit_report"
                 style={styles.answersBridgeLink}
@@ -1364,9 +1380,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <View style={styles.letterBlock}>
           <FieldLabel>UNA NOTA PERSONALE</FieldLabel>
           <Text style={styles.bodyText}>{(result as any).assembled?.letter || ""}</Text>
-          <Text style={styles.letterSign}>— Davide</Text>
-          <Text style={styles.letterCred}>COO & co-founder di una fintech di tokenizzazione · IMPULSE è il mio criterio operativo, reso strumento — costruito con l'''AI.</Text>
-          <Text style={styles.letterRetest}>Ricalibrazione consigliata: {(result as any).assembled?.retestDate || ""} — stesso test, numeri a confronto.</Text>
+          <Text style={styles.letterSign}>Davide</Text>
+          <Text style={styles.letterCred}>COO & co-founder di una fintech di tokenizzazione · IMPULSE è il mio criterio operativo, reso strumento e costruito con l'AI.</Text>
+          <Text style={styles.letterRetest}>Rifai lo scorecard il {(result as any).assembled?.retestDate || ""} e confronta i numeri.</Text>
         </View>
       </Page>
     </Document>
@@ -1379,7 +1395,28 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
    #C9A24B (scuro) · red #B42318 · hairline #E0DACA
 ============================================================ */
 
-const styles = StyleSheet.create({
+/* [DESIGN A] Cormorant ha l'occhio piccolo: i testi correnti salgono del
+   16%, i titoli del 6%; le etichette in Jost restano come sono. */
+function designA<T extends Record<string, any>>(defs: T): T {
+  const out: any = {};
+  Object.keys(defs).forEach((k) => {
+    const st = { ...(defs as any)[k] };
+    if (typeof st.fontSize === "number") {
+      if (st.fontFamily === F.mono) {
+        /* invariato */
+      } else if (st.fontFamily === F.black) {
+        st.fontSize = Math.round(st.fontSize * 1.06 * 10) / 10;
+        if (typeof st.letterSpacing === "number" && st.letterSpacing < 0) st.letterSpacing = st.letterSpacing * 0.5;
+      } else {
+        st.fontSize = Math.round(st.fontSize * 1.16 * 10) / 10;
+      }
+    }
+    out[k] = st;
+  });
+  return out;
+}
+
+const styles = StyleSheet.create(designA({
   /* ---- Copertina ---- */
   coverPage: {
     paddingTop: 44,
@@ -2110,4 +2147,4 @@ const styles = StyleSheet.create({
     color: MUTED,
     marginTop: 3
   }
-});
+}));
