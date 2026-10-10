@@ -66,6 +66,80 @@ function fetchAssembledContent(
   });
 }
  
+/* [VINCOLO v2.8] nome leggibile della dimensione-vincolo (stessa
+   dimensione che mostrano result page e CRM: bindingConstraint) */
+const DIMENSION_LABELS: Record<string, string> = {
+  clarity: 'Clarity',
+  acquisition: 'Acquisition',
+  operations: 'Operations',
+  margins: 'Margins',
+  asset: 'Asset',
+  readiness: 'Readiness'
+};
+
+function getBindingKey(result: any): string {
+  const b = result?.bindingConstraint;
+  if (b && DIMENSION_LABELS[b]) return b;
+  const dims = result?.dimensions || {};
+  let best = '';
+  ASSEMBLER_DIM_ORDER.forEach(d => {
+    const sc = dims[d] && typeof dims[d].score === 'number' ? dims[d].score : null;
+    if (sc === null) return;
+    if (!best || sc < dims[best].score) best = d;
+  });
+  return best;
+}
+
+/* [LEAD v2.8] link Kit con leadId e vincolo (li usa il blocco /kit) */
+function buildKitUrl(result: any, medium: string) {
+  const params = new URLSearchParams();
+  params.set('utm_source', 'report');
+  params.set('utm_medium', medium);
+  params.set('utm_campaign', 'kit_report');
+  if (result?.leadId) params.set('lead', String(result.leadId));
+  const v = getBindingKey(result);
+  if (v) params.set('v', v);
+  if (result?.metadata?.isTest) params.set('test', '1');
+  return `https://davidedileo.it/kit?${params.toString()}`;
+}
+
+/* [CONSENSO + GA v2.8] GA4 solo dopo consenso esplicito.
+   La scelta (si'/no) resta in localStorage: nessun dato personale. */
+const GA4_ID = 'G-8F2VD8X89M';
+const CONSENT_KEY = 'impulse_analytics_consent';
+
+function readConsent(): 'yes' | 'no' | null {
+  try {
+    const v = localStorage.getItem(CONSENT_KEY);
+    return v === 'yes' || v === 'no' ? v : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function loadGA() {
+  const w = window as any;
+  if (w.__impulseGaLoaded) return;
+  w.__impulseGaLoaded = true;
+  w.dataLayer = w.dataLayer || [];
+  w.gtag = function () { w.dataLayer.push(arguments); };
+  const sc = document.createElement('script');
+  sc.async = true;
+  sc.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA4_ID;
+  document.head.appendChild(sc);
+  w.gtag('js', new Date());
+  w.gtag('config', GA4_ID);
+}
+
+function track(name: string, params: Record<string, any> = {}) {
+  try {
+    const w = window as any;
+    if (readConsent() === 'yes' && typeof w.gtag === 'function') {
+      w.gtag('event', name, params);
+    }
+  } catch (e) {}
+}
+
 /* JSONP: evita problemi di CORS verso script.google.com.
    Risolve con il payload (gia' decodificato dall'url-encoding) o stringa vuota. */
 function fetchEncodedResultById(id: string): Promise<string> {
@@ -317,7 +391,14 @@ function buildStrategicReviewUrl(result: any) {
   });
  
   if (result?.metadata?.isTest) params.set('test', '1');
- 
+
+  /* [UTM v2.8] leadId anche in query: la pagina Review lo legge da li'
+     e resiste ai clic sulle ancore interne (#request-review) */
+  const leadIdQ = result?.leadId || '';
+  if (leadIdQ) params.set('leadId', String(leadIdQ));
+  const vincolo = getBindingKey(result);
+  if (vincolo) params.set('v', vincolo);
+
   const query = params.toString() ? `?${params.toString()}` : '';
   const leadId = result?.leadId || '';
   const hash = leadId ? `#leadId=${encodeURIComponent(leadId)}` : '';
@@ -372,6 +453,30 @@ export default function App() {
   const [result, setResult] = useState<any>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [shareCopied, setShareCopied] = useState(false);
+  const [consent, setConsent] = useState<'yes' | 'no' | null>(() => readConsent());
+
+  /* [CONSENSO + GA v2.8] */
+  useEffect(() => {
+    if (consent === 'yes') loadGA();
+  }, [consent]);
+
+  const chooseConsent = (v: 'yes' | 'no') => {
+    try { localStorage.setItem(CONSENT_KEY, v); } catch (e) {}
+    setConsent(v);
+    if (v === 'yes') {
+      loadGA();
+      if (result) {
+        setTimeout(() => track('report_view', { vincolo: getBindingKey(result), is_test: result?.metadata?.isTest ? 'yes' : 'no' }), 300);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (step === 'summary' && result) {
+      document.title = 'Il tuo vincolo: ' + (DIMENSION_LABELS[getBindingKey(result)] || '') + ' — IMPULSE';
+      track('report_view', { vincolo: getBindingKey(result), is_test: result?.metadata?.isTest ? 'yes' : 'no' });
+    }
+  }, [step, result]);
  
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -540,6 +645,7 @@ export default function App() {
   const handleDownloadPDF = async () => {
     if (result) {
       console.log('Report result before PDF:', result);
+      track('pdf_download', { vincolo: getBindingKey(result) });
       await generateIMPULSEReport(result);
     }
   };
@@ -656,8 +762,8 @@ export default function App() {
   ];
  
   return (
-    <div className="min-h-screen bg-[#FBF9F3] flex flex-col items-center p-4 font-sans text-gray-900">
-      <div className="bg-white p-8 rounded-none shadow-sm border border-gray-200 max-w-2xl w-full">
+    <div className="min-h-screen bg-[#FBF9F3] flex flex-col items-center p-0 sm:p-4 font-sans text-gray-900">
+      <div className="bg-white p-5 sm:p-8 rounded-none sm:shadow-sm border-0 sm:border sm:border-gray-200 max-w-2xl w-full">
         <div className="flex justify-between items-center mb-8 border-b pb-4">
           <h1 className="text-2xl font-bold tracking-tight text-[#0B1928]">
             IMPULSE Scorecard
@@ -916,14 +1022,23 @@ export default function App() {
  
         {step === 'summary' && result && (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold tracking-tight text-[#0B1928] text-center mb-8">
-              Il tuo Constraint Profile
-            </h2>
+            {/* [VINCOLO v2.8] il vincolo e' il titolo: e' la promessa dello scorecard */}
+            <div className="text-center mb-8">
+              <p className="text-xs font-bold tracking-widest text-[#B88A2A] mb-3">
+                IL TUO VINCOLO PRINCIPALE
+              </p>
+              <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#0B1928]">
+                {DIMENSION_LABELS[getBindingKey(result)] || 'Il tuo vincolo'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-3">
+                &Egrave; la dimensione che oggi limita di pi&ugrave; la prossima fase del business.
+              </p>
+            </div>
  
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-[#FBF9F3] rounded-none text-center border border-gray-100 mb-6">
               <div className="flex flex-col justify-center">
                 <p className="text-xs text-gray-500 tracking-wider mb-2">
-                  SCORE
+                  PUNTEGGIO
                 </p>
                 <p className="text-lg md:text-xl font-bold break-words leading-tight">
                   {result.overall} / 100
@@ -950,10 +1065,10 @@ export default function App() {
  
               <div className="flex flex-col justify-center">
                 <p className="text-xs text-gray-500 tracking-wider mb-2">
-                  PROFILE
+                  VINCOLO
                 </p>
                 <p className="text-lg md:text-xl font-bold break-words leading-tight">
-                  {result.profile}
+                  {DIMENSION_LABELS[getBindingKey(result)] || '-'}
                 </p>
               </div>
             </div>
@@ -961,7 +1076,7 @@ export default function App() {
             {result.diagnosticPattern ? (
               <div className="p-5 bg-[#FBF9F3] rounded-none border border-gray-100">
                 <p className="text-xs text-gray-500 tracking-wider mb-2">
-                  DIAGNOSTIC PATTERN
+                  PATTERN DIAGNOSTICO
                 </p>
                 <p className="text-lg font-bold text-gray-900 mb-2">
                   {result.diagnosticPattern.topGapPairTitle}
@@ -975,7 +1090,7 @@ export default function App() {
             {result.riskFlags && result.riskFlags.length > 0 ? (
               <div className="p-5 bg-red-50 rounded-none border border-red-100">
                 <p className="text-xs text-red-500 tracking-wider mb-2">
-                  RISK FLAG
+                  SEGNALE DI RISCHIO
                 </p>
                 <p className="text-lg font-bold text-red-700 mb-2">
                   {result.riskFlags[0].title}
@@ -1033,7 +1148,8 @@ export default function App() {
                 <p className="text-sm text-gray-600 mt-3">
                   &Egrave; la prima di tre. Le altre due &mdash; e l&rsquo;ordine giusto &mdash; sono il metodo:{' '}
                   <a
-                    href="https://davidedileo.it/kit?utm_source=report&utm_medium=web&utm_campaign=kit_report"
+                    href={buildKitUrl(result, 'web')}
+                    onClick={() => track('click_kit', { from: 'report_first_move', vincolo: getBindingKey(result) })}
                     className="font-bold text-[#8F6B20] underline"
                   >
                     Priority Map Kit &rarr;
@@ -1078,10 +1194,22 @@ export default function App() {
                   </p>
                   <a
                     href={reviewUrl}
+                    onClick={() => track('click_review', { from: 'report', vincolo: getBindingKey(result) })}
                     className="inline-block bg-[rgb(184,138,42)] hover:bg-[#B88A2A] text-gray-900 font-bold py-3 px-6 rounded transition"
                   >
                     {cta.button}
                   </a>
+                  {/* [CTA v2.8] alternativa fai-da-te sempre visibile */}
+                  <p className="text-sm text-gray-300 mt-4">
+                    Preferisci partire da solo?{' '}
+                    <a
+                      href={buildKitUrl(result, 'web_cta')}
+                      onClick={() => track('click_kit', { from: 'report_cta', vincolo: getBindingKey(result) })}
+                      className="font-bold text-[#DFBE6F] underline"
+                    >
+                      Priority Map Kit, &euro;47 &rarr;
+                    </a>
+                  </p>
                 </div>
               );
             })()}
@@ -1100,14 +1228,15 @@ export default function App() {
                 CONOSCI UN FOUNDER CHE DOVREBBE VEDERLO?
               </p>
               <p className="text-sm text-[#ADB9C6] mb-4">
-                Ogni business ha un vincolo. Lo scorecard &egrave; gratuito e ci vogliono 4 minuti.
+                Ogni business ha un vincolo. Lo scorecard &egrave; gratuito e il report arriva subito.
               </p>
               <button
                 onClick={() => {
                   const url = 'https://davidedileo.it/scorecard?utm_source=share&utm_medium=report&utm_campaign=passaparola';
                   const nav: any = navigator;
+                  track('share', { vincolo: getBindingKey(result) });
                   if (nav.share) {
-                    nav.share({ title: 'IMPULSE Business Readiness', text: 'Un business cresce alla velocit\u00e0 del suo vincolo. Scopri il tuo in 4 minuti:', url }).catch(() => {});
+                    nav.share({ title: 'IMPULSE Business Readiness', text: 'Un business cresce alla velocit\u00e0 del suo vincolo. Scopri il tuo:', url }).catch(() => {});
                   } else if (nav.clipboard && nav.clipboard.writeText) {
                     nav.clipboard.writeText(url).then(() => setShareCopied(true));
                   }
@@ -1134,6 +1263,28 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* [CONSENSO v2.8] Accetta e Rifiuta con la stessa evidenza */}
+      {step === 'summary' && consent === null ? (
+        <div className="fixed bottom-0 left-0 right-0 bg-[#0B1928] text-white p-4 z-50">
+          <div className="max-w-2xl mx-auto flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="text-sm text-gray-200 flex-1">
+              Uso cookie analitici (Google Analytics) solo per capire come migliorare il report. Nessuna pubblicit&agrave;.{' '}
+              <a href="https://davidedileo.it/cookie-policy" target="_blank" rel="noreferrer" className="underline text-[#DFBE6F]">
+                Cookie policy
+              </a>
+            </p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => chooseConsent('no')} className="flex-1 sm:flex-none border border-white px-5 py-2 font-bold text-sm">
+                Rifiuta
+              </button>
+              <button type="button" onClick={() => chooseConsent('yes')} className="flex-1 sm:flex-none border border-white px-5 py-2 font-bold text-sm">
+                Accetta
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
