@@ -440,29 +440,29 @@ function getReviewCta(result: any) {
  
   if (!Number.isNaN(level) && level >= 3) {
     return {
-      kicker: 'PRIORITÀ ADESSO',
+      kicker: 'Priorità adesso',
       title: 'Hai una finestra di decisione aperta.',
       body:
-        'Hai indicato che una decisione importante è una priorità adesso. La Strategic Review trasforma questa diagnosi nell’ordine operativo dei prossimi 30-60 giorni: cosa correggere prima, cosa non scalare ancora, con i tuoi numeri.',
+        'Hai detto che c’è una decisione importante da prendere adesso. Nella Strategic Review trasformiamo questa diagnosi nel piano dei prossimi 30-60 giorni: cosa correggere prima e cosa non spingere ancora, sui tuoi numeri.',
       button: 'Prenota ora la Strategic Review'
     };
   }
  
   if (!Number.isNaN(level) && level === 2) {
     return {
-      kicker: 'STRATEGIC REVIEW',
-      title: 'Trasforma la diagnosi in ordine operativo.',
+      kicker: 'Strategic Review',
+      title: 'Dalla diagnosi a un piano.',
       body:
-        'Hai indicato una decisione importante nei prossimi 6-12 mesi. L’ordine degli interventi determina con quale forza ci arriverai. Una sessione di lavoro sul tuo caso: priorità, sequenza, prossime decisioni.',
+        'Hai una decisione importante nei prossimi 6-12 mesi. L’ordine in cui intervieni decide con quanta forza ci arrivi. In una sessione sul tuo caso fissiamo priorità e sequenza.',
       button: 'Prenota la Strategic Review'
     };
   }
  
   return {
-    kicker: 'QUANDO SARAI PRONTO',
+    kicker: 'Quando sarai pronto',
     title: 'Il punto di partenza è già identificato.',
     body:
-      'Questa diagnosi resta valida nel tempo. Se vuoi trasformarla in una sequenza operativa con una sessione di lavoro sul tuo caso, la Strategic Review è il passo successivo.',
+      'Questa diagnosi resta valida. Quando vorrai trasformarla in un piano, sul tuo caso, il passo successivo è la Strategic Review.',
     button: 'Scopri la Strategic Review'
   };
 }
@@ -502,7 +502,7 @@ export default function App() {
 
   useEffect(() => {
     if (step === 'summary' && result) {
-      document.title = 'Il tuo vincolo: ' + (DIMENSION_LABELS[getBindingKey(result)] || '') + ' — IMPULSE';
+      document.title = 'Il tuo vincolo: ' + (DIMENSION_LABELS[getBindingKey(result)] || '') + ' | IMPULSE';
       track('report_view', { vincolo: getBindingKey(result), is_test: result?.metadata?.isTest ? 'yes' : 'no' });
     }
   }, [step, result]);
@@ -791,17 +791,17 @@ export default function App() {
   ];
  
   return (
-    <div className="min-h-screen bg-[#FBF9F3] flex flex-col items-center p-0 sm:p-4 font-sans text-gray-900">
-      <div className="bg-white p-5 sm:p-8 rounded-none sm:shadow-sm border-0 sm:border sm:border-gray-200 max-w-2xl w-full">
-        <div className="flex justify-between items-center mb-8 border-b pb-4">
-          <h1 className="text-2xl font-bold tracking-tight text-[#0B1928]">
-            IMPULSE Scorecard
+    <div className="min-h-screen bg-[#F8F5EE] flex flex-col items-center p-0 sm:p-6 font-serif text-[#13273B]">
+      <div className="bg-[#F8F5EE] p-5 sm:p-8 max-w-2xl w-full">
+        <div className="flex justify-between items-baseline mb-10 border-b border-[rgba(19,39,59,0.16)] pb-4">
+          <h1 className="font-sans text-[11px] font-medium tracking-[0.32em] uppercase text-[#13273B]">
+            IMPULSE &middot; Il tuo report
           </h1>
  
-          <div className="text-sm text-gray-500 tracking-wider">
+          <div className="font-sans text-[10.5px] tracking-[0.22em] uppercase text-[#6B7682]">
             {step === 'info' && '1/3 PROFILE'}
             {step === 'questions' && '2/3 ASSESSMENT'}
-            {step === 'summary' && 'DIAGNOSI'}
+            {step === 'summary' && 'Diagnosi'}
           </div>
         </div>
  
@@ -1050,213 +1050,187 @@ export default function App() {
         )}
  
         {step === 'summary' && result && (
-          <div className="space-y-6">
-            {/* [VINCOLO v2.8] il vincolo e' il titolo: e' la promessa dello scorecard */}
-            <div className="text-center mb-8">
-              <p className="text-xs font-bold tracking-widest text-[#B88A2A] mb-3">
-                IL TUO VINCOLO PRINCIPALE
+          <div className="font-serif">
+            {/* [DESIGN A v2.9] il vincolo e' il titolo: e' la promessa dello scorecard */}
+            <div className="mb-10">
+              <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#4B5866] mb-3">
+                Il tuo vincolo principale
               </p>
-              <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#0B1928]">
+              <h2 className="font-serif italic font-medium text-[#B88A2A] text-6xl sm:text-7xl leading-[0.95] tracking-tight">
                 {DIMENSION_LABELS[getBindingKey(result)] || 'Il tuo vincolo'}
               </h2>
-              <p className="text-sm text-gray-500 mt-3">
-                &Egrave; la dimensione che oggi limita di pi&ugrave; la prossima fase del business.
+              <p className="text-xl text-[#22364A] mt-4 leading-snug">
+                &Egrave; la dimensione che oggi frena di pi&ugrave; la prossima fase del business.
               </p>
             </div>
- 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-[#FBF9F3] rounded-none text-center border border-gray-100 mb-6">
-              <div className="flex flex-col justify-center">
-                <p className="text-xs text-gray-500 tracking-wider mb-2">
-                  PUNTEGGIO
-                </p>
-                <p className="text-lg md:text-xl font-bold break-words leading-tight">
-                  {result.overall} / 100
-                </p>
-              </div>
- 
-              <div className="flex flex-col justify-center">
-                <p className="text-xs text-gray-500 tracking-wider mb-2">
-                  FASCIA
-                </p>
-                <p className="text-lg md:text-xl font-bold break-words leading-tight">
-                  {result.fascia}
-                </p>
-              </div>
- 
-              <div className="flex flex-col justify-center">
-                <p className="text-xs text-gray-500 tracking-wider mb-2">
-                  STAGE
-                </p>
-                <p className="text-lg md:text-xl font-bold break-words leading-tight">
-                  {result.stage}
-                </p>
-              </div>
- 
-              <div className="flex flex-col justify-center">
-                <p className="text-xs text-gray-500 tracking-wider mb-2">
-                  VINCOLO
-                </p>
-                <p className="text-lg md:text-xl font-bold break-words leading-tight">
-                  {DIMENSION_LABELS[getBindingKey(result)] || '-'}
-                </p>
-              </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-b border-[rgba(19,39,59,0.55)] mb-10">
+              {[
+                ['Punteggio', `${result.overall} / 100`],
+                ['Fascia', result.fascia],
+                ['Stage', result.stage],
+                ['Vincolo', DIMENSION_LABELS[getBindingKey(result)] || '-']
+              ].map(([label, value], i) => (
+                <div key={label as string} className={`py-4 ${i % 2 === 1 ? 'pl-4 sm:pl-4' : 'pr-4'} ${i > 0 ? 'sm:pl-4' : ''} ${i < 2 ? 'border-b sm:border-b-0' : ''} border-[rgba(19,39,59,0.16)]`}>
+                  <p className="font-sans text-[10px] font-medium tracking-[0.22em] uppercase text-[#6B7682] mb-1">
+                    {label}
+                  </p>
+                  <p className="text-2xl font-medium text-[#13273B] leading-tight break-words">
+                    {value}
+                  </p>
+                </div>
+              ))}
             </div>
- 
-            {result.diagnosticPattern ? (
-              <div className="p-5 bg-[#FBF9F3] rounded-none border border-gray-100">
-                <p className="text-xs text-gray-500 tracking-wider mb-2">
-                  PATTERN DIAGNOSTICO
-                </p>
-                <p className="text-lg font-bold text-gray-900 mb-2">
-                  {result.diagnosticPattern.topGapPairTitle}
-                </p>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {result.diagnosticPattern.topGapPairBody}
-                </p>
-              </div>
-            ) : null}
- 
-            {result.riskFlags && result.riskFlags.length > 0 ? (
-              <div className="p-5 bg-red-50 rounded-none border border-red-100">
-                <p className="text-xs text-red-500 tracking-wider mb-2">
-                  SEGNALE DI RISCHIO
-                </p>
-                <p className="text-lg font-bold text-red-700 mb-2">
-                  {result.riskFlags[0].title}
-                </p>
-                <p className="text-sm text-red-700 leading-relaxed">
-                  {result.riskFlags[0].body}
-                </p>
-              </div>
-            ) : null}
- 
-            {/* [SFIDA] eco delle parole del lead (solo flusso ?id=) */}
+
             {(result as any).challenge ? (
-              <div className="p-5 bg-[#0B1928] rounded-none">
-                <p className="text-xs text-[#DFBE6F] font-semibold tracking-wider mb-2">
-                  LA SFIDA CHE HAI DICHIARATO
+              <div className="mb-10 pt-4 border-t border-[rgba(19,39,59,0.16)]">
+                <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#4B5866] mb-2">
+                  La sfida che hai scritto
                 </p>
-                <p className="text-base font-bold text-[#F4EFE4] leading-relaxed">
+                <p className="text-2xl italic text-[#13273B] leading-snug">
                   &laquo;{(result as any).challenge}&raquo;
                 </p>
-                <p className="text-sm text-[#ADB9C6] mt-2 leading-relaxed">
-                  Parole tue. Questa diagnosi ti dice da dove cominciare a scioglierla: dal vincolo, non da tutto insieme.
+                <p className="text-lg text-[#4B5866] mt-2 leading-relaxed">
+                  Parole tue. La diagnosi ti dice da dove partire: dal vincolo, non da tutto insieme.
                 </p>
               </div>
             ) : null}
 
-            {/* [ANSWERS v3] le 3 risposte che pesano di più — answer-level */}
+            {(result as any).assembled?.firstMove ? (
+              <div className="mb-10 pt-4 border-t border-[rgba(19,39,59,0.55)]">
+                <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#8F6B20] mb-2">
+                  La tua prima mossa, entro 48 ore
+                </p>
+                <p className="text-xl font-medium text-[#13273B] leading-relaxed">
+                  {(result as any).assembled.firstMove}
+                </p>
+                <p className="text-lg text-[#4B5866] mt-3 leading-relaxed">
+                  &Egrave; la prima di tre. Le altre due, e l&rsquo;ordine in cui farle, sono nel{' '}
+                  <a
+                    href={buildKitUrl(result, 'web')}
+                    onClick={() => track('click_kit', { from: 'report_first_move', vincolo: getBindingKey(result) })}
+                    className="italic text-[#8F6B20] underline underline-offset-4 decoration-1"
+                  >
+                    Priority Map Kit
+                  </a>.
+                </p>
+              </div>
+            ) : null}
+
             {(() => {
               const picks = ((result as any).assembled?.costlyAnswers) || [];
               if (!picks.length) return null;
               return (
-                <div className="p-5 bg-white rounded-none border-2 border-[#13273B]">
-                  <p className="text-xs text-[#8F6B20] font-semibold tracking-wider mb-3">
-                    LE RISPOSTE CHE TI COSTANO DI PI&Ugrave;
+                <div className="mb-10 pt-4 border-t border-[rgba(19,39,59,0.55)]">
+                  <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#4B5866] mb-4">
+                    Le risposte che ti costano di pi&ugrave;
                   </p>
-                  {picks.map((pk) => (
-                    <div key={pk.id} className="mb-4 last:mb-0">
-                      <p className="text-sm font-bold text-gray-900">{pk.text}</p>
-                      <p className="text-sm italic text-[#57626E] mt-1">Hai risposto: &laquo;{pk.chosenText}&raquo;</p>
-                      <p className="text-sm text-gray-600 mt-1 leading-relaxed">{pk.why}</p>
+                  {picks.map((pk: any) => (
+                    <div key={pk.id} className="pb-5 mb-5 border-b border-[rgba(19,39,59,0.16)] last:border-b-0 last:mb-0">
+                      <p className="text-xl font-semibold text-[#13273B] leading-snug">{pk.text}</p>
+                      <p className="text-lg italic text-[#4B5866] mt-1">Hai risposto: &laquo;{pk.chosenText}&raquo;</p>
+                      <p className="text-lg text-[#22364A] mt-1 leading-relaxed">{pk.why}</p>
                     </div>
                   ))}
                 </div>
               );
             })()}
 
-            {/* [ANSWERS v3] la prima mossa (48h) + ponte Kit */}
-            {(result as any).assembled?.firstMove ? (
-              <div className="p-5 bg-[#F5EDD8] rounded-none border-2 border-[#B88A2A]">
-                <p className="text-xs text-[#8F6B20] font-semibold tracking-wider mb-2">
-                  LA TUA PRIMA MOSSA &mdash; ENTRO 48 ORE
+            {result.diagnosticPattern ? (
+              <div className="mb-10 pt-4 border-t border-[rgba(19,39,59,0.55)]">
+                <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#4B5866] mb-2">
+                  Lo schema dei tuoi vincoli
                 </p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {(result as any).assembled.firstMove}
+                <p className="text-3xl font-medium text-[#13273B] mb-2 leading-tight">
+                  {result.diagnosticPattern.topGapPairTitle}
                 </p>
-                <p className="text-sm text-gray-600 mt-3">
-                  &Egrave; la prima di tre. Le altre due &mdash; e l&rsquo;ordine giusto &mdash; sono il metodo:{' '}
-                  <a
-                    href={buildKitUrl(result, 'web')}
-                    onClick={() => track('click_kit', { from: 'report_first_move', vincolo: getBindingKey(result) })}
-                    className="font-bold text-[#8F6B20] underline"
-                  >
-                    Priority Map Kit &rarr;
-                  </a>
+                <p className="text-lg text-[#22364A] leading-relaxed">
+                  {result.diagnosticPattern.topGapPairBody}
                 </p>
               </div>
             ) : null}
 
-            {/* [ANSWERS v3] cosa distingue chi passa oltre + ricalibrazione */}
+            {result.riskFlags && result.riskFlags.length > 0 ? (
+              <div className="mb-10 pl-4 border-l-2 border-[#8E2A1E]">
+                <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#8E2A1E] mb-2">
+                  Segnale di rischio
+                </p>
+                <p className="text-xl font-semibold text-[#13273B] mb-1">
+                  {result.riskFlags[0].title}
+                </p>
+                <p className="text-lg text-[#22364A] leading-relaxed">
+                  {result.riskFlags[0].body}
+                </p>
+              </div>
+            ) : null}
+
             {(result as any).assembled?.stageNext ? (
-              <div className="p-5 bg-[#FBF9F3] rounded-none border border-gray-200">
-                <p className="text-xs text-gray-500 tracking-wider mb-2">
-                  COSA DISTINGUE CHI PASSA OLTRE
+              <div className="mb-10 pt-4 border-t border-[rgba(19,39,59,0.16)]">
+                <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#4B5866] mb-2">
+                  Cosa distingue chi passa oltre
                 </p>
-                <p className="text-sm text-gray-600 leading-relaxed">{(result as any).assembled.stageNext}</p>
-                <p className="text-xs text-gray-500 mt-3">
-                  Ricalibrazione consigliata: <span className="font-bold text-gray-700">{(result as any).assembled?.retestDate}</span> &mdash; rifai lo scorecard e confronta.
+                <p className="text-lg text-[#22364A] leading-relaxed">{(result as any).assembled.stageNext}</p>
+                <p className="text-base italic text-[#4B5866] mt-3">
+                  Rifai lo scorecard il <span className="not-italic font-semibold text-[#13273B]">{(result as any).assembled?.retestDate}</span> e confronta i risultati.
                 </p>
               </div>
             ) : null}
 
-            {result.leadId ? (
-              <div className="text-center text-xs text-gray-400">
-                Report ID: {result.leadId}
-              </div>
-            ) : null}
- 
-            {/* [V2.5] CTA Strategic Review on-page, calibrata su intent */}
             {(() => {
               const cta = getReviewCta(result);
               const reviewUrl = buildStrategicReviewUrl(result);
               return (
-                <div className="bg-[#0B1928] rounded-none p-6 mt-2">
-                  <p className="text-[11px] tracking-widest font-bold text-[rgb(184,138,42)] mb-2 uppercase">
+                <div className="bg-[#13273B] -mx-5 sm:mx-0 px-6 sm:px-8 py-8 mt-2">
+                  <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#D9BE7E] mb-3">
                     {cta.kicker}
                   </p>
-                  <p className="text-xl font-bold text-white mb-2">
+                  <p className="text-3xl font-medium text-[#F5EDD8] mb-3 leading-tight">
                     {cta.title}
                   </p>
-                  <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                  <p className="text-lg text-[rgba(245,237,216,0.82)] leading-relaxed mb-6">
                     {cta.body}
                   </p>
                   <a
                     href={reviewUrl}
                     onClick={() => track('click_review', { from: 'report', vincolo: getBindingKey(result) })}
-                    className="inline-block bg-[rgb(184,138,42)] hover:bg-[#B88A2A] text-gray-900 font-bold py-3 px-6 rounded transition"
+                    className="font-sans inline-block bg-[#F5EDD8] hover:bg-white text-[#13273B] text-xs font-medium tracking-[0.2em] uppercase py-4 px-6 transition"
                   >
                     {cta.button}
                   </a>
-                  {/* [CTA v2.8] alternativa fai-da-te sempre visibile */}
-                  <p className="text-sm text-gray-300 mt-4">
+                  <p className="text-lg italic text-[rgba(245,237,216,0.82)] mt-5">
                     Preferisci partire da solo?{' '}
                     <a
                       href={buildKitUrl(result, 'web_cta')}
                       onClick={() => track('click_kit', { from: 'report_cta', vincolo: getBindingKey(result) })}
-                      className="font-bold text-[#DFBE6F] underline"
+                      className="text-[#D9BE7E] underline underline-offset-4 decoration-1"
                     >
-                      Priority Map Kit, &euro;47 &rarr;
+                      Priority Map Kit, &euro;47
                     </a>
                   </p>
                 </div>
               );
             })()}
- 
+
             <button
               type="button"
               onClick={handleDownloadPDF}
-              className="w-full bg-[#C9A24B] hover:bg-[rgb(192,155,35)] text-gray-900 font-bold py-4 px-6 rounded mt-8 mb-4 transition"
+              className="font-sans w-full border border-[#13273B] text-[#13273B] hover:bg-[#13273B] hover:text-[#F5EDD8] text-xs font-medium tracking-[0.2em] uppercase py-4 px-6 mt-8 mb-4 transition"
             >
-              Scarica Report PDF
+              Scarica il report in PDF
             </button>
 
+            {result.leadId ? (
+              <div className="font-sans text-center text-[10.5px] tracking-[0.12em] text-[#6B7682] mt-2">
+                Report ID: {result.leadId}
+              </div>
+            ) : null}
+
             {/* [SHARE] riquadro-condivisione: il passaparola del metodo */}
-            <div className="mt-6 p-5 bg-[#0B1928] rounded-none text-center">
-              <p className="text-xs text-[#DFBE6F] font-semibold tracking-wider mb-2">
-                CONOSCI UN FOUNDER CHE DOVREBBE VEDERLO?
+            <div className="mt-10 pt-4 border-t border-[rgba(19,39,59,0.16)]">
+              <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#4B5866] mb-2">
+                Conosci un founder che dovrebbe vederlo?
               </p>
-              <p className="text-sm text-[#ADB9C6] mb-4">
+              <p className="text-lg text-[#22364A] mb-4">
                 Ogni business ha un vincolo. Lo scorecard &egrave; gratuito e il report arriva subito.
               </p>
               <button
@@ -1265,17 +1239,17 @@ export default function App() {
                   const nav: any = navigator;
                   track('share', { vincolo: getBindingKey(result) });
                   if (nav.share) {
-                    nav.share({ title: 'IMPULSE Business Readiness', text: 'Un business cresce alla velocit\u00e0 del suo vincolo. Scopri il tuo:', url }).catch(() => {});
+                    nav.share({ title: 'IMPULSE Business Readiness', text: 'Un business cresce alla velocità del suo vincolo. Scopri il tuo:', url }).catch(() => {});
                   } else if (nav.clipboard && nav.clipboard.writeText) {
                     nav.clipboard.writeText(url).then(() => setShareCopied(true));
                   }
                 }}
-                className="px-6 py-3 bg-[#C9A24B] text-[#0B1928] font-bold text-sm rounded-none"
+                className="font-sans px-6 py-3 border border-[rgba(19,39,59,0.55)] text-[#13273B] text-xs font-medium tracking-[0.2em] uppercase"
               >
-                {shareCopied ? 'Link copiato \u2713' : 'Condividi lo scorecard'}
+                {shareCopied ? 'Link copiato ✓' : 'Condividi lo scorecard'}
               </button>
             </div>
- 
+
             {SHOW_TESTS && (
               <button
                 type="button"
@@ -1295,19 +1269,19 @@ export default function App() {
 
       {/* [CONSENSO v2.8] Accetta e Rifiuta con la stessa evidenza */}
       {step === 'summary' && consent === null ? (
-        <div className="fixed bottom-0 left-0 right-0 bg-[#0B1928] text-white p-4 z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-[#F8F5EE] text-[#13273B] p-4 z-50 border-t border-[rgba(19,39,59,0.16)]">
           <div className="max-w-2xl mx-auto flex flex-col sm:flex-row sm:items-center gap-3">
-            <p className="text-sm text-gray-200 flex-1">
+            <p className="text-base text-[#22364A] flex-1 leading-snug">
               Uso cookie analitici (Google Analytics) solo per capire come migliorare il report. Nessuna pubblicit&agrave;.{' '}
-              <a href="https://davidedileo.it/cookie-policy" target="_blank" rel="noreferrer" className="underline text-[#DFBE6F]">
+              <a href="https://davidedileo.it/cookie-policy" target="_blank" rel="noreferrer" className="underline underline-offset-2 text-[#8F6B20]">
                 Cookie policy
               </a>
             </p>
             <div className="flex gap-2">
-              <button type="button" onClick={() => chooseConsent('no')} className="flex-1 sm:flex-none border border-white px-5 py-2 font-bold text-sm">
+              <button type="button" onClick={() => chooseConsent('no')} className="font-sans flex-1 sm:flex-none border border-[rgba(19,39,59,0.55)] px-5 py-3 text-xs font-medium tracking-[0.2em] uppercase">
                 Rifiuta
               </button>
-              <button type="button" onClick={() => chooseConsent('yes')} className="flex-1 sm:flex-none border border-white px-5 py-2 font-bold text-sm">
+              <button type="button" onClick={() => chooseConsent('yes')} className="font-sans flex-1 sm:flex-none bg-[#13273B] text-[#F5EDD8] border border-[#13273B] px-5 py-3 text-xs font-medium tracking-[0.2em] uppercase">
                 Accetta
               </button>
             </div>

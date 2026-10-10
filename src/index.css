@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+/* [DESIGN A v2.9 - 10/10/2026] Font ospitati nella repo (/public/fonts,
+   @fontsource, licenza OFL): Cormorant per i testi, Jost per etichette e
+   bottoni. Le cifre di Cormorant sono gia' allineate (lining) nei file. */
+@font-face { font-family: "Cormorant"; src: url("/fonts/Cormorant-Regular.woff") format("woff"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Cormorant"; src: url("/fonts/Cormorant-Medium.woff") format("woff"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Cormorant"; src: url("/fonts/Cormorant-SemiBold.woff") format("woff"); font-weight: 600 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Cormorant"; src: url("/fonts/Cormorant-Italic.woff") format("woff"); font-weight: 400 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Jost"; src: url("/fonts/Jost-Medium.woff") format("woff"); font-weight: 400 700; font-style: normal; font-display: swap; }
+
 @theme {
-  --font-sans: "Poppins", -apple-system, Arial, sans-serif;
-  --default-font-family: "Poppins", -apple-system, Arial, sans-serif;
+  --font-sans: "Jost", "Futura", "Avenir Next", Arial, sans-serif;
+  --font-serif: "Cormorant", "Cormorant Garamond", Georgia, serif;
+  --default-font-family: "Cormorant", "Cormorant Garamond", Georgia, serif;
 }
 
-html, body { font-family: "Poppins", -apple-system, Arial, sans-serif; }
+html, body { font-family: "Cormorant", "Cormorant Garamond", Georgia, serif; background: #F8F5EE; color: #13273B; -webkit-font-smoothing: antialiased; }
