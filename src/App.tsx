@@ -25,6 +25,25 @@ const ASSEMBLER_WEBAPP =
   'https://script.google.com/macros/s/AKfycbxn0duukqyMP5Dvw4DTTGyKddnfAKucRBN4mt9-dMtJdWGv_Sjb3pXSSYlA_pJ1VGAB/exec';
 const ASSEMBLER_DIM_ORDER = ['clarity', 'acquisition', 'operations', 'margins', 'asset', 'readiness'];
 
+/* [FIX COOKIE v2.8.1] Le chiamate JSONP (<script>) inviano i cookie di
+   Google: chi e' collegato a piu' account viene rediretto su /macros/u/N/
+   e riceve "Pagina non trovata". fetch cross-origin senza cookie evita il
+   problema (verificato 10/10/2026). Ritorna undefined se fallisce: in quel
+   caso si usa il vecchio JSONP come riserva. */
+async function jsonpViaFetch(url: string, cbName: string): Promise<any> {
+  try {
+    const r = await fetch(url, { credentials: 'omit', cache: 'no-store' });
+    if (!r.ok) return undefined;
+    const t = (await r.text()).trim();
+    const prefix = cbName + '(';
+    if (!t.startsWith(prefix)) return undefined;
+    const inner = t.slice(prefix.length).replace(/\)\s*;?\s*$/, '');
+    return JSON.parse(inner);
+  } catch (e) {
+    return undefined;
+  }
+}
+
 function fetchAssembledContent(
   overall: number | null | undefined,
   dimensions: any,
@@ -53,7 +72,7 @@ function fetchAssembledContent(
     (window as any)[cbName] = (data: any) => finish(data || null);
     script.onerror = () => finish(null);
     setTimeout(() => finish(null), 8000);
-    script.src =
+    const url =
       ASSEMBLER_WEBAPP +
       '?callback=' + cbName +
       '&ans=' + encodeURIComponent(ans || '') +
@@ -62,7 +81,12 @@ function fetchAssembledContent(
       '&intent=' + encodeURIComponent(String(intentLevel == null ? '' : intentLevel)) +
       '&staging=' + encodeURIComponent(String(stagingScore == null ? '' : stagingScore)) +
       '&dims=' + encodeURIComponent(dims);
-    document.body.appendChild(script);
+    script.src = url;
+    /* [FIX COOKIE v2.8.1] prima fetch senza cookie, poi JSONP di riserva */
+    jsonpViaFetch(url, cbName).then(data => {
+      if (data !== undefined) finish(data || null);
+      else if (!done) document.body.appendChild(script);
+    });
   });
 }
  
@@ -179,12 +203,13 @@ function fetchEncodedResultById(id: string): Promise<string> {
       resolve({ encoded: decoded, challenge });
     };
  
-    script.src =
+    const url =
       SHORT_LINK_WEBAPP +
       '?id=' +
       encodeURIComponent(id) +
       '&callback=' +
       cbName;
+    script.src = url;
  
     script.onerror = () => {
       if (!done) {
@@ -193,8 +218,12 @@ function fetchEncodedResultById(id: string): Promise<string> {
       }
     };
  
-    document.head.appendChild(script);
- 
+    /* [FIX COOKIE v2.8.1] prima fetch senza cookie, poi JSONP di riserva */
+    jsonpViaFetch(url, cbName).then(data => {
+      if (data !== undefined) (window as any)[cbName](data);
+      else if (!done) document.head.appendChild(script);
+    });
+
     setTimeout(() => {
       if (!done) {
         cleanup();
