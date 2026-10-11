@@ -50,7 +50,9 @@ function fetchAssembledContent(
   ans: string | null | undefined,
   bind: string | null | undefined,
   intentLevel: number | null | undefined,
-  stagingScore: number | null | undefined
+  stagingScore: number | null | undefined,
+  revenueRange?: string | null,
+  businessType?: string | null
 ): Promise<any> {
   return new Promise(resolve => {
     const dims = ASSEMBLER_DIM_ORDER
@@ -80,6 +82,9 @@ function fetchAssembledContent(
       '&overall=' + encodeURIComponent(String(overall == null ? '' : overall)) +
       '&intent=' + encodeURIComponent(String(intentLevel == null ? '' : intentLevel)) +
       '&staging=' + encodeURIComponent(String(stagingScore == null ? '' : stagingScore)) +
+      /* [v2.11] fascia di fatturato e tipo: la prima mossa cambia con la dimensione del business */
+      '&rev=' + encodeURIComponent(revenueRange || '') +
+      '&bt=' + encodeURIComponent(businessType || '') +
       '&dims=' + encodeURIComponent(dims);
     script.src = url;
     /* [FIX COOKIE v2.8.1] prima fetch senza cookie, poi JSONP di riserva */
@@ -568,7 +573,8 @@ export default function App() {
         /* [SERVER-SIDE v2] stato diagnostico + fetta testuale: tutto dal server */
         const assembled = await fetchAssembledContent(
           parsed.overall, parsed.dimensions, ansStr,
-          parsed.bindingConstraint, intentLevel, stagingScore
+          parsed.bindingConstraint, intentLevel, stagingScore,
+          parsed.metadata?.revenueRange || '', parsed.metadata?.businessType || ''
         );
         const state = (assembled && assembled.state) ? assembled.state : {};
  

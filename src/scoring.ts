@@ -1,3 +1,12 @@
+/* ============================================================
+   ATTENZIONE (11/10/2026): FILE VECCHIO, NON E' IL MOTORE LIVE.
+   Domande sì/no di una versione precedente, usate solo dalla
+   modalità di prova interna del report (SHOW_TESTS).
+   Il motore vero è:
+   - scorecard su Tilda (/scorecard): domande, punteggi, vincolo;
+   - Apps Script "IMPULSE Report Assembler": diagnosi e testi.
+   Non modificare questo file pensando di cambiare l'assessment.
+   ============================================================ */
 import { QUESTIONS } from './questions';
 
 export function calculateScorecardResult(answers: Record<string, any>, user: { name: string, company: string, email: string }) {
