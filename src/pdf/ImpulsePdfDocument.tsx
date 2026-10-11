@@ -141,22 +141,43 @@ type PdfResult = {
   intentLevel?: number | null;
 };
 
+/* [NOMI v2.10] nomi in italiano (l'inglese resta nelle Capsule del Kit) */
 const dimensionNames: Record<DimensionKey, string> = {
-  clarity: "Clarity",
-  acquisition: "Acquisition",
-  operations: "Operations",
-  margins: "Margins",
-  asset: "Asset",
-  readiness: "Readiness"
+  clarity: "Chiarezza",
+  acquisition: "Acquisizione clienti",
+  operations: "Operatività",
+  margins: "Margini",
+  asset: "Valore trasferibile",
+  readiness: "Prontezza"
+};
+const DIM_EN_TO_IT: Record<string, string> = {
+  Clarity: "Chiarezza", Acquisition: "Acquisizione clienti", Operations: "Operatività",
+  Margins: "Margini", Asset: "Valore trasferibile", Readiness: "Prontezza"
+};
+function pairTitleIt(t: string) {
+  let out = String(t || "");
+  Object.keys(DIM_EN_TO_IT).forEach(k => { out = out.split(k).join(DIM_EN_TO_IT[k]); });
+  return out;
+}
+/* etichette corte per il radar: i nomi lunghi escono dal disegno */
+const RADAR_SHORT: Record<string, string> = {
+  clarity: "Chiarezza", acquisition: "Clienti", operations: "Operatività",
+  margins: "Margini", asset: "Valore", readiness: "Prontezza"
+};
+const FASCIA_IT: Record<string, string> = {
+  FOUNDATIONAL: "Fondamenta",
+  BUILDING: "In costruzione",
+  AWARE: "Avanzato",
+  READY: "Pronto"
 };
 
 const dimensionShortCopy: Record<DimensionKey, string> = {
-  clarity: "Offerta, cliente ideale, messaggio e pricing.",
-  acquisition: "Canali, lead flow, vendita e qualità della domanda.",
-  operations: "Processi, delivery, ownership e dipendenza dal founder.",
-  margins: "Margini, cash flow, pricing e qualità economica.",
-  asset: "Brand, dati, IP, contratti e valore trasferibile.",
-  readiness: "Materiali, numeri, struttura e leggibilità esterna."
+  clarity: "Cosa vendi, a chi e perché ti scelgono.",
+  acquisition: "Da dove arrivano i clienti e quanto è regolare il flusso.",
+  operations: "Come consegni il lavoro e quanto passa ancora da te.",
+  margins: "Quanto resta di ogni vendita e quanta cassa hai.",
+  asset: "Quello che resta nel business anche senza di te.",
+  readiness: "Quanto il business si capisce da fuori: numeri, ruoli, materiali."
 };
 
 function safeText(value: any, fallback = "") {
@@ -166,21 +187,22 @@ function safeText(value: any, fallback = "") {
 
 function normalizeStage(stage: string) {
   const map: Record<string, string> = {
-    FOUNDATION: "Foundation",
-    TRACTION: "Traction",
-    MARKET_TRACTION: "Traction",
-    "MARKET TRACTION": "Traction",
-    STABILIZATION: "Stabilization",
-    OPERATING_STABILITY: "Stabilization",
-    "OPERATING STABILITY": "Stabilization",
-    PRODUCTIZATION: "Productization",
-    VALUE_ARCHITECTURE: "Productization",
-    "VALUE ARCHITECTURE": "Productization",
-    "SCALE READINESS": "Scale Readiness",
-    SCALE_READINESS: "Scale Readiness"
+    FOUNDATION: "Avvio",
+    TRACTION: "Crescita",
+    MARKET_TRACTION: "Crescita",
+    "MARKET TRACTION": "Crescita",
+    STABILIZATION: "Stabilità",
+    OPERATING_STABILITY: "Stabilità",
+    "OPERATING STABILITY": "Stabilità",
+    PRODUCTIZATION: "Offerta definita",
+    VALUE_ARCHITECTURE: "Offerta definita",
+    "VALUE ARCHITECTURE": "Offerta definita",
+    "SCALE READINESS": "Pronto a scalare",
+    SCALE_READINESS: "Pronto a scalare"
   };
 
-  return map[stage] || stage || "";
+  const key = String(stage || "").toUpperCase().trim();
+  return map[key] || map[stage] || stage || "";
 }
 
 function getFirstName(name?: string) {
@@ -189,7 +211,19 @@ function getFirstName(name?: string) {
   return clean.split(" ")[0];
 }
 
+const PROFILE_TITLE_IT: Record<string, string> = {
+  "Clarity Gap": "Il nodo della chiarezza",
+  "Growth Engine Gap": "Il nodo dei clienti",
+  "Operational Gap": "Il nodo operativo",
+  "Readiness Gap": "Il nodo della prontezza"
+};
+
 function getProfileTitle(result: PdfResult) {
+  const t = getProfileTitleRaw(result);
+  return PROFILE_TITLE_IT[t] || t;
+}
+
+function getProfileTitleRaw(result: PdfResult) {
   if (result.profileData?.title) return result.profileData.title;
 
   const profile = result.profile || "B";
@@ -537,7 +571,7 @@ function DimensionsRadar({
               fontWeight: 700
             }}
           >
-            {dimensionNames[key].toUpperCase()}
+            {(RADAR_SHORT[key] || dimensionNames[key]).toUpperCase()}
           </Text>
         );
       })}
@@ -705,7 +739,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
     <Document
       title={`IMPULSE Report ${name || "Business"}`}
       author="IMPULSE System"
-      subject="Business Readiness Report"
+      subject="Report IMPULSE"
     >
       {/* ================= 01 — COPERTINA (scura) ================= */}
       <Page size="A4" style={styles.coverPage}>
@@ -764,7 +798,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <View style={styles.coverBand}>
           <View style={styles.coverScoreCell}>
-            <Text style={styles.coverCellLabel}>IMPULSE SCORE</Text>
+            <Text style={styles.coverCellLabel}>PUNTEGGIO IMPULSE</Text>
             <View style={styles.coverScoreRow}>
               <Text style={styles.coverScoreNumber}>{String(clampedScore)}</Text>
               <Text style={styles.coverScoreOutOf}>/100</Text>
@@ -793,7 +827,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={styles.coverMetaItem}>
             FASCIA{" "}
             <Text style={styles.coverMetaValue}>
-              {safeText(result.fascia).toUpperCase()}
+              {(FASCIA_IT[safeText(result.fascia).toUpperCase().trim()] || safeText(result.fascia)).toUpperCase()}
             </Text>
           </Text>
           <Text style={styles.coverMetaItem}>
@@ -803,7 +837,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             </Text>
           </Text>
           <Text style={styles.coverMetaItem}>
-            STAGE{" "}
+            FASE{" "}
             <Text style={styles.coverMetaValue}>{stageLabel.toUpperCase()}</Text>
           </Text>
           {displayedBindingKey ? (
@@ -828,7 +862,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <PageHeader name={name} page="02" />
         <SectionHead
           number="02"
-          kicker="LO STAGE OPERATIVO"
+          kicker="LA FASE DEL BUSINESS"
           title={stageLabel}
           body={
             stageInfo.headline ||
@@ -853,7 +887,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         </View>
 
         <View style={styles.fieldBlock}>
-          <FieldLabel>VINCOLO DI STAGE</FieldLabel>
+          <FieldLabel>IL VINCOLO DI QUESTA FASE</FieldLabel>
           <Text style={styles.bodyText}>
             {stageInfo.bottomLineConstraint ||
               "Il business deve rendere più leggibili sistemi, numeri, responsabilità e margini prima di aumentare complessità."}
@@ -897,8 +931,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <PageHeader name={name} page="03" />
         <SectionHead
           number="03"
-          kicker="IL PATTERN DIAGNOSTICO"
-          title={safeText(diagnosticPattern.topGapPairTitle, "Pattern diagnostico")}
+          kicker="LO SCHEMA DEI VINCOLI"
+          title={pairTitleIt(safeText(diagnosticPattern.topGapPairTitle, "Lo schema dei tuoi vincoli"))}
           body={safeText(diagnosticPattern.topGapPairBody)}
         />
 
@@ -927,7 +961,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         </CellBox>
 
         <View style={styles.fieldBlock}>
-          <FieldLabel>INTENT</FieldLabel>
+          <FieldLabel>INTENZIONE</FieldLabel>
           <Text style={styles.patternTitle}>
             {safeText(intentInsight.label)}
           </Text>
@@ -1030,10 +1064,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         />
 
         <View style={styles.matrixHead}>
-          <Text style={[styles.matrixHeadText, { width: 128 }]}>DIMENSIONE</Text>
+          <Text style={[styles.matrixHeadText, { width: 150 }]}>DIMENSIONE</Text>
           <Text style={[styles.matrixHeadText, { flex: 1 }]}>DA 0 A 10</Text>
           <Text style={[styles.matrixHeadText, styles.matrixHeadScore]}>
-            SCORE
+            PUNTEGGIO
           </Text>
         </View>
 
@@ -1046,10 +1080,11 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               key={dim.key}
               style={[styles.matrixRow, isBinding ? styles.matrixRowBinding : null]}
             >
-              <View style={{ width: 128 }}>
+              <View style={{ width: 150 }}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Text
                     style={[
+                      { flexShrink: 1 },
                       styles.matrixName,
                       isBinding ? styles.matrixNameBinding : null
                     ]}
@@ -1128,7 +1163,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <View style={styles.radarSideCol}>
             <View style={styles.miniMatrixHead}>
               <Text style={styles.matrixHeadText}>DIMENSIONE / 0–10</Text>
-              <Text style={styles.matrixHeadText}>SCORE</Text>
+              <Text style={styles.matrixHeadText}>PUNTEGGIO</Text>
             </View>
             {dims.map((dim: any) => {
               const isBinding = dim.key === displayedBindingKey;
@@ -1180,7 +1215,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <CellBox label="VINCOLO PRINCIPALE" variant="ink">
           {displayedBindingKey
-            ? `La dimensione che oggi limita di più lo stage è ${
+            ? `La dimensione che oggi limita di più questa fase è ${
                 dimensionNames[displayedBindingKey] || displayedBindingKey
               }. Finché resta debole, ogni intervento sulle altre aree rende meno.`
             : "Il vincolo principale emerge dalla combinazione delle dimensioni più deboli."}
