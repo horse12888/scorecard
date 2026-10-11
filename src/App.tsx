@@ -836,7 +836,7 @@ export default function App() {
             IMPULSE &middot; Il tuo report
           </h1>
  
-          <div className="font-sans text-[10.5px] tracking-[0.22em] uppercase text-[#6B7682]">
+          <div className="font-sans text-[10.5px] tracking-[0.22em] uppercase text-[#606B78]">
             {step === 'info' && '1/3 PROFILE'}
             {step === 'questions' && '2/3 ASSESSMENT'}
             {step === 'summary' && 'Diagnosi'}
@@ -1098,7 +1098,7 @@ export default function App() {
                 {DIMENSION_LABELS[getBindingKey(result)] || 'Il tuo vincolo'}
               </h2>
               {DIMENSION_EN[getBindingKey(result)] && DIMENSION_EN[getBindingKey(result)] !== DIMENSION_LABELS[getBindingKey(result)] && (
-                <p className="font-sans text-[11px] font-medium tracking-[0.22em] uppercase text-[#8F6B20] mt-3">
+                <p className="font-sans text-[11px] font-medium tracking-[0.22em] uppercase text-[#86651E] mt-3">
                   In inglese: {DIMENSION_EN[getBindingKey(result)]} &middot; lo stesso nome delle Capsule del Kit
                 </p>
               )}
@@ -1115,7 +1115,7 @@ export default function App() {
                 ['Vincolo', DIMENSION_LABELS[getBindingKey(result)] || '-']
               ].map(([label, value], i) => (
                 <div key={label as string} className={`py-4 ${i % 2 === 1 ? 'pl-4 sm:pl-4' : 'pr-4'} ${i > 0 ? 'sm:pl-4' : ''} ${i < 2 ? 'border-b sm:border-b-0' : ''} border-[rgba(19,39,59,0.16)]`}>
-                  <p className="font-sans text-[10px] font-medium tracking-[0.22em] uppercase text-[#6B7682] mb-1">
+                  <p className="font-sans text-[10px] font-medium tracking-[0.22em] uppercase text-[#606B78] mb-1">
                     {label}
                   </p>
                   <p className="text-2xl font-medium text-[#13273B] leading-tight break-words">
@@ -1141,7 +1141,7 @@ export default function App() {
 
             {(result as any).assembled?.firstMove ? (
               <div className="mb-10 pt-4 border-t border-[rgba(19,39,59,0.55)]">
-                <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#8F6B20] mb-2">
+                <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#86651E] mb-2">
                   La tua prima mossa, entro 48 ore
                 </p>
                 <p className="text-xl font-medium text-[#13273B] leading-relaxed">
@@ -1152,7 +1152,7 @@ export default function App() {
                   <a
                     href={buildKitUrl(result, 'web')}
                     onClick={() => track('click_kit', { from: 'report_first_move', vincolo: getBindingKey(result) })}
-                    className="italic text-[#8F6B20] underline underline-offset-4 decoration-1"
+                    className="italic text-[#86651E] underline underline-offset-4 decoration-1"
                   >
                     Priority Map Kit
                   </a>.
@@ -1263,7 +1263,7 @@ export default function App() {
             </button>
 
             {result.leadId ? (
-              <div className="font-sans text-center text-[10.5px] tracking-[0.12em] text-[#6B7682] mt-2">
+              <div className="font-sans text-center text-[10.5px] tracking-[0.12em] text-[#606B78] mt-2">
                 Report ID: {result.leadId}
               </div>
             ) : null}
@@ -1316,7 +1316,7 @@ export default function App() {
           <div className="max-w-2xl mx-auto flex flex-col sm:flex-row sm:items-center gap-3">
             <p className="text-base text-[#22364A] flex-1 leading-snug">
               Uso cookie analitici (Google Analytics) solo per capire come migliorare il report. Nessuna pubblicit&agrave;.{' '}
-              <a href="https://davidedileo.it/cookie-policy" target="_blank" rel="noreferrer" className="underline underline-offset-2 text-[#8F6B20]">
+              <a href="https://davidedileo.it/cookie-policy" target="_blank" rel="noreferrer" className="underline underline-offset-2 text-[#86651E]">
                 Cookie policy
               </a>
             </p>
