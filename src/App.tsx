@@ -93,6 +93,15 @@ function fetchAssembledContent(
 /* [VINCOLO v2.8] nome leggibile della dimensione-vincolo (stessa
    dimensione che mostrano result page e CRM: bindingConstraint) */
 const DIMENSION_LABELS: Record<string, string> = {
+  clarity: 'Chiarezza',
+  acquisition: 'Acquisizione clienti',
+  operations: 'Operatività',
+  margins: 'Margini',
+  asset: 'Valore trasferibile',
+  readiness: 'Prontezza'
+};
+/* [NOMI v2.10] nome inglese, lo stesso delle Capsule del Kit */
+const DIMENSION_EN: Record<string, string> = {
   clarity: 'Clarity',
   acquisition: 'Acquisition',
   operations: 'Operations',
@@ -100,6 +109,35 @@ const DIMENSION_LABELS: Record<string, string> = {
   asset: 'Asset',
   readiness: 'Readiness'
 };
+/* [NOMI v2.10] fasce e fasi in italiano: i codici (FOUNDATIONAL, TRACTION...)
+   restano invariati nei dati, cambia solo cio' che si legge */
+const FASCIA_IT: Record<string, string> = {
+  FOUNDATIONAL: 'Fondamenta',
+  BUILDING: 'In costruzione',
+  AWARE: 'Avanzato',
+  READY: 'Pronto'
+};
+const STAGE_IT: Record<string, string> = {
+  FOUNDATION: 'Avvio',
+  TRACTION: 'Crescita',
+  STABILIZATION: 'Stabilità',
+  PRODUCTIZATION: 'Offerta definita',
+  'SCALE READINESS': 'Pronto a scalare',
+  SCALE_READINESS: 'Pronto a scalare'
+};
+function fasciaIt(v: any): string {
+  const k = String(v || '').toUpperCase().trim();
+  return FASCIA_IT[k] || String(v || '-');
+}
+function stageIt(v: any): string {
+  const k = String(v || '').toUpperCase().trim();
+  return STAGE_IT[k] || STAGE_IT[k.replace(/\s+/g, '_')] || String(v || '-');
+}
+function pairTitleIt(t: any): string {
+  let out = String(t || '');
+  Object.keys(DIMENSION_EN).forEach(k => { out = out.split(DIMENSION_EN[k]).join(DIMENSION_LABELS[k]); });
+  return out;
+}
 
 function getBindingKey(result: any): string {
   const b = result?.bindingConstraint;
@@ -1059,6 +1097,11 @@ export default function App() {
               <h2 className="font-serif italic font-medium text-[#B88A2A] text-6xl sm:text-7xl leading-[0.95] tracking-tight">
                 {DIMENSION_LABELS[getBindingKey(result)] || 'Il tuo vincolo'}
               </h2>
+              {DIMENSION_EN[getBindingKey(result)] && DIMENSION_EN[getBindingKey(result)] !== DIMENSION_LABELS[getBindingKey(result)] && (
+                <p className="font-sans text-[11px] font-medium tracking-[0.22em] uppercase text-[#8F6B20] mt-3">
+                  In inglese: {DIMENSION_EN[getBindingKey(result)]} &middot; lo stesso nome delle Capsule del Kit
+                </p>
+              )}
               <p className="text-xl text-[#22364A] mt-4 leading-snug">
                 &Egrave; la dimensione che oggi frena di pi&ugrave; la prossima fase del business.
               </p>
@@ -1067,8 +1110,8 @@ export default function App() {
             <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-b border-[rgba(19,39,59,0.55)] mb-10">
               {[
                 ['Punteggio', `${result.overall} / 100`],
-                ['Fascia', result.fascia],
-                ['Stage', result.stage],
+                ['Fascia', fasciaIt(result.fascia)],
+                ['Fase', stageIt(result.stage)],
                 ['Vincolo', DIMENSION_LABELS[getBindingKey(result)] || '-']
               ].map(([label, value], i) => (
                 <div key={label as string} className={`py-4 ${i % 2 === 1 ? 'pl-4 sm:pl-4' : 'pr-4'} ${i > 0 ? 'sm:pl-4' : ''} ${i < 2 ? 'border-b sm:border-b-0' : ''} border-[rgba(19,39,59,0.16)]`}>
@@ -1142,7 +1185,7 @@ export default function App() {
                   Lo schema dei tuoi vincoli
                 </p>
                 <p className="text-3xl font-medium text-[#13273B] mb-2 leading-tight">
-                  {result.diagnosticPattern.topGapPairTitle}
+                  {pairTitleIt(result.diagnosticPattern.topGapPairTitle)}
                 </p>
                 <p className="text-lg text-[#22364A] leading-relaxed">
                   {result.diagnosticPattern.topGapPairBody}
@@ -1239,7 +1282,7 @@ export default function App() {
                   const nav: any = navigator;
                   track('share', { vincolo: getBindingKey(result) });
                   if (nav.share) {
-                    nav.share({ title: 'IMPULSE Business Readiness', text: 'Un business cresce alla velocità del suo vincolo. Scopri il tuo:', url }).catch(() => {});
+                    nav.share({ title: 'IMPULSE: la diagnosi del tuo business', text: 'Un business cresce alla velocità del suo vincolo. Scopri il tuo:', url }).catch(() => {});
                   } else if (nav.clipboard && nav.clipboard.writeText) {
                     nav.clipboard.writeText(url).then(() => setShareCopied(true));
                   }
