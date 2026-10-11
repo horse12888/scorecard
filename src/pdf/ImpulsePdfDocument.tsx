@@ -857,80 +857,121 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         </Text>
       </Page>
 
-      {/* ================= 02 — STAGE ================= */}
+      {/* ================= 02 — LE RISPOSTE CHE PESANO + PRIMA MOSSA ============ */}
       <Page size="A4" style={styles.page}>
         <PageHeader name={name} page="02" />
         <SectionHead
           number="02"
-          kicker="LA FASE DEL BUSINESS"
-          title={stageLabel}
-          body={
-            stageInfo.headline ||
-            "Il business ha segnali utili, ma il prossimo salto richiede più struttura e leggibilità."
-          }
+          kicker="PERCHÉ TI FRENA"
+          title="Il tuo vincolo, in pratica."
+          body="Le risposte che ti costano di più, parola per parola, e la prima cosa da fare."
         />
 
-        <View style={styles.twoColBlock}>
-          <View style={styles.col}>
-            <FieldLabel>RUOLO</FieldLabel>
-            <Text style={styles.emphasisText}>
-              {stageInfo.role || "Founder as system builder"}
-            </Text>
-          </View>
-          <View style={styles.col}>
-            <FieldLabel>FOCUS</FieldLabel>
-            <Text style={styles.emphasisText}>
-              {stageInfo.strategicReviewFocus ||
-                "Chiarire il vincolo principale e la sequenza operativa."}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.fieldBlock}>
-          <FieldLabel>IL VINCOLO DI QUESTA FASE</FieldLabel>
-          <Text style={styles.bodyText}>
-            {stageInfo.bottomLineConstraint ||
-              "Il business deve rendere più leggibili sistemi, numeri, responsabilità e margini prima di aumentare complessità."}
-          </Text>
-        </View>
-
-        {stageInfo.costOfInaction ? (
-          <View style={styles.fieldBlock}>
-            <FieldLabel>IL COSTO DELL'INAZIONE</FieldLabel>
-            <Text style={styles.bodyText}>{stageInfo.costOfInaction}</Text>
+        {(result as any).challenge ? (
+          <View style={styles.challengeBox}>
+            <Text style={styles.challengeLabel}>LA SFIDA CHE HAI SCRITTO</Text>
+            <Text style={styles.challengeQuote}>{'\u00AB'}{String((result as any).challenge)}{'\u00BB'}</Text>
+            <Text style={styles.challengeNote}>Parole tue. La diagnosi ti dice da dove partire: dal vincolo, non da tutto insieme.</Text>
           </View>
         ) : null}
 
-        <View style={styles.listBlock}>
-          <Text style={styles.blockTitle}>Criteri per il prossimo salto</Text>
-          {(stageInfo.graduationCriteria || [])
-            .slice(0, 5)
-            .map((item: string, index: number) => (
-              <View key={index} style={styles.listRow}>
-                <Text style={styles.listNumber}>
-                  {String(index + 1).padStart(2, "0")}
-                </Text>
-                <Text style={styles.listText}>{item}</Text>
-              </View>
-            ))}
-        </View>
+        {costlyAnswers.length > 0 ? (
+          costlyAnswers.map((ca, index) => (
+            <View key={ca.id} style={styles.fieldBlock}>
+              <FieldLabel>{String(index + 1).padStart(2, "0")} · {ca.dimension.toUpperCase()}</FieldLabel>
+              <Text style={styles.emphasisText}>{ca.text}</Text>
+              <Text style={styles.answersChosen}>Hai risposto: {'\u00AB'}{ca.chosenText}{'\u00BB'}</Text>
+              <Text style={styles.bodyText}>{ca.why}</Text>
+            </View>
+          ))
+        ) : (
+          <View style={styles.fieldBlock}>
+            <Text style={styles.bodyText}>
+              Le risposte puntuali non sono disponibili per questo report: rifai lo scorecard per la versione completa.
+            </Text>
+          </View>
+        )}
 
-        <View style={{ flexGrow: 1 }} />
+        {firstMove ? (
+          <View style={styles.firstMoveBox}>
+            <FieldLabel>LA TUA PRIMA MOSSA, ENTRO 48 ORE</FieldLabel>
+            <Text style={styles.bodyText}>{firstMove}</Text>
+            <Text style={styles.answersBridge}>
+              È la prima di tre. Le altre due, e l'ordine in cui farle, sono nel Kit:{" "}
+              <Link
+                src="https://davidedileo.it/kit?utm_source=report&utm_medium=pdf&utm_campaign=kit_report"
+                style={styles.answersBridgeLink}
+              >
+                davidedileo.it/kit
+              </Link>
+            </Text>
+          </View>
+        ) : null}
 
-        <CellBox label="NON SCALARE ANCORA" variant="red">
-          {stageInfo.nonFare ||
-            stageInfo.troppoPresto ||
-            "Non aumentare complessità prima di aver reso chiaro il vincolo operativo principale."}
-        </CellBox>
-
-        <PageFooter />
       </Page>
-
-      {/* ================= 03 — PATTERN ================= */}
+      {/* ================= 03 — PRIORITÀ ================= */}
       <Page size="A4" style={styles.page}>
         <PageHeader name={name} page="03" />
         <SectionHead
           number="03"
+          kicker={`LE ${priorityCountWord(priorities.length).toUpperCase()} PRIORITÀ OPERATIVE`}
+          title="Cosa va chiarito prima"
+          body="Queste sono le aree che oggi creano più attrito operativo. Prima di aumentare volume, complessità o investimento, vanno rese più chiare, trasferibili e leggibili."
+        />
+
+        {priorities.map((item: any, index: number) => (
+          <View key={item.key || index} style={styles.priorityBlock} wrap={false}>
+            <View style={styles.priorityHeadRow}>
+              <Text style={styles.priorityRank}>
+                {String(index + 1).padStart(2, "0")}
+              </Text>
+              <Text style={styles.priorityTitle}>{getDimensionLabel(item)}</Text>
+              <Text style={styles.priorityScore}>
+                {Number(item.score || 0).toFixed(1)} / 10
+              </Text>
+            </View>
+
+            <View style={styles.priorityField}>
+              <FieldLabel>VINCOLO</FieldLabel>
+              <Text style={styles.bodyText}>
+                {item.vincolo ||
+                  item.cosaIndica ||
+                  dimensionShortCopy[item.key as DimensionKey] ||
+                  ""}
+              </Text>
+            </View>
+
+            <View style={styles.twoColTight}>
+              <View style={styles.col}>
+                <FieldLabel>DA CHIARIRE</FieldLabel>
+                <Text style={styles.bodyText}>
+                  {item.lavoro ||
+                    "Rendere più chiari numeri, responsabilità, criteri e sequenza operativa."}
+                </Text>
+              </View>
+              <View style={styles.col}>
+                <FieldLabel danger>EVITARE</FieldLabel>
+                <Text style={styles.bodyText}>
+                  {item.nonFare ||
+                    "Non aumentare complessità prima di avere una lettura più stabile di questa area."}
+                </Text>
+              </View>
+            </View>
+          </View>
+        ))}
+
+        <Text style={styles.deprioritizeNote}>
+          {`Tutto ciò che non è in queste ${priorityCountWord(priorities.length)} priorità è, per questa fase, rumore. Conta, ma conta dopo. In che ordine e a che ritmo affrontare queste priorità lo decidiamo nella Strategic Review (pagina 08).`}
+        </Text>
+
+        <PageFooter />
+      </Page>
+
+      {/* ================= 04 — PATTERN ================= */}
+      <Page size="A4" style={styles.page}>
+        <PageHeader name={name} page="04" />
+        <SectionHead
+          number="04"
           kicker="LO SCHEMA DEI VINCOLI"
           title={pairTitleIt(safeText(diagnosticPattern.topGapPairTitle, "Lo schema dei tuoi vincoli"))}
           body={safeText(diagnosticPattern.topGapPairBody)}
@@ -991,64 +1032,6 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
             </Text>
           </View>
         )}
-
-        <PageFooter />
-      </Page>
-
-      {/* ================= 04 — PRIORITÀ ================= */}
-      <Page size="A4" style={styles.page}>
-        <PageHeader name={name} page="04" />
-        <SectionHead
-          number="04"
-          kicker={`LE ${priorityCountWord(priorities.length).toUpperCase()} PRIORITÀ OPERATIVE`}
-          title="Cosa va chiarito prima"
-          body="Queste sono le aree che oggi creano più attrito operativo. Prima di aumentare volume, complessità o investimento, vanno rese più chiare, trasferibili e leggibili."
-        />
-
-        {priorities.map((item: any, index: number) => (
-          <View key={item.key || index} style={styles.priorityBlock} wrap={false}>
-            <View style={styles.priorityHeadRow}>
-              <Text style={styles.priorityRank}>
-                {String(index + 1).padStart(2, "0")}
-              </Text>
-              <Text style={styles.priorityTitle}>{getDimensionLabel(item)}</Text>
-              <Text style={styles.priorityScore}>
-                {Number(item.score || 0).toFixed(1)} / 10
-              </Text>
-            </View>
-
-            <View style={styles.priorityField}>
-              <FieldLabel>VINCOLO</FieldLabel>
-              <Text style={styles.bodyText}>
-                {item.vincolo ||
-                  item.cosaIndica ||
-                  dimensionShortCopy[item.key as DimensionKey] ||
-                  ""}
-              </Text>
-            </View>
-
-            <View style={styles.twoColTight}>
-              <View style={styles.col}>
-                <FieldLabel>DA CHIARIRE</FieldLabel>
-                <Text style={styles.bodyText}>
-                  {item.lavoro ||
-                    "Rendere più chiari numeri, responsabilità, criteri e sequenza operativa."}
-                </Text>
-              </View>
-              <View style={styles.col}>
-                <FieldLabel danger>EVITARE</FieldLabel>
-                <Text style={styles.bodyText}>
-                  {item.nonFare ||
-                    "Non aumentare complessità prima di avere una lettura più stabile di questa area."}
-                </Text>
-              </View>
-            </View>
-          </View>
-        ))}
-
-        <Text style={styles.deprioritizeNote}>
-          {`Tutto ciò che non è in queste ${priorityCountWord(priorities.length)} priorità è, per questa fase, rumore. Conta, ma conta dopo. In che ordine e a che ritmo affrontare queste priorità lo decidiamo nella Strategic Review (pagina 08).`}
-        </Text>
 
         <PageFooter />
       </Page>
@@ -1224,11 +1207,80 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <PageFooter />
       </Page>
 
-      {/* ================= 07 — VINCOLI FUNZIONALI ================= */}
+      {/* ================= 07 — STAGE ================= */}
       <Page size="A4" style={styles.page}>
         <PageHeader name={name} page="07" />
         <SectionHead
           number="07"
+          kicker="LA FASE DEL BUSINESS"
+          title={stageLabel}
+          body={
+            stageInfo.headline ||
+            "Il business ha segnali utili, ma il prossimo salto richiede più struttura e leggibilità."
+          }
+        />
+
+        <View style={styles.twoColBlock}>
+          <View style={styles.col}>
+            <FieldLabel>RUOLO</FieldLabel>
+            <Text style={styles.emphasisText}>
+              {stageInfo.role || "Founder as system builder"}
+            </Text>
+          </View>
+          <View style={styles.col}>
+            <FieldLabel>FOCUS</FieldLabel>
+            <Text style={styles.emphasisText}>
+              {stageInfo.strategicReviewFocus ||
+                "Chiarire il vincolo principale e la sequenza operativa."}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.fieldBlock}>
+          <FieldLabel>IL VINCOLO DI QUESTA FASE</FieldLabel>
+          <Text style={styles.bodyText}>
+            {stageInfo.bottomLineConstraint ||
+              "Il business deve rendere più leggibili sistemi, numeri, responsabilità e margini prima di aumentare complessità."}
+          </Text>
+        </View>
+
+        {stageInfo.costOfInaction ? (
+          <View style={styles.fieldBlock}>
+            <FieldLabel>IL COSTO DELL'INAZIONE</FieldLabel>
+            <Text style={styles.bodyText}>{stageInfo.costOfInaction}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.listBlock}>
+          <Text style={styles.blockTitle}>Criteri per il prossimo salto</Text>
+          {(stageInfo.graduationCriteria || [])
+            .slice(0, 5)
+            .map((item: string, index: number) => (
+              <View key={index} style={styles.listRow}>
+                <Text style={styles.listNumber}>
+                  {String(index + 1).padStart(2, "0")}
+                </Text>
+                <Text style={styles.listText}>{item}</Text>
+              </View>
+            ))}
+        </View>
+
+        <View style={{ flexGrow: 1 }} />
+
+        <CellBox label="NON SCALARE ANCORA" variant="red">
+          {stageInfo.nonFare ||
+            stageInfo.troppoPresto ||
+            "Non aumentare complessità prima di aver reso chiaro il vincolo operativo principale."}
+        </CellBox>
+
+        <PageFooter />
+      </Page>
+
+      {/* ================= 08 — VINCOLI FUNZIONALI ================= */}
+      <Page size="A4" style={styles.page}>
+        <PageHeader name={name} page="08" />
+        <SectionHead
+          number="08"
           kicker="I VINCOLI FUNZIONALI"
           title="Dove il sistema perde leva"
           body="Questi sono i vincoli funzionali più probabili in base alla fase del business e alle dimensioni più deboli emerse dalla scorecard."
@@ -1280,11 +1332,11 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <PageFooter />
       </Page>
 
-      {/* ================= 08 — PROFILO + CTA ================= */}
+      {/* ================= 09 — PROFILO + CTA ================= */}
       <Page size="A4" style={styles.page}>
-        <PageHeader name={name} page="08" />
+        <PageHeader name={name} page="09" />
         <SectionHead
-          number="08"
+          number="09"
           kicker={profileKickerLabel}
           title={profileTitle}
           body={profileBody}
@@ -1358,60 +1410,6 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           </View>
         </View>
 
-        <PageFooter />
-      </Page>
-
-      {/* ============ PAGE 09 — LE RISPOSTE CHE PESANO + PRIMA MOSSA ============ */}
-      <Page size="A4" style={styles.page}>
-        <PageHeader name={name} page="09" />
-        <SectionHead
-          number="09"
-          kicker="LE TUE RISPOSTE, ALLA LETTERA"
-          title="Dove si nasconde il punteggio."
-          body="Le risposte che ti costano di più, parola per parola, e perché pesano sul risultato."
-        />
-
-        {(result as any).challenge ? (
-          <View style={styles.challengeBox}>
-            <Text style={styles.challengeLabel}>LA SFIDA CHE HAI SCRITTO</Text>
-            <Text style={styles.challengeQuote}>{'\u00AB'}{String((result as any).challenge)}{'\u00BB'}</Text>
-            <Text style={styles.challengeNote}>Parole tue. La diagnosi ti dice da dove partire: dal vincolo, non da tutto insieme.</Text>
-          </View>
-        ) : null}
-
-        {costlyAnswers.length > 0 ? (
-          costlyAnswers.map((ca, index) => (
-            <View key={ca.id} style={styles.fieldBlock}>
-              <FieldLabel>{String(index + 1).padStart(2, "0")} · {ca.dimension.toUpperCase()}</FieldLabel>
-              <Text style={styles.emphasisText}>{ca.text}</Text>
-              <Text style={styles.answersChosen}>Hai risposto: {'\u00AB'}{ca.chosenText}{'\u00BB'}</Text>
-              <Text style={styles.bodyText}>{ca.why}</Text>
-            </View>
-          ))
-        ) : (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.bodyText}>
-              Le risposte puntuali non sono disponibili per questo report: rifai lo scorecard per la versione completa.
-            </Text>
-          </View>
-        )}
-
-        {firstMove ? (
-          <View style={styles.firstMoveBox}>
-            <FieldLabel>LA TUA PRIMA MOSSA, ENTRO 48 ORE</FieldLabel>
-            <Text style={styles.bodyText}>{firstMove}</Text>
-            <Text style={styles.answersBridge}>
-              È la prima di tre. Le altre due, e l'ordine in cui farle, sono nel Kit:{" "}
-              <Link
-                src="https://davidedileo.it/kit?utm_source=report&utm_medium=pdf&utm_campaign=kit_report"
-                style={styles.answersBridgeLink}
-              >
-                davidedileo.it/kit
-              </Link>
-            </Text>
-          </View>
-        ) : null}
-
         <View style={styles.letterBlock}>
           <FieldLabel>UNA NOTA PERSONALE</FieldLabel>
           <Text style={styles.bodyText}>{(result as any).assembled?.letter || ""}</Text>
@@ -1419,7 +1417,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={styles.letterCred}>COO & co-founder di una fintech di tokenizzazione · IMPULSE è il mio criterio operativo, reso strumento e costruito con l'AI.</Text>
           <Text style={styles.letterRetest}>Rifai lo scorecard il {(result as any).assembled?.retestDate || ""} e confronta i numeri.</Text>
         </View>
+        <PageFooter />
       </Page>
+
     </Document>
   );
 }
