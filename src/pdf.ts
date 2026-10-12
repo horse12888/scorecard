@@ -39,7 +39,8 @@ export async function generateIMPULSEReport(result: any, label?: string) {
       "impulse-report"
   );
 
-  const fileName = `IMPULSE_Constraint_Profile_${namePart}.pdf`;
+  /* [v2.12] nome del file in italiano (prima: IMPULSE_Constraint_Profile_) */
+  const fileName = `IMPULSE_Report_${namePart}.pdf`;
 
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
