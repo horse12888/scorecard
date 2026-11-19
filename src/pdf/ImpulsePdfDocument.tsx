@@ -6,11 +6,7 @@ import {
   View,
   StyleSheet,
   Font,
-  Link,
-  Svg,
-  Line,
-  Polygon,
-  Circle
+  Link
 } from "@react-pdf/renderer";
 
 /* ============================================================
@@ -18,20 +14,8 @@ import {
    Rifatto da zero sulla grafica del sito (Design A): Cormorant per
    titoli e testi, Jost per le etichette, blu notte / oro / crema.
 
-   Cosa cambia rispetto a v3.x:
-   - 8 pagine fisse, ognuna con una sola idea:
-     01 copertina · 02 in sintesi · 03 perché ti frena · 04 le sei
-     aree · 05 cosa sistemare prima · 06 dove il sistema perde leva ·
-     07 la fase del business · 08 il prossimo passo.
-   - Niente inglese visibile ("Business Readiness Report",
-     "Constraint Profile", "Risk flags", nomi delle aree in inglese).
-   - Niente "Profilo B" e niente "Fascia": conta il vincolo.
-   - Una sola pagina per le 6 aree (radar + barre), non due.
-   - La chiusura segue lo stesso percorso della pagina risultato:
-     Kit per quasi tutti, Strategic Review con intento 3 e fatturato
-     da €500k in su.
-   - Numeri di pagina calcolati (mai più "09/09" su 10 pagine).
-   - Testi più grandi: il PDF si legge anche dal telefono.
+   La sintesi apre con una prova da fare sul lavoro. Le sei aree sono
+   ordinate dalla priorità principale; entrambe le offerte restano accessibili.
 
    LOGICA DATI: invariata. I testi arrivano dall'assembler (state +
    assembled); qui si sceglie solo cosa mostrare e come.
@@ -149,15 +133,6 @@ const DIM_IT: Record<string, string> = {
   readiness: "Prontezza"
 };
 
-const DIM_SHORT: Record<string, string> = {
-  clarity: "Chiarezza",
-  acquisition: "Clienti",
-  operations: "Operatività",
-  margins: "Margini",
-  asset: "Valore",
-  readiness: "Prontezza"
-};
-
 const DIM_COPY: Record<string, string> = {
   clarity: "Cosa vendi, a chi e perché ti scelgono.",
   acquisition: "Da dove arrivano i clienti e quanto è regolare il flusso.",
@@ -165,6 +140,66 @@ const DIM_COPY: Record<string, string> = {
   margins: "Quanto resta di ogni vendita e quanta cassa hai.",
   asset: "Quello che resta nel business anche senza di te.",
   readiness: "Quanto il business si capisce da fuori: numeri, ruoli, materiali."
+};
+
+const FIELDWORK: Record<DimensionKey, { task: string; evidence: string }> = {
+  clarity: {
+    task: "Confronta gli ultimi tre preventivi. Sottolinea il problema del cliente, il risultato proposto e come lo descrivi.",
+    evidence: "Hai scritto una frase che un cliente reale riconoscerebbe e hai individuato il preventivo in cui quella promessa è più chiara."
+  },
+  acquisition: {
+    task: "Riprendi le ultime dieci richieste commerciali. Per ciascuna segna da dove è arrivata e come è finita.",
+    evidence: "Puoi indicare quante richieste ha generato ogni fonte e quante sono diventate clienti. Segna i casi di origine sconosciuta."
+  },
+  operations: {
+    task: "Riprendi gli ultimi cinque giorni di lavoro. Cerca nelle chat e nelle email le decisioni rimaste in attesa del tuo via libera.",
+    evidence: "Hai il numero di richieste e un esempio concreto. Se una richiesta si ripete, scrivi chi potrebbe gestirla e con quale regola."
+  },
+  margins: {
+    task: "Prendi le ultime tre commesse concluse. Per ciascuna sottrai dal ricavo i costi diretti e il costo delle ore impiegate.",
+    evidence: "Puoi indicare quale commessa ha lasciato meno margine e quale costo ha inciso di più. Segna le ore stimate per poterle verificare."
+  },
+  asset: {
+    task: "Scegli un metodo, un contratto o un archivio usato nel lavoro. Individua dove si trova, chi può usarlo e con quali diritti.",
+    evidence: "Una seconda persona riesce a trovare il materiale e a descrivere come usarlo. Annota il primo passaggio in cui si blocca."
+  },
+  readiness: {
+    task: "Riunisci i numeri dell’ultimo trimestre, i ruoli e i rischi principali in una pagina. Falla leggere a una persona autorizzata.",
+    evidence: "Il lettore sa spiegare come guadagna l’azienda e chi decide. Le domande rimaste aperte indicano cosa chiarire."
+  }
+};
+
+const ANSWER_CHECK: Record<string, string> = {
+  Q3: "Confronta gli ultimi tre preventivi e cerchia ciò che hai venduto in tutti e tre.",
+  Q4: "Prendi l’ultimo cliente profittevole e l’ultimo difficile da servire. Quale tratto potevi riconoscere prima?",
+  Q5: "Affianca la promessa sul sito alla tua ultima proposta. Sottolinea ciò che cambia.",
+  Q6: "Chiedi a una persona esterna di spiegare in una frase cosa vendi, dopo aver letto la tua pagina.",
+  Q7: "Recupera l’ultima decisione sul prezzo e il dato che l’ha motivata.",
+  Q8: "Confronta la previsione di nuovi clienti del mese scorso con il numero effettivo.",
+  Q9: "Segna l’origine degli ultimi dieci clienti e in quanti casi sei intervenuto personalmente.",
+  Q10: "Guarda gli ultimi cinque contatti. Quali segnali anticipavano il costo di servirli?",
+  Q11: "Ricostruisci i passaggi seguiti per le ultime tre richieste, fino all’esito.",
+  Q12: "Sulle ultime dieci vendite, calcola la quota di ricavi arrivata fuori dalla tua rete.",
+  Q13: "Ripensa all’ultima assenza. Qual è il primo lavoro rimasto fermo e per quanto tempo?",
+  Q14: "Chiedi a un collega di completare un’attività usando solo le istruzioni disponibili.",
+  Q15: "Confronta ritardi e rilavorazioni di una settimana normale con quelli dell’ultimo picco.",
+  Q16: "Conta le approvazioni che ti sono arrivate in cinque giorni. Quale richiesta si ripete?",
+  Q17: "Riprendi le ultime tre eccezioni e annota chi le ha chiuse e con quale regola.",
+  Q18: "Ricostruisci il margine di una commessa conclusa, includendo il costo delle ore.",
+  Q19: "Confronta incassi e uscite previsti un mese fa con i movimenti effettivi.",
+  Q20: "Trova la data dell’ultima revisione prezzi e confronta il margine prima e dopo.",
+  Q21: "Riprendi l’ultima decisione di spesa e verifica quali dati erano disponibili quel giorno.",
+  Q22: "Ordina tre clienti per fatturato, poi per margine. Chi cambia posizione?",
+  Q23: "Elenca cosa continuerebbe ad avere valore se per un mese non entrassero nuovi ordini.",
+  Q24: "Per un asset importante recupera una prova del suo valore e la data dell’ultimo aggiornamento.",
+  Q25: "Fai seguire a un collega le istruzioni d’uso di un asset e annota dove serve il tuo aiuto.",
+  Q26: "Nelle ultime trattative cerca un motivo preciso per cui un cliente ha scelto proprio voi.",
+  Q27: "Per una relazione chiave recupera l’accordo e controlla chi può rinnovarlo.",
+  Q28: "Cronometra quanto impieghi a ritrovare una sintesi aggiornata di numeri e responsabilità.",
+  Q29: "Scegli una decisione strategica recente. Chi aveva autorità per prenderla in tua assenza?",
+  Q30: "Fai presentare il business a un collega e annota le domande a cui deve rispondere il founder.",
+  Q31: "Scegli un rischio concreto. Recupera il piano scritto, il responsabile e la prima azione prevista.",
+  Q32: "Fai leggere la sintesi aziendale a una persona autorizzata e raccogli le domande rimaste aperte."
 };
 
 /* stesso testo della pagina risultato (result page v2.14) */
@@ -216,13 +251,6 @@ function txt(value: any, fallback = "") {
   return s || fallback;
 }
 
-function firstNameOf(name?: string) {
-  const clean = txt(name);
-  if (!clean) return "";
-  const f = clean.split(" ")[0];
-  return f.charAt(0).toUpperCase() + f.slice(1);
-}
-
 function stageFromScore(score: number) {
   const s = Math.max(0, Math.min(100, Number(score) || 0));
   for (const b of STAGE_BANDS) {
@@ -241,7 +269,7 @@ function dimName(key?: string) {
 }
 
 function fmtScore(n: any) {
-  return (Math.round((Number(n) || 0) * 10) / 10).toFixed(1);
+  return (Math.round((Number(n) || 0) * 10) / 10).toFixed(1).replace(".", ",");
 }
 
 function scoreStatus(score: number) {
@@ -297,83 +325,6 @@ function TickBar({ score, accent, h = 9 }: { score: number; accent?: boolean; h?
         );
       })}
     </View>
-  );
-}
-
-function polar(cx: number, cy: number, r: number, deg: number) {
-  const rad = (deg * Math.PI) / 180;
-  return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
-}
-
-function Radar({
-  dims,
-  binding
-}: {
-  dims: Record<DimensionKey, { score: number; yes: number }>;
-  binding?: string;
-}) {
-  const W = 220;
-  const H = 200;
-  const cx = W / 2;
-  const cy = H / 2 + 2;
-  const R = 70;
-  const ang = (i: number) => 90 - i * 60;
-  const ring = (r: number) =>
-    DIM_ORDER.map((_, i) => {
-      const p = polar(cx, cy, r, ang(i));
-      return `${p.x.toFixed(2)},${p.y.toFixed(2)}`;
-    }).join(" ");
-  const pts = DIM_ORDER.map((k, i) => {
-    const s = Math.max(0, Math.min(10, Number(dims?.[k]?.score || 0)));
-    const p = polar(cx, cy, (s / 10) * R, ang(i));
-    return { k, x: p.x, y: p.y };
-  });
-  return (
-    <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-      {[R * 0.4, R * 0.7].map((r, i) => (
-        <Polygon key={i} points={ring(r)} stroke="#D8D2C2" strokeWidth={0.7} fill="none" />
-      ))}
-      <Polygon points={ring(R)} stroke={INK} strokeWidth={1} fill="none" />
-      {DIM_ORDER.map((_, i) => {
-        const p = polar(cx, cy, R, ang(i));
-        return <Line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#D8D2C2" strokeWidth={0.7} />;
-      })}
-      <Polygon
-        points={pts.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ")}
-        fill={GOLD}
-        fillOpacity={0.2}
-        stroke={GOLD}
-        strokeWidth={1.4}
-      />
-      {pts.map((p) => (
-        <Circle
-          key={p.k}
-          cx={p.x}
-          cy={p.y}
-          r={p.k === binding ? 4 : 2.3}
-          fill={p.k === binding ? GOLD : PAPER}
-          stroke={GOLD}
-          strokeWidth={1.1}
-        />
-      ))}
-      {DIM_ORDER.map((k, i) => {
-        const deg = ang(i);
-        const p = polar(cx, cy, R + 12, deg);
-        const cos = Math.cos((deg * Math.PI) / 180);
-        const anchor = cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle";
-        return (
-          <Text
-            key={k}
-            x={p.x}
-            y={p.y + 2.5}
-            textAnchor={anchor as any}
-            style={{ fontFamily: F.sans, fontSize: 6.5, fill: k === binding ? GOLD_INK : INK }}
-          >
-            {DIM_SHORT[k].toUpperCase()}
-          </Text>
-        );
-      })}
-    </Svg>
   );
 }
 
@@ -435,8 +386,8 @@ function StageScale({ score, dark, labels }: { score: number; dark?: boolean; la
             style={{
               width: `${b.to - b.from}%`,
               fontFamily: F.sans,
-              fontSize: 5.8,
-              letterSpacing: 0.5,
+              fontSize: 8,
+              letterSpacing: 0.2,
               color:
                 b.name === current ? (dark ? GOLD_BRIGHT : GOLD_INK) : dark ? DARK_MUTED : SOFT
             }}
@@ -447,8 +398,8 @@ function StageScale({ score, dark, labels }: { score: number; dark?: boolean; la
       </View>
       ) : (
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 6 }}>
-        <Text style={{ fontFamily: F.sans, fontSize: 5.8, letterSpacing: 0.5, color: dark ? DARK_MUTED : SOFT }}>0</Text>
-        <Text style={{ fontFamily: F.sans, fontSize: 5.8, letterSpacing: 0.5, color: dark ? DARK_MUTED : SOFT }}>100</Text>
+        <Text style={{ fontFamily: F.sans, fontSize: 8, letterSpacing: 0.5, color: dark ? DARK_MUTED : SOFT }}>0</Text>
+        <Text style={{ fontFamily: F.sans, fontSize: 8, letterSpacing: 0.5, color: dark ? DARK_MUTED : SOFT }}>100</Text>
       </View>
       )}
     </View>
@@ -505,12 +456,12 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const score = Math.max(0, Math.min(100, Math.round(Number(result.overall || 0))));
   const name = txt(result.name);
   const company = txt(result.company);
-  const first = firstNameOf(name);
   const who = name || company;
 
   const dims = result.dimensions;
-  const binding = (txt(result.bindingConstraint) ||
-    [...DIM_ORDER].sort((a, b) => Number(dims[a]?.score || 0) - Number(dims[b]?.score || 0))[0]) as DimensionKey;
+  const binding = DIM_ORDER.find((key) => key === result.bindingConstraint) ??
+    [...DIM_ORDER].sort((a, b) => Number(dims[a]?.score || 0) - Number(dims[b]?.score || 0))[0];
+  const exercise = FIELDWORK[binding];
   const bindingName = dimName(binding);
 
   const profile = result.profileData || {};
@@ -627,56 +578,28 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Head
           n="02"
           kicker="In sintesi"
-          title="Il tuo business in una pagina."
-          intro="Se leggi solo questa pagina, leggi questa. Il resto del report spiega il perché e il come."
+          title="Da dove partire questa settimana"
+          intro={`Dalle tue risposte emerge una priorità: ${bindingName.toLowerCase()}. Verificala sul lavoro prima di cambiare il modo in cui operi.`}
         />
 
-        <View style={s.sumTop}>
-          <View style={s.sumBind}>
-            <Label>Il tuo vincolo principale</Label>
-            <Text style={s.sumBindName}>{bindingName}</Text>
-            <Text style={s.sumBindProfile}>{profileTitle}</Text>
-            {profileBody ? <Text style={s.body}>{profileBody}</Text> : null}
-          </View>
-          <View style={s.sumScore}>
-            <Label>Punteggio e fase</Label>
-            <View style={s.sumScoreRow}>
-              <Text style={s.sumScoreNum}>{String(score)}</Text>
-              <Text style={s.sumScoreOf}>/100</Text>
-            </View>
-            <StageScale score={score} />
-            <Text style={s.sumStageName}>{stageName}</Text>
-            <Text style={s.small}>{STAGE_COPY[stageName] || ""}</Text>
-          </View>
+        <View style={s.moveBox} wrap={false}>
+          <Label>Una prova da avviare entro 48 ore</Label>
+          <Text style={s.moveText}>{exercise.task}</Text>
         </View>
-
-        {firstMove ? (
-          <View style={s.moveBox} wrap={false}>
-            <Label>La tua prima mossa, entro 48 ore</Label>
-            <Text style={s.moveText}>{firstMove}</Text>
+        <View style={s.block} wrap={false}>
+          <Label>La prova è completa quando</Label>
+          <Text style={s.lead}>{exercise.evidence}</Text>
+        </View>
+        {firstMove && (
+          <View style={s.block} wrap={false}>
+            <Label>La mossa suggerita dal tuo report</Label>
+            <Text style={s.body}>{firstMove}</Text>
           </View>
-        ) : null}
+        )}
 
         <View style={s.antiRow} wrap={false}>
           <Label tone="alert">Cosa non fare adesso</Label>
           <Text style={s.antiText}>{ANTI_ACTION[binding] || ""}</Text>
-        </View>
-
-        <View style={s.block} wrap={false}>
-          <Label>Le aree da sistemare, in ordine</Label>
-          {ranked.slice(0, 3).map((k, i) => (
-            <View key={k} style={s.orderRow}>
-              <Text style={s.orderNum}>{String(i + 1).padStart(2, "0")}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={s.orderName}>{dimName(k)}</Text>
-                <Text style={s.small}>{DIM_COPY[k]}</Text>
-              </View>
-              <Text style={[s.orderScore, k === binding ? { color: GOLD_INK } : {}]}>
-                {fmtScore(dims[k]?.score)}
-                <Text style={s.orderScoreOf}> /10</Text>
-              </Text>
-            </View>
-          ))}
         </View>
 
         <View style={{ flexGrow: 1 }} />
@@ -710,7 +633,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           n="03"
           kicker="Perché ti frena"
           title="Il tuo vincolo, in pratica."
-          intro="Le risposte che oggi ti costano di più, con le tue parole, e cosa significano."
+          intro="Riprendi questi episodi nella tua azienda. Per ogni risposta trovi un possibile effetto e una verifica pratica."
         />
 
         {(result as any).challenge ? (
@@ -726,31 +649,20 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               <Label>{`${String(i + 1).padStart(2, "0")} · ${dimName(ca.dimension)}`}</Label>
               <Text style={s.answerQ}>{txt(ca.text)}</Text>
               <Text style={s.answerChosen}>{`Hai risposto: «${txt(ca.chosenText)}»`}</Text>
-              <Text style={s.body}>{txt(ca.why)}</Text>
+              {txt(ca.why) && <Text style={s.body}>{txt(ca.why)}</Text>}
+              <Text style={s.answerCheck}>
+                <Text style={{ fontWeight: 600 }}>Come verificarlo. </Text>
+                {ANSWER_CHECK[ca.id] || "Riprendi l’ultimo episodio che ti ha portato a scegliere questa risposta e annota cosa è successo."}
+              </Text>
             </View>
           ))
         ) : (
-          <Text style={s.body}>
-            Le risposte puntuali non sono disponibili per questo report. Rifai lo scorecard per la versione completa.
-          </Text>
-        )}
-
-        {txt(profile.manifesta) || txt(profile.rischio) ? (
-          <View style={s.twoCol} wrap={false}>
-            {txt(profile.manifesta) ? (
-              <View style={s.col}>
-                <Label>Come si vede, ogni giorno</Label>
-                <Text style={s.body}>{profile.manifesta}</Text>
-              </View>
-            ) : null}
-            {txt(profile.rischio) ? (
-              <View style={s.col}>
-                <Label tone="alert">Cosa rischi se lo ignori</Label>
-                <Text style={s.body}>{profile.rischio}</Text>
-              </View>
-            ) : null}
+          <View style={s.block}>
+            <Text style={s.body}>Per questo report mancano le singole risposte. Puoi comunque verificare la priorità con la prova di pagina 2.</Text>
+            {txt(profile.manifesta) && <Text style={s.answerCheck}>{profile.manifesta}</Text>}
+            {txt(profile.rischio) && <Text style={s.answerCheck}>{profile.rischio}</Text>}
           </View>
-        ) : null}
+        )}
 
         <Footer />
       </Page>
@@ -761,24 +673,9 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Head
           n="04"
           kicker="Le sei aree"
-          title="La mappa del tuo business."
-          intro="Ogni area va da 0 a 10. Sotto 4 è un vincolo, da 7 in su è una forza. Il punteggio su 100 è la loro media pesata."
+          title="Le sei aree, in ordine di priorità"
+          intro="La prima riga indica il vincolo emerso dalle risposte. Ogni barra mostra un punteggio su 10. A parità di punteggio il vincolo mantiene la precedenza."
         />
-
-        <View style={s.mapTop}>
-          <Radar dims={dims} binding={binding} />
-          <View style={s.mapSide}>
-            <Label>Come leggerla</Label>
-            <Text style={s.body}>
-              {`La forma conta più dei singoli numeri. Il punto in oro è ${bindingName}: è l'area che oggi limita tutte le altre. Finché resta debole, ogni sforzo altrove rende meno.`}
-            </Text>
-            <View style={s.legend}>
-              <Text style={s.legendItem}>0–3,9 VINCOLO</Text>
-              <Text style={s.legendItem}>4–6,9 IN SVILUPPO</Text>
-              <Text style={s.legendItem}>7+ FORZA</Text>
-            </View>
-          </View>
-        </View>
 
         {ranked.map((k) => {
           const sc = Number(dims[k]?.score || 0);
@@ -803,6 +700,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           );
         })}
 
+        <View style={s.block} wrap={false}>
+          <Label>Come leggere i punteggi</Label>
+          <Text style={s.body}>Sotto 4 l’area è debole. Da 4 a meno di 7 è in sviluppo. Da 7 in su è un punto di forza. Il punteggio complessivo è una media pesata delle sei aree.</Text>
+        </View>
         <Footer />
       </Page>
 
@@ -944,60 +845,37 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Header who={who} />
         <Head n="08" kicker="Il prossimo passo" title="Dalla diagnosi all'azione." />
 
-        {txt(profile.decisione) ? (
+        {(txt(profile.decisione) || txt(assembled.nextProblem)) ? (
           <View style={s.block}>
-            <Label>La decisione che viene prima</Label>
-            <Text style={s.lead}>{profile.decisione}</Text>
+            <Label>{txt(profile.decisione) ? "La decisione che viene prima" : "Il prossimo problema da considerare"}</Label>
+            <Text style={s.lead}>{txt(profile.decisione) || txt(assembled.nextProblem)}</Text>
           </View>
         ) : null}
 
-        {txt(assembled.nextProblem) ? (
-          <View style={s.block}>
-            <Label tone="muted">Il problema che si apre dopo</Label>
-            <Text style={s.body}>{assembled.nextProblem}</Text>
-          </View>
-        ) : null}
+        <View style={s.block} wrap={false}>
+          <Label>Se prosegui in autonomia</Label>
+          <Text style={s.body}>Fai la prova di pagina 2. Tra sette giorni confronta il risultato con la tua risposta iniziale e scegli una cosa da cambiare.</Text>
+        </View>
 
         <View style={{ flexGrow: 1 }} />
-
         <View style={s.cta} wrap={false}>
-          {route === "kit" ? (
-            <>
-              <Text style={s.ctaKicker}>PRIORITY MAP KIT</Text>
-              <Text style={s.ctaTitle}>
-                {first ? `${first}, le 3 mosse per ${bindingName}, in ordine.` : `Le 3 mosse per ${bindingName}, in ordine.`}
-              </Text>
-              <Text style={s.ctaBody}>
-                Il template che uso nelle Strategic Review, le 3 mosse per il tuo vincolo e cosa non fare nei prossimi 90
-                giorni. Lo compili in 90 minuti. €47, e se entro 30 giorni passi alla Review, li scali dal prezzo.
-              </Text>
-              <View style={s.ctaRow}>
-                <Link src={kitUrl} style={s.ctaButton}>
-                  PRENDI IL KIT · €47
-                </Link>
-                <Link src={reviewUrl} style={s.ctaAlt}>
-                  Preferisci farlo con me? Strategic Review →
-                </Link>
-              </View>
-            </>
-          ) : (
-            <>
-              <Text style={s.ctaKicker}>STRATEGIC REVIEW</Text>
-              <Text style={s.ctaTitle}>{first ? `${first}, dalla diagnosi a un piano.` : "Dalla diagnosi a un piano."}</Text>
-              <Text style={s.ctaBody}>
-                {`Questo report ti dice cosa frena il business. Non può dirti in che ordine muoverti nel tuo caso, con i tuoi margini e il tempo che hai. Nella Strategic Review lo decidiamo insieme: un piano per i prossimi 30-60 giorni, partendo da ${bindingName}.`}
-              </Text>
-              <View style={s.ctaRow}>
-                <Link src={reviewUrl} style={s.ctaButton}>
-                  PRENOTA LA STRATEGIC REVIEW
-                </Link>
-                <Link src={kitUrl} style={s.ctaAlt}>
-                  Preferisci partire da solo? Priority Map Kit, €47 →
-                </Link>
-              </View>
-            </>
-          )}
-          {txt(assembled.intentClosing) ? <Text style={s.ctaIntent}>{assembled.intentClosing}</Text> : null}
+          <Text style={s.ctaKicker}>SE VUOI UN SUPPORTO</Text>
+          <Text style={s.ctaTitle}>Chi prepara il piano?</Text>
+          {(route === "review" ? ["review", "kit"] : ["kit", "review"]).map((option) => (
+            <View key={option} style={{ marginTop: 12 }}>
+              {option === "kit" ? (
+                <>
+                  <Text style={s.ctaBody}>Con il Kit scegli le tre mosse e compili tu il piano di 90 giorni. Se passi alla Review entro 30 giorni, i €47 vengono scalati dal prezzo.</Text>
+                  <Link src={kitUrl} style={s.ctaAlt}>Guarda il Priority Map Kit · €47</Link>
+                </>
+              ) : (
+                <>
+                  <Text style={s.ctaBody}>Se devi prendere una decisione e vuoi un confronto, esaminiamo il tuo caso in 45 minuti. Entro 48 ore ti consegno la Priority Map scritta.</Text>
+                  <Link src={reviewUrl} style={s.ctaAlt}>Guarda la Strategic Review · €350</Link>
+                </>
+              )}
+            </View>
+          ))}
         </View>
 
         <View style={s.letter} wrap={false}>
@@ -1055,14 +933,14 @@ const s = StyleSheet.create({
     borderTopWidth: 0.6,
     borderTopColor: RULE
   },
-  footerText: { fontFamily: F.sans, fontSize: 6.3, letterSpacing: 1.2, color: SOFT },
+  footerText: { fontFamily: F.sans, fontSize: 7.1, letterSpacing: 1, color: MUTED },
 
   head: { marginBottom: 20 },
   kicker: { fontFamily: F.sans, fontSize: 7.6, letterSpacing: 2.2, color: GOLD_INK, marginBottom: 8 },
   title: { fontFamily: F.display, fontSize: 33, lineHeight: 1.08, color: INK, letterSpacing: -0.3 },
   intro: { marginTop: 9, fontSize: 13.5, lineHeight: 1.4, color: MUTED, maxWidth: 440 },
 
-  label: { fontFamily: F.sans, fontSize: 7, letterSpacing: 1.7, marginBottom: 5, textTransform: "uppercase" },
+  label: { fontFamily: F.sans, fontSize: 8.5, letterSpacing: 1.1, marginBottom: 5, textTransform: "uppercase" },
   body: { fontSize: 12.6, lineHeight: 1.42, color: BODY },
   bodyMid: { fontSize: 12.2, lineHeight: 1.38, color: BODY },
   bodySmall: { fontSize: 11.4, lineHeight: 1.36, color: BODY },
@@ -1107,24 +985,10 @@ const s = StyleSheet.create({
   coverNote: { marginTop: 14, fontSize: 9.5, lineHeight: 1.4, color: DARK_MUTED },
 
   /* ---- 02 sintesi ---- */
-  sumTop: { flexDirection: "row", paddingTop: 12, borderTopWidth: 0.8, borderTopColor: RULE_STRONG },
-  sumBind: { flex: 1.3, paddingRight: 20 },
-  sumBindName: { fontFamily: F.serif, fontStyle: "italic", fontSize: 34, lineHeight: 1, color: GOLD_INK, marginBottom: 6 },
-  sumBindProfile: { fontFamily: F.display, fontSize: 15.5, color: INK, marginBottom: 4 },
-  sumScore: { flex: 1, paddingLeft: 18, borderLeftWidth: 0.6, borderLeftColor: RULE },
-  sumScoreRow: { flexDirection: "row", alignItems: "flex-end", marginBottom: 10 },
-  sumScoreNum: { fontFamily: F.display, fontSize: 40, lineHeight: 0.9, color: INK },
-  sumScoreOf: { fontFamily: F.sans, fontSize: 8, color: SOFT, marginLeft: 5, marginBottom: 4 },
-  sumStageName: { marginTop: 8, fontFamily: F.display, fontSize: 15, color: INK, marginBottom: 2 },
   moveBox: { marginTop: 18, padding: 16, backgroundColor: CREAM, borderLeftWidth: 2.5, borderLeftColor: GOLD },
   moveText: { fontSize: 13.4, lineHeight: 1.42, color: INK },
   antiRow: { marginTop: 14, paddingLeft: 16, borderLeftWidth: 2.5, borderLeftColor: ALERT },
   antiText: { fontSize: 12.6, lineHeight: 1.4, color: BODY, fontStyle: "italic" },
-  orderRow: { flexDirection: "row", alignItems: "flex-start", paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: RULE },
-  orderNum: { width: 26, fontFamily: F.display, fontSize: 15, color: GOLD },
-  orderName: { fontFamily: F.display, fontSize: 15, color: INK, marginBottom: 1 },
-  orderScore: { width: 70, textAlign: "right", fontFamily: F.display, fontSize: 18, color: INK },
-  orderScoreOf: { fontFamily: F.sans, fontSize: 7, color: SOFT },
   toc: { paddingTop: 10, borderTopWidth: 0.6, borderTopColor: RULE },
   tocItem: { width: "50%", flexDirection: "row", alignItems: "baseline", marginTop: 4 },
   tocNum: { width: 22, fontFamily: F.sans, fontSize: 7, letterSpacing: 1, color: GOLD_INK },
@@ -1134,21 +998,18 @@ const s = StyleSheet.create({
   quoteBox: { marginBottom: 6, paddingBottom: 12, borderBottomWidth: 0.6, borderBottomColor: RULE },
   quote: { fontStyle: "italic", fontSize: 16, lineHeight: 1.35, color: INK },
   answer: { paddingTop: 11, paddingBottom: 12, borderBottomWidth: 0.6, borderBottomColor: RULE },
+  answerCheck: { fontSize: 12.2, color: BODY, marginTop: 4, lineHeight: 1.35 },
   answerQ: { fontFamily: F.display, fontSize: 15.5, lineHeight: 1.25, color: INK, marginBottom: 3 },
   answerChosen: { fontStyle: "italic", fontSize: 12.6, color: GOLD_INK, marginBottom: 4 },
 
   /* ---- 04 mappa ---- */
-  mapTop: { flexDirection: "row", alignItems: "center", marginBottom: 10, paddingTop: 4, borderTopWidth: 0.8, borderTopColor: RULE_STRONG },
-  mapSide: { flex: 1, paddingLeft: 16 },
-  legend: { flexDirection: "row", flexWrap: "wrap", marginTop: 10 },
-  legendItem: { fontFamily: F.sans, fontSize: 6.3, letterSpacing: 1, color: SOFT, marginRight: 12 },
-  areaRow: { flexDirection: "row", alignItems: "flex-start", paddingVertical: 10, paddingHorizontal: 6, borderBottomWidth: 0.5, borderBottomColor: RULE },
+  areaRow: { flexDirection: "row", alignItems: "center", paddingVertical: 15, paddingHorizontal: 6, borderBottomWidth: 0.5, borderBottomColor: RULE },
   areaRowB: { backgroundColor: "#F3EBD6" },
-  areaName: { width: 132, paddingRight: 8 },
-  areaTitle: { fontFamily: F.display, fontSize: 14.5, color: INK },
-  areaSub: { fontFamily: F.sans, fontSize: 5.8, letterSpacing: 1.1, color: SOFT, marginTop: 2 },
-  areaCopy: { fontSize: 10.4, lineHeight: 1.3, color: MUTED, marginTop: 4 },
-  areaScore: { width: 44, textAlign: "right", fontFamily: F.display, fontSize: 19, color: INK },
+  areaName: { width: 140, paddingRight: 8 },
+  areaTitle: { fontFamily: F.display, fontSize: 17, color: INK },
+  areaSub: { fontFamily: F.sans, fontSize: 9, letterSpacing: 0.5, color: MUTED, marginTop: 2 },
+  areaCopy: { fontSize: 12, lineHeight: 1.3, color: MUTED, marginTop: 4 },
+  areaScore: { width: 50, textAlign: "right", fontFamily: F.display, fontSize: 19, color: INK },
 
   /* ---- 05/06 priorità e punti deboli ---- */
   prio: { paddingTop: 10, paddingBottom: 10, borderTopWidth: 0.8, borderTopColor: RULE_STRONG },
@@ -1174,20 +1035,7 @@ const s = StyleSheet.create({
   ctaKicker: { fontFamily: F.sans, fontSize: 7.2, letterSpacing: 2, color: GOLD_BRIGHT, marginBottom: 8 },
   ctaTitle: { fontFamily: F.display, fontSize: 24, lineHeight: 1.12, color: IVORY, marginBottom: 8 },
   ctaBody: { fontSize: 12.4, lineHeight: 1.42, color: IVORY_SOFT },
-  ctaRow: { flexDirection: "row", alignItems: "center", marginTop: 14, flexWrap: "wrap" },
-  ctaButton: {
-    fontFamily: F.sans,
-    fontSize: 8,
-    letterSpacing: 1.8,
-    color: DEEP,
-    backgroundColor: GOLD_BRIGHT,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    textDecoration: "none",
-    marginRight: 16
-  },
-  ctaAlt: { fontStyle: "italic", fontSize: 12, color: GOLD_BRIGHT, textDecoration: "underline" },
-  ctaIntent: { marginTop: 12, fontStyle: "italic", fontSize: 11, lineHeight: 1.4, color: DARK_MUTED },
+  ctaAlt: { fontFamily: F.sans, marginTop: 5, fontSize: 13, color: GOLD_BRIGHT, textDecoration: "underline" },
   letter: { marginTop: 18, paddingTop: 12, borderTopWidth: 0.6, borderTopColor: RULE },
   letterText: { fontSize: 12.4, lineHeight: 1.42, color: BODY },
   letterSign: { marginTop: 8, fontFamily: F.serif, fontStyle: "italic", fontSize: 18, color: INK },
