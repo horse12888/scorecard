@@ -152,11 +152,11 @@ const FIELDWORK: Record<DimensionKey, { task: string; evidence: string }> = {
     evidence: "Puoi indicare quante richieste ha generato ogni fonte e quante sono diventate clienti. Segna i casi di origine sconosciuta."
   },
   operations: {
-    task: "Riprendi gli ultimi cinque giorni di lavoro. Cerca nelle chat e nelle email le decisioni rimaste in attesa del tuo via libera.",
-    evidence: "Hai il numero di richieste e un esempio concreto. Se una richiesta si ripete, scrivi chi potrebbe gestirla e con quale regola."
+    task: "Scegli una decisione ricorrente. Scrivi chi può prenderla e fino a quale limite.",
+    evidence: "La prossima volta il team decide entro il limite concordato e registra l’esito senza aspettare il tuo via libera."
   },
   margins: {
-    task: "Prendi le ultime tre commesse concluse. Per ciascuna sottrai dal ricavo i costi diretti e il costo delle ore impiegate.",
+    task: "Confronta le ultime tre commesse concluse. Annota ricavi, costi diretti e costo delle ore. Se il lavoro è già incluso nei costi diretti, contalo una sola volta.",
     evidence: "Puoi indicare quale commessa ha lasciato meno margine e quale costo ha inciso di più. Segna le ore stimate per poterle verificare."
   },
   asset: {
@@ -587,7 +587,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={s.moveText}>{exercise.task}</Text>
         </View>
         <View style={s.block} wrap={false}>
-          <Label>La prova è completa quando</Label>
+          <Label>Come saprai se è servita?</Label>
           <Text style={s.lead}>{exercise.evidence}</Text>
         </View>
         {firstMove && (
@@ -866,12 +866,12 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               {option === "kit" ? (
                 <>
                   <Text style={s.ctaBody}>Con il Kit scegli le tre mosse e compili tu il piano di 90 giorni. Se passi alla Review entro 30 giorni, i €47 vengono scalati dal prezzo.</Text>
-                  <Link src={kitUrl} style={s.ctaAlt}>Guarda il Priority Map Kit · €47</Link>
+                  <Link src={kitUrl} style={s.ctaAlt}>{binding === "margins" ? "Lavora in autonomia sui tuoi margini · Kit €47" : "Voglio lavorarci in autonomia · Kit €47"}</Link>
                 </>
               ) : (
                 <>
                   <Text style={s.ctaBody}>Se devi prendere una decisione e vuoi un confronto, esaminiamo il tuo caso in 45 minuti. Entro 48 ore ti consegno la Priority Map scritta.</Text>
-                  <Link src={reviewUrl} style={s.ctaAlt}>Guarda la Strategic Review · €350</Link>
+                  <Link src={reviewUrl} style={s.ctaAlt}>Voglio discuterne con Davide · Review €350</Link>
                 </>
               )}
             </View>
