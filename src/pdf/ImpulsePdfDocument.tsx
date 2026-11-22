@@ -1,3 +1,4 @@
+import { decisions, reportOffer } from "../reportDecision";
 import React from "react";
 import {
   Document,
@@ -6,11 +7,7 @@ import {
   View,
   StyleSheet,
   Font,
-  Link,
-  Svg,
-  Line,
-  Polygon,
-  Circle
+  Link, Svg, Line, Polygon, Circle
 } from "@react-pdf/renderer";
 
 /* ============================================================
@@ -18,23 +15,7 @@ import {
    Rifatto da zero sulla grafica del sito (Design A): Cormorant per
    titoli e testi, Jost per le etichette, blu notte / oro / crema.
 
-   Cosa cambia rispetto a v3.x:
-   - 8 pagine fisse, ognuna con una sola idea:
-     01 copertina · 02 in sintesi · 03 perché ti frena · 04 le sei
-     aree · 05 cosa sistemare prima · 06 dove il sistema perde leva ·
-     07 la fase del business · 08 il prossimo passo.
-   - Niente inglese visibile ("Business Readiness Report",
-     "Constraint Profile", "Risk flags", nomi delle aree in inglese).
-   - Niente "Profilo B" e niente "Fascia": conta il vincolo.
-   - Una sola pagina per le 6 aree (radar + barre), non due.
-   - La chiusura segue lo stesso percorso della pagina risultato:
-     Kit per quasi tutti, Strategic Review con intento 3 e fatturato
-     da €500k in su.
-   - Numeri di pagina calcolati (mai più "09/09" su 10 pagine).
-   - Testi più grandi: il PDF si legge anche dal telefono.
-
-   LOGICA DATI: invariata. I testi arrivano dall'assembler (state +
-   assembled); qui si sceglie solo cosa mostrare e come.
+   La sintesi presenta la decisione suggerita dalle risposte.
 ============================================================ */
 
 const USE_CUSTOM_FONTS = true;
@@ -77,7 +58,6 @@ Font.registerHyphenationCallback((word) => [word]);
 const INK = "#13273B";
 const DEEP = "#0B1928";
 const PAPER = "#F8F5EE";
-const CREAM = "#F5EDD8";
 const BODY = "#22364A";
 const MUTED = "#4B5866";
 const SOFT = "#77828F";
@@ -149,15 +129,6 @@ const DIM_IT: Record<string, string> = {
   readiness: "Prontezza"
 };
 
-const DIM_SHORT: Record<string, string> = {
-  clarity: "Chiarezza",
-  acquisition: "Clienti",
-  operations: "Operatività",
-  margins: "Margini",
-  asset: "Valore",
-  readiness: "Prontezza"
-};
-
 const DIM_COPY: Record<string, string> = {
   clarity: "Cosa vendi, a chi e perché ti scelgono.",
   acquisition: "Da dove arrivano i clienti e quanto è regolare il flusso.",
@@ -167,29 +138,13 @@ const DIM_COPY: Record<string, string> = {
   readiness: "Quanto il business si capisce da fuori: numeri, ruoli, materiali."
 };
 
-/* stesso testo della pagina risultato (result page v2.14) */
-const ANTI_ACTION: Record<string, string> = {
-  clarity: "Aumentare marketing, contenuti o automazioni. Prima va chiarito cosa vendi, a chi e a che prezzo.",
-  acquisition: "Aprire tre canali nuovi insieme. Prima trovane uno che funziona, misuralo e verifica che regga il margine.",
-  operations: "Assumere o comprare software per tappare processi che nessuno ha mai scritto. Prima metti nero su bianco come lavorate davvero.",
-  margins: "Spingere su volume o nuovi canali finché non sai quanto margine lascia ogni vendita.",
-  asset: "Cercare partner, capitale o acquirenti prima di poter mostrare cosa resta nel business quando tu non ci sei.",
-  readiness: "Presentarti a investitori o partner prima di aver messo in ordine numeri, ruoli e materiali."
-};
-
-const STAGE_IT: Record<string, string> = {
-  FOUNDATION: "Avvio",
-  TRACTION: "Crescita",
-  MARKET_TRACTION: "Crescita",
-  "MARKET TRACTION": "Crescita",
-  STABILIZATION: "Stabilità",
-  OPERATING_STABILITY: "Stabilità",
-  "OPERATING STABILITY": "Stabilità",
-  PRODUCTIZATION: "Offerta definita",
-  VALUE_ARCHITECTURE: "Offerta definita",
-  "VALUE ARCHITECTURE": "Offerta definita",
-  "SCALE READINESS": "Pronto a scalare",
-  SCALE_READINESS: "Pronto a scalare"
+const DIM_SHORT: Record<string, string> = {
+  clarity: "Chiarezza",
+  acquisition: "Clienti",
+  operations: "Operatività",
+  margins: "Margini",
+  asset: "Valore",
+  readiness: "Prontezza"
 };
 
 const STAGE_BANDS = [
@@ -200,27 +155,11 @@ const STAGE_BANDS = [
   { name: "Pronto a scalare", from: 85, to: 100 }
 ];
 
-/* stesso testo della pagina risultato */
-const STAGE_COPY: Record<string, string> = {
-  Avvio: "Prima servono basi più solide. Senza quelle, né la crescita né il capitale producono leva vera.",
-  Crescita: "Il business si muove, ma vendita e operatività non sono ancora prevedibili.",
-  "Stabilità": "Il business funziona. Adesso esecuzione, numeri e decisioni ricorrenti vanno messi in struttura.",
-  "Offerta definita": "C'è abbastanza trazione per trasformare il lavoro in un sistema e ridurre la dipendenza da te.",
-  "Pronto a scalare": "Sei vicino a poter scalare. Il lavoro adesso è tenere il business documentato e sotto controllo mentre cresce."
-};
-
 /* ---------------- Utilità ---------------- */
 function txt(value: any, fallback = "") {
   if (value === null || value === undefined) return fallback;
   const s = String(value).trim();
   return s || fallback;
-}
-
-function firstNameOf(name?: string) {
-  const clean = txt(name);
-  if (!clean) return "";
-  const f = clean.split(" ")[0];
-  return f.charAt(0).toUpperCase() + f.slice(1);
 }
 
 function stageFromScore(score: number) {
@@ -231,17 +170,12 @@ function stageFromScore(score: number) {
   return "Crescita";
 }
 
-function stageNameOf(result: PdfResult, score: number) {
-  const raw = txt(result.stageLabel || result.stage).toUpperCase();
-  return STAGE_IT[raw] || stageFromScore(score);
-}
-
 function dimName(key?: string) {
   return DIM_IT[String(key || "")] || txt(key);
 }
 
 function fmtScore(n: any) {
-  return (Math.round((Number(n) || 0) * 10) / 10).toFixed(1);
+  return (Math.round((Number(n) || 0) * 10) / 10).toFixed(1).replace(".", ",");
 }
 
 function scoreStatus(score: number) {
@@ -254,15 +188,6 @@ function reportDate() {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
   return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`;
-}
-
-/* Percorso: come la pagina risultato. Review solo con intento 3 e
-   fatturato da €500k in su; tutti gli altri Kit. */
-const REVENUE_REVIEW = ["€500k–€1M", "€1M–€3M", "€3M–€10M", "Oltre €10M"];
-function routeOf(result: PdfResult): "review" | "kit" {
-  const intent = Number(result.intentLevel ?? result.intentInsight?.level);
-  const rev = txt(result.metadata?.revenueRange);
-  return intent === 3 && REVENUE_REVIEW.indexOf(rev) >= 0 ? "review" : "kit";
 }
 
 /* ============================================================
@@ -313,10 +238,10 @@ function Radar({
   binding?: string;
 }) {
   const W = 220;
-  const H = 200;
+  const H = 154;
   const cx = W / 2;
   const cy = H / 2 + 2;
-  const R = 70;
+  const R = 54;
   const ang = (i: number) => 90 - i * 60;
   const ring = (r: number) =>
     DIM_ORDER.map((_, i) => {
@@ -435,8 +360,8 @@ function StageScale({ score, dark, labels }: { score: number; dark?: boolean; la
             style={{
               width: `${b.to - b.from}%`,
               fontFamily: F.sans,
-              fontSize: 5.8,
-              letterSpacing: 0.5,
+              fontSize: 8,
+              letterSpacing: 0.2,
               color:
                 b.name === current ? (dark ? GOLD_BRIGHT : GOLD_INK) : dark ? DARK_MUTED : SOFT
             }}
@@ -447,8 +372,8 @@ function StageScale({ score, dark, labels }: { score: number; dark?: boolean; la
       </View>
       ) : (
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 6 }}>
-        <Text style={{ fontFamily: F.sans, fontSize: 5.8, letterSpacing: 0.5, color: dark ? DARK_MUTED : SOFT }}>0</Text>
-        <Text style={{ fontFamily: F.sans, fontSize: 5.8, letterSpacing: 0.5, color: dark ? DARK_MUTED : SOFT }}>100</Text>
+        <Text style={{ fontFamily: F.sans, fontSize: 8, letterSpacing: 0.5, color: dark ? DARK_MUTED : SOFT }}>0</Text>
+        <Text style={{ fontFamily: F.sans, fontSize: 8, letterSpacing: 0.5, color: dark ? DARK_MUTED : SOFT }}>100</Text>
       </View>
       )}
     </View>
@@ -505,20 +430,15 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const score = Math.max(0, Math.min(100, Math.round(Number(result.overall || 0))));
   const name = txt(result.name);
   const company = txt(result.company);
-  const first = firstNameOf(name);
   const who = name || company;
 
   const dims = result.dimensions;
-  const binding = (txt(result.bindingConstraint) ||
-    [...DIM_ORDER].sort((a, b) => Number(dims[a]?.score || 0) - Number(dims[b]?.score || 0))[0]) as DimensionKey;
+  const binding = DIM_ORDER.find((key) => key === result.bindingConstraint) ??
+    [...DIM_ORDER].sort((a, b) => Number(dims[a]?.score || 0) - Number(dims[b]?.score || 0))[0];
+  const decision = decisions[binding];
   const bindingName = dimName(binding);
 
-  const profile = result.profileData || {};
-  const profileTitle = txt(profile.title, `Il nodo: ${bindingName.toLowerCase()}`);
-  const profileBody = txt(profile.blocco);
-
-  const stageName = stageNameOf(result, score);
-  const stageInfo = result.roadmapInfo || result.stageInfo || {};
+  const stageName = stageFromScore(score);
 
   const ranked = [...DIM_ORDER].sort((a, b) => {
     if (a === binding) return -1;
@@ -527,16 +447,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
     return d !== 0 ? d : DIM_ORDER.indexOf(a) - DIM_ORDER.indexOf(b);
   });
 
-  const prioritiesRaw = (result.priorita || result.priorities || []).slice(0, 3);
-  const priorities =
-    prioritiesRaw.length > 0
-      ? prioritiesRaw
-      : ranked.slice(0, 3).map((k) => ({ key: k, score: dims[k]?.score, vincolo: DIM_COPY[k] }));
-
-  const costly: any[] = assembled.costlyAnswers || [];
-  const firstMove = txt(assembled.firstMove);
-  const pattern = result.diagnosticPattern || {};
-  const constraints = (result.functionConstraints || []).slice(0, 3);
+  const priorities = ranked.slice(0, 3);
+  const costly = assembled.costlyAnswers || [];
 
   /* link: stessi parametri della pagina risultato */
   const leadId = txt(result.leadId || result.metadata?.leadId);
@@ -562,7 +474,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   if (isTest) kitParams.set("test", "1");
   const kitUrl = "https://davidedileo.it/kit?" + kitParams.toString();
 
-  const route = routeOf(result);
+  const route = reportOffer(result);
 
   return (
     <Document
@@ -586,7 +498,6 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={s.coverTitle}>Cosa frena</Text>
           <Text style={[s.coverTitle, s.coverTitleGold]}>il tuo business.</Text>
           <View style={s.coverFor}>
-            <View style={s.coverForBar} />
             <Text style={s.coverForText}>
               Preparato per <Text style={s.coverForName}>{name || "te"}</Text>
               {company ? ` · ${company}` : ""}
@@ -600,8 +511,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <View style={s.coverBindCell}>
             <Text style={s.coverLabel}>IL TUO VINCOLO PRINCIPALE</Text>
             <Text style={s.coverBind}>{bindingName}</Text>
-            <Text style={s.coverProfile}>{profileTitle}</Text>
-            {profileBody ? <Text style={s.coverProfileBody}>{profileBody}</Text> : null}
+
+            <Text style={s.coverProfileBody}>{DIM_COPY[binding]}</Text>
           </View>
           <View style={s.coverScoreCell}>
             <Text style={s.coverLabel}>PUNTEGGIO IMPULSE</Text>
@@ -627,56 +538,20 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Head
           n="02"
           kicker="In sintesi"
-          title="Il tuo business in una pagina."
-          intro="Se leggi solo questa pagina, leggi questa. Il resto del report spiega il perché e il come."
+          title="Quale decisione viene prima?"
+          intro={`Tra le sei aree valutate, dalle tue risposte emerge una priorità: ${bindingName.toLowerCase()}.`}
         />
-
-        <View style={s.sumTop}>
-          <View style={s.sumBind}>
-            <Label>Il tuo vincolo principale</Label>
-            <Text style={s.sumBindName}>{bindingName}</Text>
-            <Text style={s.sumBindProfile}>{profileTitle}</Text>
-            {profileBody ? <Text style={s.body}>{profileBody}</Text> : null}
-          </View>
-          <View style={s.sumScore}>
-            <Label>Punteggio e fase</Label>
-            <View style={s.sumScoreRow}>
-              <Text style={s.sumScoreNum}>{String(score)}</Text>
-              <Text style={s.sumScoreOf}>/100</Text>
-            </View>
-            <StageScale score={score} />
-            <Text style={s.sumStageName}>{stageName}</Text>
-            <Text style={s.small}>{STAGE_COPY[stageName] || ""}</Text>
-          </View>
+        <View style={s.block}>
+          <Label>La decisione</Label>
+          <Text style={s.lead}>{decision.question}</Text>
         </View>
-
-        {firstMove ? (
-          <View style={s.moveBox} wrap={false}>
-            <Label>La tua prima mossa, entro 48 ore</Label>
-            <Text style={s.moveText}>{firstMove}</Text>
-          </View>
-        ) : null}
-
-        <View style={s.antiRow} wrap={false}>
-          <Label tone="alert">Cosa non fare adesso</Label>
-          <Text style={s.antiText}>{ANTI_ACTION[binding] || ""}</Text>
+        <View style={s.block}>
+          <Label>Perché conta</Label>
+          <Text style={s.body}>{decision.reason}</Text>
         </View>
-
-        <View style={s.block} wrap={false}>
-          <Label>Le aree da sistemare, in ordine</Label>
-          {ranked.slice(0, 3).map((k, i) => (
-            <View key={k} style={s.orderRow}>
-              <Text style={s.orderNum}>{String(i + 1).padStart(2, "0")}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={s.orderName}>{dimName(k)}</Text>
-                <Text style={s.small}>{DIM_COPY[k]}</Text>
-              </View>
-              <Text style={[s.orderScore, k === binding ? { color: GOLD_INK } : {}]}>
-                {fmtScore(dims[k]?.score)}
-                <Text style={s.orderScoreOf}> /10</Text>
-              </Text>
-            </View>
-          ))}
+        <View style={s.block}>
+          <Label>Le tre aree che pesano di più</Label>
+          {priorities.map(key => <Text key={key} style={s.body}>{dimName(key)} · {fmtScore(dims[key]?.score)} su 10</Text>)}
         </View>
 
         <View style={{ flexGrow: 1 }} />
@@ -685,10 +560,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Label tone="muted">Nelle prossime pagine</Label>
           <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
             {[
-              ["03", "Perché ti frena: le tue risposte"],
+              ["03", "Le tue risposte"],
               ["04", "La mappa delle sei aree"],
               ["05", "Cosa sistemare prima"],
-              ["06", "Dove il business perde forza"],
+              ["06", "Le conseguenze sul lavoro"],
               ["07", "La fase del business"],
               ["08", "Il prossimo passo"]
             ].map(([n, t]) => (
@@ -709,8 +584,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Head
           n="03"
           kicker="Perché ti frena"
-          title="Il tuo vincolo, in pratica."
-          intro="Le risposte che oggi ti costano di più, con le tue parole, e cosa significano."
+          title="Le risposte che contano"
+          intro="Queste sono le risposte che hanno pesato sulla diagnosi."
         />
 
         {(result as any).challenge ? (
@@ -726,32 +601,18 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               <Label>{`${String(i + 1).padStart(2, "0")} · ${dimName(ca.dimension)}`}</Label>
               <Text style={s.answerQ}>{txt(ca.text)}</Text>
               <Text style={s.answerChosen}>{`Hai risposto: «${txt(ca.chosenText)}»`}</Text>
-              <Text style={s.body}>{txt(ca.why)}</Text>
             </View>
           ))
         ) : (
-          <Text style={s.body}>
-            Le risposte puntuali non sono disponibili per questo report. Rifai lo scorecard per la versione completa.
-          </Text>
+          <View style={s.block}>
+            <Text style={s.body}>In questo report sono disponibili i punteggi per area. Il dettaglio delle singole risposte non è disponibile.</Text>
+          </View>
         )}
 
-        {txt(profile.manifesta) || txt(profile.rischio) ? (
-          <View style={s.twoCol} wrap={false}>
-            {txt(profile.manifesta) ? (
-              <View style={s.col}>
-                <Label>Come si vede, ogni giorno</Label>
-                <Text style={s.body}>{profile.manifesta}</Text>
-              </View>
-            ) : null}
-            {txt(profile.rischio) ? (
-              <View style={s.col}>
-                <Label tone="alert">Cosa rischi se lo ignori</Label>
-                <Text style={s.body}>{profile.rischio}</Text>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-
+        <View style={s.block} wrap={false}>
+          <Label>Come leggere queste risposte</Label>
+          <Text style={s.body}>{binding === "margins" ? "Dal solo fatturato non puoi sapere quanto lascia una commessa. Per quella decisione servono anche i costi diretti e le ore di lavoro." : "Le risposte descrivono come vedi il lavoro oggi. Contratti, conti e prestazioni effettive richiedono una verifica separata."}</Text>
+        </View>
         <Footer />
       </Page>
 
@@ -761,25 +622,11 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Head
           n="04"
           kicker="Le sei aree"
-          title="La mappa del tuo business."
-          intro="Ogni area va da 0 a 10. Sotto 4 è un vincolo, da 7 in su è una forza. Il punteggio su 100 è la loro media pesata."
+          title="Le sei aree, in ordine di priorità"
+          intro="Il punto dorato indica la priorità. Le barre sotto il grafico riportano i punteggi su 10."
         />
 
-        <View style={s.mapTop}>
-          <Radar dims={dims} binding={binding} />
-          <View style={s.mapSide}>
-            <Label>Come leggerla</Label>
-            <Text style={s.body}>
-              {`La forma conta più dei singoli numeri. Il punto in oro è ${bindingName}: è l'area che oggi limita tutte le altre. Finché resta debole, ogni sforzo altrove rende meno.`}
-            </Text>
-            <View style={s.legend}>
-              <Text style={s.legendItem}>0–3,9 VINCOLO</Text>
-              <Text style={s.legendItem}>4–6,9 IN SVILUPPO</Text>
-              <Text style={s.legendItem}>7+ FORZA</Text>
-            </View>
-          </View>
-        </View>
-
+        <View style={{ alignItems: "center" }}><Radar dims={dims} binding={binding} /></View>
         {ranked.map((k) => {
           const sc = Number(dims[k]?.score || 0);
           const isB = k === binding;
@@ -803,6 +650,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           );
         })}
 
+        <View style={s.block} wrap={false}>
+          <Label>Come leggere i punteggi</Label>
+          <Text style={s.body}>Sotto 4 l’area richiede attenzione. Da 4 a meno di 7 è in sviluppo. Da 7 in su è un punto di forza. Il punteggio complessivo è una media pesata delle sei aree.</Text>
+        </View>
         <Footer />
       </Page>
 
@@ -813,48 +664,23 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           n="05"
           kicker="Le priorità"
           title="Cosa sistemare prima."
-          intro="Le tre aree che oggi creano più attrito, in ordine. Il resto, per ora, può aspettare."
+          intro="Per ogni area trovi la decisione aperta e gli elementi utili per prenderla."
         />
 
-        {priorities.map((p: any, i: number) => (
-          <View key={p.key || i} style={s.prio} wrap={false}>
+        {priorities.map((key, i) => (
+          <View key={key} style={s.prio} wrap={false}>
             <View style={s.prioHead}>
               <Text style={s.prioNum}>{String(i + 1).padStart(2, "0")}</Text>
-              <Text style={s.prioName}>{dimName(p.key)}</Text>
-              <Text style={s.prioScore}>{`${fmtScore(dims[p.key as DimensionKey]?.score ?? p.score)} / 10`}</Text>
+              <Text style={s.prioName}>{dimName(key)}</Text>
+              <Text style={s.prioScore}>{fmtScore(dims[key]?.score)} / 10</Text>
             </View>
-            {txt(p.vincolo) ? <Text style={s.bodyMid}>{p.vincolo}</Text> : null}
-            <View style={s.twoColTight}>
-              <View style={s.col}>
-                <Label>Su cosa lavorare</Label>
-                <Text style={s.bodySmall}>{txt(p.lavoro, "Rendere quest'area chiara, misurabile e trasferibile.")}</Text>
-              </View>
-              <View style={s.col}>
-                <Label tone="alert">Da evitare</Label>
-                <Text style={s.bodySmall}>{txt(p.nonFare, "Aggiungere complessità prima di aver chiarito quest'area.")}</Text>
-              </View>
+            <Text style={s.lead}>{decisions[key].question}</Text>
+            <View style={{ marginTop: 8 }}>
+              <Label tone="muted">Cosa guardare</Label>
+              <Text style={s.body}>{decisions[key].evidence}</Text>
             </View>
           </View>
         ))}
-
-        {txt(pattern.topGapPairBody) ? (
-          <View style={s.pairBox} wrap={false}>
-            <Label tone="light">Come si legano le tue due aree più deboli</Label>
-            <Text style={s.pairTitle}>
-              {txt(pattern.topGapPairTitle).replace(/Clarity|Acquisition|Operations|Margins|Asset|Readiness/g, (m) =>
-                dimName(m.toLowerCase())
-              )}
-            </Text>
-            <Text style={s.pairBody}>{pattern.topGapPairBody}</Text>
-            {txt(pattern.recommendedFocus) ? (
-              <Text style={s.pairFocus}>
-                <Text style={{ color: GOLD_BRIGHT }}>Dove lavorare: </Text>
-                {pattern.recommendedFocus}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
-
         <Footer />
       </Page>
 
@@ -863,79 +689,35 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Header who={who} />
         <Head
           n="06"
-          kicker="I punti deboli del sistema"
-          title="Dove il business perde forza."
-          intro="I problemi concreti più probabili, dati la fase del business e le aree più deboli."
+          kicker="Le conseguenze"
+          title="Cosa può succedere nel lavoro"
+          intro="Tre possibili conseguenze delle aree evidenziate nelle risposte."
         />
-
-        {constraints.length > 0 ? (
-          constraints.map((c: any, i: number) => (
-            <View key={c.id || i} style={s.prio} wrap={false}>
-              <View style={s.prioHead}>
-                <Text style={s.prioNum}>{String(i + 1).padStart(2, "0")}</Text>
-                <Text style={s.prioName}>{txt(c.label)}</Text>
-              </View>
-              <Text style={s.bodyMid}>{txt(c.implication)}</Text>
-              <View style={s.twoColTight}>
-                <View style={s.col}>
-                  <Label>Come deve essere</Label>
-                  <Text style={s.bodySmall}>{txt(c.work)}</Text>
-                </View>
-                <View style={s.col}>
-                  <Label tone="alert">Da evitare</Label>
-                  <Text style={s.bodySmall}>{txt(c.avoid)}</Text>
-                </View>
-              </View>
-            </View>
-          ))
-        ) : (
-          <Text style={s.body}>Nessun punto debole specifico oltre a quelli già visti nelle sei aree.</Text>
-        )}
-
-
+        {priorities.map(key => (
+          <View key={key} style={s.block} wrap={false}>
+            <Label>{dimName(key)}</Label>
+            <Text style={s.lead}>{decisions[key].consequence}</Text>
+          </View>
+        ))}
         <Footer />
       </Page>
 
       {/* ===================== 07 LA FASE ===================== */}
       <Page size="A4" style={s.page}>
         <Header who={who} />
-        <Head n="07" kicker="La fase del business" title={`${stageName}.`} intro={txt(stageInfo.headline, STAGE_COPY[stageName])} />
-
-        <View style={s.stageScaleWrap}>
-          <StageScale score={score} labels />
+        <Head n="07" kicker="La fase del business" title={stageName}
+          intro={`Il tuo punteggio complessivo è ${score} su 100. Nell’assessment corrisponde alla fase «${stageName}».`} />
+        <View style={s.stageScaleWrap}><StageScale score={score} labels /></View>
+        <View style={s.block}><Label>Come leggere la fase</Label>
+          <Text style={s.body}>La fase riassume le risposte su tutte le aree. Anche un’azienda che vende da anni può ottenere un punteggio basso se la gestione dipende da poche persone o se i margini sono difficili da leggere.</Text>
         </View>
-
-        <View style={s.block}>
-          <Label>Il tuo ruolo in questa fase</Label>
-          <Text style={s.lead}>{txt(stageInfo.role, "Costruire il sistema")}</Text>
+        <View style={s.block}><Label>Nel tuo caso</Label>
+          <Text style={s.lead}>{dimName(binding)} · {fmtScore(dims[binding]?.score)} su 10</Text>
+          <Text style={s.body}>Il punteggio complessivo comprende anche le altre cinque aree. Per capire perché emerge questa priorità, puoi rileggere le tue risposte a pagina 3.</Text>
         </View>
-
-        {txt(stageInfo.bottomLineConstraint) ? (
-          <View style={s.block}>
-            <Label>Il limite tipico di questa fase</Label>
-            <Text style={s.bodyMid}>{stageInfo.bottomLineConstraint}</Text>
-          </View>
-        ) : null}
-
-        {txt(stageInfo.costOfInaction) ? (
-          <View style={s.block}>
-            <Label tone="alert">Quanto costa restare fermi</Label>
-            <Text style={s.bodyMid}>{stageInfo.costOfInaction}</Text>
-          </View>
-        ) : null}
-
-        {(stageInfo.graduationCriteria || []).length > 0 ? (
-          <View style={s.block}>
-            <Label>Sei pronto per la fase successiva quando</Label>
-            {(stageInfo.graduationCriteria || []).slice(0, 5).map((c: string, i: number) => (
-              <View key={i} style={s.checkRow}>
-                <View style={s.checkBox} />
-                <Text style={s.checkText}>{c}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
+        <View style={s.block}><Label>Le fasce di punteggio</Label>
+          {STAGE_BANDS.map(b => <Text key={b.name} style={s.body}>{b.from}–{b.to === 100 ? 100 : b.to - 1}   {b.name}</Text>)}
+        </View>
         <Footer />
       </Page>
 
@@ -944,65 +726,34 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Header who={who} />
         <Head n="08" kicker="Il prossimo passo" title="Dalla diagnosi all'azione." />
 
-        {txt(profile.decisione) ? (
-          <View style={s.block}>
-            <Label>La decisione che viene prima</Label>
-            <Text style={s.lead}>{profile.decisione}</Text>
-          </View>
-        ) : null}
-
-        {txt(assembled.nextProblem) ? (
-          <View style={s.block}>
-            <Label tone="muted">Il problema che si apre dopo</Label>
-            <Text style={s.body}>{assembled.nextProblem}</Text>
-          </View>
-        ) : null}
-
+        <View style={s.block}>
+          <Label>La tua priorità · {bindingName}</Label>
+          <Text style={s.lead}>{decision.question}</Text>
+        </View>
         <View style={{ flexGrow: 1 }} />
-
         <View style={s.cta} wrap={false}>
-          {route === "kit" ? (
-            <>
-              <Text style={s.ctaKicker}>PRIORITY MAP KIT</Text>
-              <Text style={s.ctaTitle}>
-                {first ? `${first}, le 3 mosse per ${bindingName}, in ordine.` : `Le 3 mosse per ${bindingName}, in ordine.`}
-              </Text>
-              <Text style={s.ctaBody}>
-                Il template che uso nelle Strategic Review, le 3 mosse per il tuo vincolo e cosa non fare nei prossimi 90
-                giorni. Lo compili in 90 minuti. €47, e se entro 30 giorni passi alla Review, li scali dal prezzo.
-              </Text>
-              <View style={s.ctaRow}>
-                <Link src={kitUrl} style={s.ctaButton}>
-                  PRENDI IL KIT · €47
-                </Link>
-                <Link src={reviewUrl} style={s.ctaAlt}>
-                  Preferisci farlo con me? Strategic Review →
-                </Link>
-              </View>
-            </>
-          ) : (
-            <>
-              <Text style={s.ctaKicker}>STRATEGIC REVIEW</Text>
-              <Text style={s.ctaTitle}>{first ? `${first}, dalla diagnosi a un piano.` : "Dalla diagnosi a un piano."}</Text>
-              <Text style={s.ctaBody}>
-                {`Questo report ti dice cosa frena il business. Non può dirti in che ordine muoverti nel tuo caso, con i tuoi margini e il tempo che hai. Nella Strategic Review lo decidiamo insieme: un piano per i prossimi 30-60 giorni, partendo da ${bindingName}.`}
-              </Text>
-              <View style={s.ctaRow}>
-                <Link src={reviewUrl} style={s.ctaButton}>
-                  PRENOTA LA STRATEGIC REVIEW
-                </Link>
-                <Link src={kitUrl} style={s.ctaAlt}>
-                  Preferisci partire da solo? Priority Map Kit, €47 →
-                </Link>
-              </View>
-            </>
-          )}
-          {txt(assembled.intentClosing) ? <Text style={s.ctaIntent}>{assembled.intentClosing}</Text> : null}
+          <Text style={s.ctaKicker}>SE VUOI UN SUPPORTO</Text>
+          <Text style={s.ctaTitle}>{route === "review" ? "Discuti la decisione con Davide" : "Prepara il tuo piano con il Kit"}</Text>
+          {(route === "review" ? ["review", "kit"] : ["kit", "review"]).map((option) => (
+            <View key={option} style={{ marginTop: 12 }}>
+              {option === "kit" ? (
+                <>
+                  <Text style={s.ctaBody}>Apri la guida per la tua priorità. Nel foglio Google scegli tre interventi, assegni le scadenze e segui i progressi per 90 giorni. Se passi alla Review entro 30 giorni, i €47 vengono scalati dal prezzo.</Text>
+                  <Link src={kitUrl} style={route === "kit" ? s.ctaPrimary : s.ctaAlt}>{binding === "margins" ? "Lavora in autonomia sui tuoi margini · Kit €47" : "Voglio lavorarci in autonomia · Kit €47"}</Link>
+                </>
+              ) : (
+                <>
+                  <Text style={s.ctaBody}>Se devi prendere una decisione e vuoi un confronto, esaminiamo il tuo caso in 45 minuti. Entro 48 ore ti consegno la Priority Map scritta.</Text>
+                  <Link src={reviewUrl} style={route === "review" ? s.ctaPrimary : s.ctaAlt}>Voglio discuterne con Davide · Review €350</Link>
+                </>
+              )}
+            </View>
+          ))}
         </View>
 
         <View style={s.letter} wrap={false}>
           <Label tone="muted">Una nota personale</Label>
-          {txt(assembled.letter) ? <Text style={s.letterText}>{assembled.letter}</Text> : null}
+          <Text style={s.letterText}>Se decidi di ripetere l’assessment, conserva questo report: potrai confrontare le risposte e vedere quali priorità sono cambiate.</Text>
           <Text style={s.letterSign}>Davide</Text>
           <Text style={s.letterCred}>COO & co-founder di una fintech di tokenizzazione · IMPULSE è il mio criterio operativo, reso strumento e costruito con l'AI.</Text>
           {txt(assembled.retestDate) ? (
@@ -1055,15 +806,15 @@ const s = StyleSheet.create({
     borderTopWidth: 0.6,
     borderTopColor: RULE
   },
-  footerText: { fontFamily: F.sans, fontSize: 6.3, letterSpacing: 1.2, color: SOFT },
+  footerText: { fontFamily: F.sans, fontSize: 7.1, letterSpacing: 1, color: MUTED },
 
   head: { marginBottom: 20 },
   kicker: { fontFamily: F.sans, fontSize: 7.6, letterSpacing: 2.2, color: GOLD_INK, marginBottom: 8 },
   title: { fontFamily: F.display, fontSize: 33, lineHeight: 1.08, color: INK, letterSpacing: -0.3 },
   intro: { marginTop: 9, fontSize: 13.5, lineHeight: 1.4, color: MUTED, maxWidth: 440 },
 
-  label: { fontFamily: F.sans, fontSize: 7, letterSpacing: 1.7, marginBottom: 5, textTransform: "uppercase" },
-  body: { fontSize: 12.6, lineHeight: 1.42, color: BODY },
+  label: { fontFamily: F.sans, fontSize: 8.5, letterSpacing: 1.1, marginBottom: 5, textTransform: "uppercase" },
+  body: { fontSize: 14, lineHeight: 1.42, color: BODY },
   bodyMid: { fontSize: 12.2, lineHeight: 1.38, color: BODY },
   bodySmall: { fontSize: 11.4, lineHeight: 1.36, color: BODY },
   small: { fontSize: 11, lineHeight: 1.35, color: MUTED },
@@ -1090,7 +841,6 @@ const s = StyleSheet.create({
   coverTitle: { fontFamily: F.display, fontSize: 60, lineHeight: 1.02, color: IVORY, letterSpacing: -0.6 },
   coverTitleGold: { fontFamily: F.serif, fontStyle: "italic", color: GOLD_BRIGHT },
   coverFor: { flexDirection: "row", alignItems: "center", marginTop: 26 },
-  coverForBar: { width: 26, height: 1.2, backgroundColor: GOLD_BRIGHT, marginRight: 12 },
   coverForText: { fontSize: 14, color: IVORY_SOFT },
   coverForName: { color: IVORY, fontWeight: 600 },
   coverBand: { flexDirection: "row", borderTopWidth: 0.8, borderTopColor: DARK_RULE, borderBottomWidth: 0.8, borderBottomColor: DARK_RULE, paddingVertical: 22 },
@@ -1107,24 +857,8 @@ const s = StyleSheet.create({
   coverNote: { marginTop: 14, fontSize: 9.5, lineHeight: 1.4, color: DARK_MUTED },
 
   /* ---- 02 sintesi ---- */
-  sumTop: { flexDirection: "row", paddingTop: 12, borderTopWidth: 0.8, borderTopColor: RULE_STRONG },
-  sumBind: { flex: 1.3, paddingRight: 20 },
-  sumBindName: { fontFamily: F.serif, fontStyle: "italic", fontSize: 34, lineHeight: 1, color: GOLD_INK, marginBottom: 6 },
-  sumBindProfile: { fontFamily: F.display, fontSize: 15.5, color: INK, marginBottom: 4 },
-  sumScore: { flex: 1, paddingLeft: 18, borderLeftWidth: 0.6, borderLeftColor: RULE },
-  sumScoreRow: { flexDirection: "row", alignItems: "flex-end", marginBottom: 10 },
-  sumScoreNum: { fontFamily: F.display, fontSize: 40, lineHeight: 0.9, color: INK },
-  sumScoreOf: { fontFamily: F.sans, fontSize: 8, color: SOFT, marginLeft: 5, marginBottom: 4 },
-  sumStageName: { marginTop: 8, fontFamily: F.display, fontSize: 15, color: INK, marginBottom: 2 },
-  moveBox: { marginTop: 18, padding: 16, backgroundColor: CREAM, borderLeftWidth: 2.5, borderLeftColor: GOLD },
   moveText: { fontSize: 13.4, lineHeight: 1.42, color: INK },
-  antiRow: { marginTop: 14, paddingLeft: 16, borderLeftWidth: 2.5, borderLeftColor: ALERT },
   antiText: { fontSize: 12.6, lineHeight: 1.4, color: BODY, fontStyle: "italic" },
-  orderRow: { flexDirection: "row", alignItems: "flex-start", paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: RULE },
-  orderNum: { width: 26, fontFamily: F.display, fontSize: 15, color: GOLD },
-  orderName: { fontFamily: F.display, fontSize: 15, color: INK, marginBottom: 1 },
-  orderScore: { width: 70, textAlign: "right", fontFamily: F.display, fontSize: 18, color: INK },
-  orderScoreOf: { fontFamily: F.sans, fontSize: 7, color: SOFT },
   toc: { paddingTop: 10, borderTopWidth: 0.6, borderTopColor: RULE },
   tocItem: { width: "50%", flexDirection: "row", alignItems: "baseline", marginTop: 4 },
   tocNum: { width: 22, fontFamily: F.sans, fontSize: 7, letterSpacing: 1, color: GOLD_INK },
@@ -1134,21 +868,18 @@ const s = StyleSheet.create({
   quoteBox: { marginBottom: 6, paddingBottom: 12, borderBottomWidth: 0.6, borderBottomColor: RULE },
   quote: { fontStyle: "italic", fontSize: 16, lineHeight: 1.35, color: INK },
   answer: { paddingTop: 11, paddingBottom: 12, borderBottomWidth: 0.6, borderBottomColor: RULE },
+  answerCheck: { fontSize: 12.2, color: BODY, marginTop: 4, lineHeight: 1.35 },
   answerQ: { fontFamily: F.display, fontSize: 15.5, lineHeight: 1.25, color: INK, marginBottom: 3 },
   answerChosen: { fontStyle: "italic", fontSize: 12.6, color: GOLD_INK, marginBottom: 4 },
 
   /* ---- 04 mappa ---- */
-  mapTop: { flexDirection: "row", alignItems: "center", marginBottom: 10, paddingTop: 4, borderTopWidth: 0.8, borderTopColor: RULE_STRONG },
-  mapSide: { flex: 1, paddingLeft: 16 },
-  legend: { flexDirection: "row", flexWrap: "wrap", marginTop: 10 },
-  legendItem: { fontFamily: F.sans, fontSize: 6.3, letterSpacing: 1, color: SOFT, marginRight: 12 },
-  areaRow: { flexDirection: "row", alignItems: "flex-start", paddingVertical: 10, paddingHorizontal: 6, borderBottomWidth: 0.5, borderBottomColor: RULE },
+  areaRow: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 6, borderBottomWidth: 0.5, borderBottomColor: RULE },
   areaRowB: { backgroundColor: "#F3EBD6" },
-  areaName: { width: 132, paddingRight: 8 },
-  areaTitle: { fontFamily: F.display, fontSize: 14.5, color: INK },
-  areaSub: { fontFamily: F.sans, fontSize: 5.8, letterSpacing: 1.1, color: SOFT, marginTop: 2 },
-  areaCopy: { fontSize: 10.4, lineHeight: 1.3, color: MUTED, marginTop: 4 },
-  areaScore: { width: 44, textAlign: "right", fontFamily: F.display, fontSize: 19, color: INK },
+  areaName: { width: 140, paddingRight: 8 },
+  areaTitle: { fontFamily: F.display, fontSize: 17, color: INK },
+  areaSub: { fontFamily: F.sans, fontSize: 9, letterSpacing: 0.5, color: MUTED, marginTop: 2 },
+  areaCopy: { fontSize: 12, lineHeight: 1.3, color: MUTED, marginTop: 4 },
+  areaScore: { width: 50, textAlign: "right", fontFamily: F.display, fontSize: 19, color: INK },
 
   /* ---- 05/06 priorità e punti deboli ---- */
   prio: { paddingTop: 10, paddingBottom: 10, borderTopWidth: 0.8, borderTopColor: RULE_STRONG },
@@ -1174,20 +905,8 @@ const s = StyleSheet.create({
   ctaKicker: { fontFamily: F.sans, fontSize: 7.2, letterSpacing: 2, color: GOLD_BRIGHT, marginBottom: 8 },
   ctaTitle: { fontFamily: F.display, fontSize: 24, lineHeight: 1.12, color: IVORY, marginBottom: 8 },
   ctaBody: { fontSize: 12.4, lineHeight: 1.42, color: IVORY_SOFT },
-  ctaRow: { flexDirection: "row", alignItems: "center", marginTop: 14, flexWrap: "wrap" },
-  ctaButton: {
-    fontFamily: F.sans,
-    fontSize: 8,
-    letterSpacing: 1.8,
-    color: DEEP,
-    backgroundColor: GOLD_BRIGHT,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    textDecoration: "none",
-    marginRight: 16
-  },
-  ctaAlt: { fontStyle: "italic", fontSize: 12, color: GOLD_BRIGHT, textDecoration: "underline" },
-  ctaIntent: { marginTop: 12, fontStyle: "italic", fontSize: 11, lineHeight: 1.4, color: DARK_MUTED },
+  ctaPrimary: { fontFamily: F.sans, marginTop: 6, padding: 7, backgroundColor: IVORY, color: INK, fontSize: 13, textDecoration: "none" },
+  ctaAlt: { fontFamily: F.sans, marginTop: 5, fontSize: 13, color: GOLD_BRIGHT, textDecoration: "underline" },
   letter: { marginTop: 18, paddingTop: 12, borderTopWidth: 0.6, borderTopColor: RULE },
   letterText: { fontSize: 12.4, lineHeight: 1.42, color: BODY },
   letterSign: { marginTop: 8, fontFamily: F.serif, fontStyle: "italic", fontSize: 18, color: INK },
