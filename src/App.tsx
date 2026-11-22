@@ -1109,7 +1109,7 @@ export default function App() {
                   &laquo;{(result as any).challenge}&raquo;
                 </p>
                 <p className="text-lg text-[#4B5866] mt-2 leading-relaxed">
-                  Parole tue. La diagnosi ti dice da dove partire: dal vincolo, non da tutto insieme.
+                  Qui ritrovi la difficoltà che hai descritto alla fine del questionario.
                 </p>
               </div>
             ) : null}
@@ -1140,7 +1140,7 @@ export default function App() {
             {result.diagnosticPattern ? (
               <div className="mb-10 pt-4 border-t border-[rgba(19,39,59,0.55)]">
                 <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#4B5866] mb-2">
-                  Lo schema dei tuoi vincoli
+                  Come si collegano le aree
                 </p>
                 <p className="text-3xl font-medium text-[#13273B] mb-2 leading-tight">
                   {pairTitleIt(result.diagnosticPattern.topGapPairTitle)}
@@ -1213,10 +1213,10 @@ export default function App() {
             {/* [SHARE] riquadro-condivisione: il passaparola del metodo */}
             <div className="mt-10 pt-4 border-t border-[rgba(19,39,59,0.16)]">
               <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#4B5866] mb-2">
-                Conosci un founder che dovrebbe vederlo?
+                Condividi l’assessment
               </p>
               <p className="text-lg text-[#22364A] mb-4">
-                Ogni business ha un vincolo. Lo scorecard &egrave; gratuito e il report arriva subito.
+                Il link apre il questionario gratuito per chi vuole valutare la propria azienda.
               </p>
               <button
                 onClick={() => {
@@ -1224,7 +1224,7 @@ export default function App() {
                   const nav: any = navigator;
                   track('share', { vincolo: getBindingKey(result) });
                   if (nav.share) {
-                    nav.share({ title: 'IMPULSE: la diagnosi del tuo business', text: 'Un business cresce alla velocità del suo vincolo. Scopri il tuo:', url }).catch(() => {});
+                    nav.share({ title: 'IMPULSE: la diagnosi del tuo business', text: 'Con IMPULSE puoi confrontare sei aree della tua azienda e capire da dove partire.', url }).catch(() => {});
                   } else if (nav.clipboard && nav.clipboard.writeText) {
                     nav.clipboard.writeText(url).then(() => setShareCopied(true));
                   }

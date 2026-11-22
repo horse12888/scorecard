@@ -538,8 +538,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Head
           n="02"
           kicker="In sintesi"
-          title="Quale decisione viene prima?"
-          intro={`Tra le sei aree valutate, dalle tue risposte emerge una priorità: ${bindingName.toLowerCase()}.`}
+          title="La decisione da prendere"
+          intro={`Dalle risposte sulle sei aree emerge una priorità: ${bindingName.toLowerCase()}.`}
         />
         <View style={s.block}>
           <Label>La decisione</Label>
@@ -550,7 +550,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={s.body}>{decision.reason}</Text>
         </View>
         <View style={s.block}>
-          <Label>Le tre aree che pesano di più</Label>
+          <Label>Le prime tre aree in ordine di priorità</Label>
           {priorities.map(key => <Text key={key} style={s.body}>{dimName(key)} · {fmtScore(dims[key]?.score)} su 10</Text>)}
         </View>
 
@@ -584,8 +584,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Head
           n="03"
           kicker="Perché ti frena"
-          title="Le risposte che contano"
-          intro="Queste sono le risposte che hanno pesato sulla diagnosi."
+          title="Le risposte che hanno pesato"
+          intro="Qui puoi rileggere le domande e le risposte disponibili per questo report."
         />
 
         {(result as any).challenge ? (
@@ -605,7 +605,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           ))
         ) : (
           <View style={s.block}>
-            <Text style={s.body}>In questo report sono disponibili i punteggi per area. Il dettaglio delle singole risposte non è disponibile.</Text>
+            <Text style={s.body}>Per questo report abbiamo i punteggi delle aree. Li trovi nella pagina successiva.</Text>
           </View>
         )}
 
@@ -724,7 +724,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
       {/* ===================== 08 IL PROSSIMO PASSO ===================== */}
       <Page size="A4" style={s.page}>
         <Header who={who} />
-        <Head n="08" kicker="Il prossimo passo" title="Dalla diagnosi all'azione." />
+        <Head n="08" kicker="Il prossimo passo" title="Come proseguire" />
 
         <View style={s.block}>
           <Label>La tua priorità · {bindingName}</Label>
@@ -732,7 +732,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         </View>
         <View style={{ flexGrow: 1 }} />
         <View style={s.cta} wrap={false}>
-          <Text style={s.ctaKicker}>SE VUOI UN SUPPORTO</Text>
+          <Text style={s.ctaKicker}>KIT E STRATEGIC REVIEW</Text>
           <Text style={s.ctaTitle}>{route === "review" ? "Discuti la decisione con Davide" : "Prepara il tuo piano con il Kit"}</Text>
           {(route === "review" ? ["review", "kit"] : ["kit", "review"]).map((option) => (
             <View key={option} style={{ marginTop: 12 }}>
@@ -755,7 +755,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Label tone="muted">Una nota personale</Label>
           <Text style={s.letterText}>Se decidi di ripetere l’assessment, conserva questo report: potrai confrontare le risposte e vedere quali priorità sono cambiate.</Text>
           <Text style={s.letterSign}>Davide</Text>
-          <Text style={s.letterCred}>COO & co-founder di una fintech di tokenizzazione · IMPULSE è il mio criterio operativo, reso strumento e costruito con l'AI.</Text>
+          <Text style={s.letterCred}>Sono cofondatore e COO di una fintech che si occupa di tokenizzazione. Ho costruito IMPULSE con il supporto dell’AI, partendo dai criteri che uso nel mio lavoro.</Text>
           {txt(assembled.retestDate) ? (
             <Text style={s.letterRetest}>{`Rifai lo scorecard il ${assembled.retestDate} e confronta i numeri.`}</Text>
           ) : null}
