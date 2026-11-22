@@ -22,6 +22,7 @@ const USE_CUSTOM_FONTS = true;
 const FONT_DIR: string = (globalThis as any).__IMPULSE_FONT_DIR || "/fonts";
 
 if (USE_CUSTOM_FONTS) {
+  Font.register({ family: "ArchivoText", src: FONT_DIR + "/Archivo-Regular.ttf" });
   Font.register({
     family: "Cormorant",
     fonts: [
@@ -57,7 +58,9 @@ Font.registerHyphenationCallback((word) => [word]);
 /* ---------------- Palette ---------------- */
 const INK = "#13273B";
 const DEEP = "#0B1928";
-const PAPER = "#F8F5EE";
+const PAPER = "#FBFAF6";
+const MIST = "#E7EEF2";
+const OCEAN = "#244B69";
 const BODY = "#22364A";
 const MUTED = "#4B5866";
 const SOFT = "#77828F";
@@ -237,11 +240,11 @@ function Radar({
   dims: Record<DimensionKey, { score: number; yes: number }>;
   binding?: string;
 }) {
-  const W = 220;
-  const H = 154;
+  const W = 254;
+  const H = 185;
   const cx = W / 2;
   const cy = H / 2 + 2;
-  const R = 54;
+  const R = 67;
   const ang = (i: number) => 90 - i * 60;
   const ring = (r: number) =>
     DIM_ORDER.map((_, i) => {
@@ -292,7 +295,7 @@ function Radar({
             x={p.x}
             y={p.y + 2.5}
             textAnchor={anchor as any}
-            style={{ fontFamily: F.sans, fontSize: 6.5, fill: k === binding ? GOLD_INK : INK }}
+            style={{ fontFamily: F.sans, fontSize: 8, fill: k === binding ? GOLD_INK : INK }}
           >
             {DIM_SHORT[k].toUpperCase()}
           </Text>
@@ -475,6 +478,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const kitUrl = "https://davidedileo.it/kit?" + kitParams.toString();
 
   const route = reportOffer(result);
+  const highestScore = Math.max(...ranked.map(key => Number(dims[key].score)));
+  const strongest = DIM_ORDER.filter(key => Number(dims[key].score) === highestScore);
+  const challenge = txt((result as any).challenge);
+  const evidenceIntro = costly.length ? "Le parole che hai scelto nel questionario." : "Il riepilogo disponibile per questo report.";
 
   return (
     <Document
@@ -505,8 +512,20 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           </View>
         </View>
 
-        <View style={{ flexGrow: 1 }} />
-
+        <View style={s.coverPlot}>
+          <Text style={s.coverLabel}>LE SEI AREE · PUNTEGGI SU 10</Text>
+          <View style={s.coverChart}>
+            {DIM_ORDER.map(key => (
+              <View key={key} style={s.coverColumn}>
+                <Text style={s.coverValue}>{fmtScore(dims[key].score)}</Text>
+                <View style={s.coverTrack}>
+                  <View style={{ height: Math.max(0, Math.min(10, dims[key].score)) * 6, backgroundColor: key === binding ? GOLD_BRIGHT : "#60849B" }} />
+                </View>
+                <Text style={s.coverAxis}>{DIM_SHORT[key]}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
         <View style={s.coverBand}>
           <View style={s.coverBindCell}>
             <Text style={s.coverLabel}>IL TUO VINCOLO PRINCIPALE</Text>
@@ -541,21 +560,23 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           title="La decisione da prendere"
           intro={`Dalle risposte sulle sei aree emerge una priorità: ${bindingName.toLowerCase()}.`}
         />
-        <View style={s.block}>
-          <Label>La decisione</Label>
-          <Text style={s.lead}>{decision.question}</Text>
+        <View style={s.summaryBand}>
+          <Text style={s.lightLabel}>PRIORITÀ · {bindingName.toUpperCase()}</Text>
+          <Text style={s.bigQuestion}>{decision.question}</Text>
         </View>
-        <View style={s.block}>
+        <View style={s.reasonBlock}>
           <Label>Perché conta</Label>
-          <Text style={s.body}>{decision.reason}</Text>
+          <Text style={s.reasonText}>{decision.reason}</Text>
         </View>
-        <View style={s.block}>
-          <Label>Le prime tre aree in ordine di priorità</Label>
-          {priorities.map(key => <Text key={key} style={s.body}>{dimName(key)} · {fmtScore(dims[key]?.score)} su 10</Text>)}
-        </View>
-
-        <View style={{ flexGrow: 1 }} />
-
+        <Label>Le prime tre aree in ordine di priorità</Label>
+        {priorities.map((key, i) => (
+          <View key={key} style={s.rankRow}>
+            <Text style={s.rankIndex}>{String(i + 1).padStart(2, "0")}</Text>
+            <Text style={s.rankName}>{dimName(key)}</Text>
+            <View style={s.rankBar}><TickBar score={dims[key].score} accent={key === binding} h={8} /></View>
+            <Text style={s.rankValue}>{fmtScore(dims[key].score)} / 10</Text>
+          </View>
+        ))}
         <View style={s.toc} wrap={false}>
           <Label tone="muted">Nelle prossime pagine</Label>
           <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
@@ -585,31 +606,40 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           n="03"
           kicker="Perché ti frena"
           title="Le risposte che hanno pesato"
-          intro="Qui puoi rileggere le domande e le risposte disponibili per questo report."
+          intro={evidenceIntro}
         />
 
-        {(result as any).challenge ? (
+        {challenge ? (
           <View style={s.quoteBox} wrap={false}>
             <Label tone="muted">La sfida che hai scritto</Label>
-            <Text style={s.quote}>{`«${String((result as any).challenge)}»`}</Text>
+            <Text style={s.quote}>{`«${challenge}»`}</Text>
           </View>
         ) : null}
 
         {costly.length > 0 ? (
           costly.slice(0, 3).map((ca: any, i: number) => (
-            <View key={ca.id || i} style={s.answer} wrap={false}>
+            <View key={ca.id || i} style={[s.answer, challenge ? s.compactAnswer : {}]} wrap={false}>
               <Label>{`${String(i + 1).padStart(2, "0")} · ${dimName(ca.dimension)}`}</Label>
               <Text style={s.answerQ}>{txt(ca.text)}</Text>
               <Text style={s.answerChosen}>{`Hai risposto: «${txt(ca.chosenText)}»`}</Text>
             </View>
           ))
         ) : (
-          <View style={s.block}>
-            <Text style={s.body}>Per questo report abbiamo i punteggi delle aree. Li trovi nella pagina successiva.</Text>
+          <View style={s.reasonBlock}>
+            <Text style={s.body}>Per questo report sono disponibili i punteggi delle aree. La priorità è {bindingName.toLowerCase()}.</Text>
+            <View style={s.evidenceScores}>
+              {ranked.map(key => (
+                <View key={key} style={s.rankRow}>
+                  <Text style={s.rankName}>{dimName(key)}</Text>
+                  <View style={s.rankBar}><TickBar score={dims[key].score} accent={key === binding} /></View>
+                  <Text style={s.rankValue}>{fmtScore(dims[key].score)} / 10</Text>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
-        <View style={s.block} wrap={false}>
+        <View style={s.notePanel} wrap={false}>
           <Label>Come leggere queste risposte</Label>
           <Text style={s.body}>{binding === "margins" ? "Dal solo fatturato non puoi sapere quanto lascia una commessa. Per quella decisione servono anche i costi diretti e le ore di lavoro." : "Le risposte descrivono come vedi il lavoro oggi. Contratti, conti e prestazioni effettive richiedono una verifica separata."}</Text>
         </View>
@@ -623,10 +653,19 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           n="04"
           kicker="Le sei aree"
           title="Le sei aree, in ordine di priorità"
-          intro="Il punto dorato indica la priorità. Le barre sotto il grafico riportano i punteggi su 10."
+          intro="Il punto dorato indica la priorità. Più un punto è lontano dal centro, più alto è il punteggio. Le barre riportano i valori su 10."
         />
 
-        <View style={{ alignItems: "center" }}><Radar dims={dims} binding={binding} /></View>
+        <View style={s.mapOverview}>
+          <Radar dims={dims} binding={binding} />
+          <View style={s.mapKey}>
+            <Label>Priorità</Label>
+            <Text style={s.mapHeadline}>{bindingName}</Text>
+            <Text style={s.mapDescription}>{DIM_COPY[binding]}</Text>
+            <Label tone="muted">Punteggio più alto</Label>
+            <Text style={s.mapDescription}>{strongest.length === DIM_ORDER.length ? "Tutte le aree" : strongest.map(k => DIM_SHORT[k]).join(", ")} · {fmtScore(highestScore)} / 10</Text>
+          </View>
+        </View>
         {ranked.map((k) => {
           const sc = Number(dims[k]?.score || 0);
           const isB = k === binding;
@@ -668,15 +707,14 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         />
 
         {priorities.map((key, i) => (
-          <View key={key} style={s.prio} wrap={false}>
-            <View style={s.prioHead}>
-              <Text style={s.prioNum}>{String(i + 1).padStart(2, "0")}</Text>
-              <Text style={s.prioName}>{dimName(key)}</Text>
-              <Text style={s.prioScore}>{fmtScore(dims[key]?.score)} / 10</Text>
+          <View key={key} style={s.priorityRow} wrap={false}>
+            <View style={s.numberColumn}>
+              <Text style={s.priorityIndex}>{String(i + 1).padStart(2, "0")}</Text>
             </View>
-            <Text style={s.lead}>{decisions[key].question}</Text>
-            <View style={{ marginTop: 8 }}>
-              <Label tone="muted">Cosa guardare</Label>
+            <View style={s.priorityContent}>
+              <Text style={s.sectionLabel}>{dimName(key).toUpperCase()} · {fmtScore(dims[key].score)} / 10</Text>
+              <Text style={s.priorityQuestion}>{decisions[key].question}</Text>
+              <Text style={s.sectionLabel}>COSA GUARDARE</Text>
               <Text style={s.body}>{decisions[key].evidence}</Text>
             </View>
           </View>
@@ -694,9 +732,18 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           intro="Tre possibili conseguenze delle aree evidenziate nelle risposte."
         />
         {priorities.map(key => (
-          <View key={key} style={s.block} wrap={false}>
-            <Label>{dimName(key)}</Label>
-            <Text style={s.lead}>{decisions[key].consequence}</Text>
+          <View key={key} style={s.scenario} wrap={false}>
+            <Text style={s.scenarioTitle}>{dimName(key)}</Text>
+            <View style={s.scenarioColumns}>
+              <View style={s.scenarioInput}>
+                <Text style={s.sectionLabel}>NEL LAVORO QUOTIDIANO</Text>
+                <Text style={s.scenarioBody}>{decisions[key].reason}</Text>
+              </View>
+              <View style={s.scenarioResult}>
+                <Text style={s.lightLabel}>POSSIBILE CONSEGUENZA</Text>
+                <Text style={s.scenarioLight}>{decisions[key].consequence}</Text>
+              </View>
+            </View>
           </View>
         ))}
         <Footer />
@@ -707,16 +754,28 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Header who={who} />
         <Head n="07" kicker="La fase del business" title={stageName}
           intro={`Il tuo punteggio complessivo è ${score} su 100. Nell’assessment corrisponde alla fase «${stageName}».`} />
-        <View style={s.stageScaleWrap}><StageScale score={score} labels /></View>
-        <View style={s.block}><Label>Come leggere la fase</Label>
-          <Text style={s.body}>La fase riassume le risposte su tutte le aree. Anche un’azienda che vende da anni può ottenere un punteggio basso se la gestione dipende da poche persone o se i margini sono difficili da leggere.</Text>
+        <View style={s.stageBand}>
+          <View style={{ width: 125 }}>
+            <Text style={s.lightLabel}>PUNTEGGIO IMPULSE</Text>
+            <Text style={s.stageValue}>{score}<Text style={s.stageUnit}> / 100</Text></Text>
+          </View>
+          <View style={{ flex: 1, justifyContent: "center" }}><StageScale score={score} dark /></View>
         </View>
-        <View style={s.block}><Label>Nel tuo caso</Label>
-          <Text style={s.lead}>{dimName(binding)} · {fmtScore(dims[binding]?.score)} su 10</Text>
-          <Text style={s.body}>Il punteggio complessivo comprende anche le altre cinque aree. Per capire perché emerge questa priorità, puoi rileggere le tue risposte a pagina 3.</Text>
-        </View>
-        <View style={s.block}><Label>Le fasce di punteggio</Label>
-          {STAGE_BANDS.map(b => <Text key={b.name} style={s.body}>{b.from}–{b.to === 100 ? 100 : b.to - 1}   {b.name}</Text>)}
+        <Label>Le fasce di punteggio</Label>
+        {STAGE_BANDS.map(b => {
+          const active = b.name === stageName;
+          return (
+            <View key={b.name} style={[s.stageRow, active ? s.stageActive : {}]}>
+              <Text style={s.stageRange}>{b.from}–{b.to === 100 ? 100 : b.to - 1}</Text>
+              <Text style={s.stageName}>{b.name}</Text>
+              {active && <Text style={s.sectionLabel}>LA TUA FASE</Text>}
+            </View>
+          );
+        })}
+        <View style={s.notePanel}>
+          <Label>Come leggere la fase</Label>
+          <Text style={s.body}>La fase riassume le sei aree. Anche un’azienda che vende da anni può avere un punteggio basso se la gestione dipende da poche persone o se i margini sono difficili da leggere.</Text>
+          <Text style={s.stageDetail}>Nel tuo caso la priorità è {bindingName.toLowerCase()} ({fmtScore(dims[binding].score)} su 10). A pagina 3 trovi il dettaglio disponibile.</Text>
         </View>
         <Footer />
       </Page>
@@ -730,7 +789,6 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Label>La tua priorità · {bindingName}</Label>
           <Text style={s.lead}>{decision.question}</Text>
         </View>
-        <View style={{ flexGrow: 1 }} />
         <View style={s.cta} wrap={false}>
           <Text style={s.ctaKicker}>KIT E STRATEGIC REVIEW</Text>
           <Text style={s.ctaTitle}>{route === "review" ? "Discuti la decisione con Davide" : "Prepara il tuo piano con il Kit"}</Text>
@@ -772,6 +830,50 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
    Stili
 ============================================================ */
 const s = StyleSheet.create({
+  coverPlot: { marginTop: 32, marginBottom: 26, paddingVertical: 17, borderTopColor: DARK_RULE, borderTopWidth: 0.8 },
+  coverChart: { flexDirection: "row", marginTop: 8 },
+  coverColumn: { flex: 1, paddingRight: 10 },
+  coverValue: { fontFamily: F.sans, fontSize: 13, color: IVORY },
+  coverTrack: { height: 60, justifyContent: "flex-end", borderBottomWidth: 1, borderBottomColor: DARK_MUTED, marginVertical: 4 },
+  coverAxis: { color: IVORY_SOFT, fontFamily: F.sans, fontSize: 10 },
+  summaryBand: { backgroundColor: INK, padding: 22, marginBottom: 16 },
+  lightLabel: { fontFamily: F.sans, color: IVORY_SOFT, fontSize: 9, letterSpacing: 0.7, marginBottom: 6 },
+  bigQuestion: { fontFamily: F.display, fontSize: 31, lineHeight: 1.15, color: IVORY },
+  reasonBlock: { paddingVertical: 14, marginBottom: 12 },
+  reasonText: { fontSize: 19, lineHeight: 1.27, color: INK },
+  rankRow: { flexDirection: "row", alignItems: "center", minHeight: 42, borderBottomWidth: 0.6, borderColor: RULE },
+  rankIndex: { width: 32, fontFamily: F.sans, fontSize: 11, color: GOLD_INK },
+  rankName: { flex: 1, fontFamily: F.display, fontSize: 18, color: INK },
+  rankBar: { width: 110, marginHorizontal: 10 },
+  rankValue: { width: 52, textAlign: "right", fontFamily: F.sans, fontSize: 11, color: INK },
+  evidenceScores: { marginTop: 16 },
+  compactAnswer: { paddingVertical: 8 },
+  notePanel: { marginTop: 18, padding: 16, backgroundColor: MIST },
+  mapOverview: { marginBottom: 12, flexDirection: "row", alignItems: "center", backgroundColor: MIST },
+  mapKey: { flex: 1, paddingRight: 12 },
+  mapHeadline: { fontFamily: F.display, fontSize: 22, lineHeight: 1.15, color: INK, marginBottom: 4 },
+  mapDescription: { fontSize: 13, lineHeight: 1.3, color: BODY, marginBottom: 8 },
+  priorityRow: { flexDirection: "row", paddingVertical: 19, borderTopWidth: 1, borderColor: RULE_STRONG },
+  numberColumn: { width: 68, paddingRight: 8 },
+  priorityIndex: { fontFamily: F.display, color: OCEAN, fontSize: 39, lineHeight: 1.05 },
+  priorityContent: { flex: 1 },
+  sectionLabel: { fontFamily: F.sans, fontSize: 9, letterSpacing: 0.6, color: OCEAN, marginBottom: 4 },
+  priorityQuestion: { fontFamily: F.display, fontSize: 25, lineHeight: 1.15, color: INK, marginVertical: 5, marginBottom: 11 },
+  scenario: { marginBottom: 15 },
+  scenarioTitle: { fontFamily: F.display, fontSize: 22, color: INK, marginBottom: 6 },
+  scenarioColumns: { flexDirection: "row", alignItems: "stretch" },
+  scenarioInput: { flex: 1, padding: 13, backgroundColor: MIST },
+  scenarioResult: { flex: 1, padding: 13, backgroundColor: OCEAN },
+  scenarioBody: { fontFamily: "ArchivoText", fontSize: 13.5, lineHeight: 1.38, color: INK },
+  scenarioLight: { fontFamily: "ArchivoText", fontSize: 13.5, lineHeight: 1.38, color: IVORY },
+  stageBand: { flexDirection: "row", backgroundColor: INK, padding: 16, marginBottom: 18 },
+  stageValue: { fontFamily: F.display, fontSize: 40, color: IVORY },
+  stageUnit: { fontFamily: F.sans, fontSize: 11, color: IVORY_SOFT },
+  stageRow: { flexDirection: "row", alignItems: "center", paddingVertical: 9, paddingHorizontal: 10, borderBottomWidth: 0.6, borderBottomColor: RULE },
+  stageActive: { backgroundColor: MIST },
+  stageRange: { width: 76, fontFamily: F.sans, fontSize: 13, color: OCEAN },
+  stageName: { flex: 1, fontFamily: F.display, color: INK, fontSize: 20 },
+  stageDetail: { fontSize: 14, lineHeight: 1.3, color: BODY, marginTop: 8 },
   /* ---- pagina ---- */
   page: {
     paddingTop: 62,
@@ -808,13 +910,13 @@ const s = StyleSheet.create({
   },
   footerText: { fontFamily: F.sans, fontSize: 7.1, letterSpacing: 1, color: MUTED },
 
-  head: { marginBottom: 20 },
-  kicker: { fontFamily: F.sans, fontSize: 7.6, letterSpacing: 2.2, color: GOLD_INK, marginBottom: 8 },
-  title: { fontFamily: F.display, fontSize: 33, lineHeight: 1.08, color: INK, letterSpacing: -0.3 },
-  intro: { marginTop: 9, fontSize: 13.5, lineHeight: 1.4, color: MUTED, maxWidth: 440 },
+  head: { marginBottom: 18 },
+  kicker: { fontFamily: F.sans, fontSize: 10, letterSpacing: 2.2, color: GOLD_INK, marginBottom: 8 },
+  title: { fontFamily: F.display, fontSize: 39, lineHeight: 1.08, color: INK, letterSpacing: -0.3 },
+  intro: { marginTop: 9, fontSize: 15, lineHeight: 1.4, color: MUTED, maxWidth: 440 },
 
-  label: { fontFamily: F.sans, fontSize: 8.5, letterSpacing: 1.1, marginBottom: 5, textTransform: "uppercase" },
-  body: { fontSize: 14, lineHeight: 1.42, color: BODY },
+  label: { fontFamily: F.sans, fontSize: 10, letterSpacing: 1.1, marginBottom: 5, textTransform: "uppercase" },
+  body: { fontFamily: "ArchivoText", fontSize: 12.5, lineHeight: 1.48, color: BODY },
   bodyMid: { fontSize: 12.2, lineHeight: 1.38, color: BODY },
   bodySmall: { fontSize: 11.4, lineHeight: 1.36, color: BODY },
   small: { fontSize: 11, lineHeight: 1.35, color: MUTED },
@@ -836,9 +938,9 @@ const s = StyleSheet.create({
   coverTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   coverMark: { fontFamily: F.display, fontSize: 17, letterSpacing: 3.2, color: IVORY },
   coverMeta: { fontFamily: F.sans, fontSize: 6.6, letterSpacing: 1.4, color: DARK_MUTED, textAlign: "right", lineHeight: 1.8 },
-  coverTitleBlock: { marginTop: 92 },
+  coverTitleBlock: { marginTop: 52 },
   coverKicker: { fontFamily: F.sans, fontSize: 8, letterSpacing: 3, color: GOLD_BRIGHT, marginBottom: 18 },
-  coverTitle: { fontFamily: F.display, fontSize: 60, lineHeight: 1.02, color: IVORY, letterSpacing: -0.6 },
+  coverTitle: { fontFamily: F.display, fontSize: 65, lineHeight: 1.02, color: IVORY, letterSpacing: -0.6 },
   coverTitleGold: { fontFamily: F.serif, fontStyle: "italic", color: GOLD_BRIGHT },
   coverFor: { flexDirection: "row", alignItems: "center", marginTop: 26 },
   coverForText: { fontSize: 14, color: IVORY_SOFT },
@@ -846,7 +948,7 @@ const s = StyleSheet.create({
   coverBand: { flexDirection: "row", borderTopWidth: 0.8, borderTopColor: DARK_RULE, borderBottomWidth: 0.8, borderBottomColor: DARK_RULE, paddingVertical: 22 },
   coverBindCell: { flex: 1.25, paddingRight: 22, borderRightWidth: 0.8, borderRightColor: DARK_RULE },
   coverScoreCell: { flex: 1, paddingLeft: 22 },
-  coverLabel: { fontFamily: F.sans, fontSize: 6.8, letterSpacing: 1.8, color: GOLD_BRIGHT, marginBottom: 8 },
+  coverLabel: { fontFamily: F.sans, fontSize: 9, letterSpacing: 1.8, color: GOLD_BRIGHT, marginBottom: 8 },
   coverBind: { fontFamily: F.serif, fontStyle: "italic", fontSize: 40, lineHeight: 1, color: GOLD_BRIGHT, marginBottom: 8 },
   coverProfile: { fontFamily: F.display, fontSize: 15.5, color: IVORY, marginBottom: 5 },
   coverProfileBody: { fontSize: 11.8, lineHeight: 1.38, color: IVORY_SOFT },
@@ -859,7 +961,7 @@ const s = StyleSheet.create({
   /* ---- 02 sintesi ---- */
   moveText: { fontSize: 13.4, lineHeight: 1.42, color: INK },
   antiText: { fontSize: 12.6, lineHeight: 1.4, color: BODY, fontStyle: "italic" },
-  toc: { paddingTop: 10, borderTopWidth: 0.6, borderTopColor: RULE },
+  toc: { marginTop: 26, paddingTop: 12, borderTopWidth: 0.6, borderTopColor: RULE },
   tocItem: { width: "50%", flexDirection: "row", alignItems: "baseline", marginTop: 4 },
   tocNum: { width: 22, fontFamily: F.sans, fontSize: 7, letterSpacing: 1, color: GOLD_INK },
   tocText: { fontSize: 11.6, color: BODY },
@@ -867,10 +969,10 @@ const s = StyleSheet.create({
   /* ---- 03 perché ti frena ---- */
   quoteBox: { marginBottom: 6, paddingBottom: 12, borderBottomWidth: 0.6, borderBottomColor: RULE },
   quote: { fontStyle: "italic", fontSize: 16, lineHeight: 1.35, color: INK },
-  answer: { paddingTop: 11, paddingBottom: 12, borderBottomWidth: 0.6, borderBottomColor: RULE },
+  answer: { paddingTop: 18, paddingBottom: 18, borderBottomWidth: 0.6, borderBottomColor: RULE },
   answerCheck: { fontSize: 12.2, color: BODY, marginTop: 4, lineHeight: 1.35 },
-  answerQ: { fontFamily: F.display, fontSize: 15.5, lineHeight: 1.25, color: INK, marginBottom: 3 },
-  answerChosen: { fontStyle: "italic", fontSize: 12.6, color: GOLD_INK, marginBottom: 4 },
+  answerQ: { fontFamily: F.display, fontSize: 19, lineHeight: 1.25, color: INK, marginBottom: 3 },
+  answerChosen: { fontFamily: "ArchivoText", fontSize: 14.5, color: OCEAN, marginBottom: 4 },
 
   /* ---- 04 mappa ---- */
   areaRow: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 6, borderBottomWidth: 0.5, borderBottomColor: RULE },
@@ -901,14 +1003,14 @@ const s = StyleSheet.create({
   checkText: { flex: 1, fontSize: 11.4, lineHeight: 1.34, color: BODY },
 
   /* ---- 08 prossimo passo ---- */
-  cta: { padding: 22, backgroundColor: DEEP },
+  cta: { marginTop: 24, padding: 26, backgroundColor: DEEP },
   ctaKicker: { fontFamily: F.sans, fontSize: 7.2, letterSpacing: 2, color: GOLD_BRIGHT, marginBottom: 8 },
-  ctaTitle: { fontFamily: F.display, fontSize: 24, lineHeight: 1.12, color: IVORY, marginBottom: 8 },
-  ctaBody: { fontSize: 12.4, lineHeight: 1.42, color: IVORY_SOFT },
+  ctaTitle: { fontFamily: F.display, fontSize: 30, lineHeight: 1.12, color: IVORY, marginBottom: 8 },
+  ctaBody: { fontFamily: "ArchivoText", fontSize: 13.5, lineHeight: 1.46, color: IVORY_SOFT },
   ctaPrimary: { fontFamily: F.sans, marginTop: 6, padding: 7, backgroundColor: IVORY, color: INK, fontSize: 13, textDecoration: "none" },
   ctaAlt: { fontFamily: F.sans, marginTop: 5, fontSize: 13, color: GOLD_BRIGHT, textDecoration: "underline" },
   letter: { marginTop: 18, paddingTop: 12, borderTopWidth: 0.6, borderTopColor: RULE },
-  letterText: { fontSize: 12.4, lineHeight: 1.42, color: BODY },
+  letterText: { fontSize: 15, lineHeight: 1.42, color: BODY },
   letterSign: { marginTop: 8, fontFamily: F.serif, fontStyle: "italic", fontSize: 18, color: INK },
   letterCred: { marginTop: 3, fontSize: 10.2, lineHeight: 1.35, color: SOFT },
   letterRetest: { marginTop: 6, fontSize: 11, color: GOLD_INK, fontStyle: "italic" },
