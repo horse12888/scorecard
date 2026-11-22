@@ -4,6 +4,7 @@
  */
  
 import React, { useState, useEffect } from 'react';
+import { decisions, reportOffer, type ReportArea } from './reportDecision';
 import { generateIMPULSEReport } from './pdf';
 import { QUESTIONS } from './questions';
 import { calculateScorecardResult } from './scoring';
@@ -209,7 +210,7 @@ function track(name: string, params: Record<string, any> = {}) {
 
 /* JSONP: evita problemi di CORS verso script.google.com.
    Risolve con il payload (gia' decodificato dall'url-encoding) o stringa vuota. */
-function fetchEncodedResultById(id: string): Promise<string> {
+function fetchEncodedResultById(id: string): Promise<{ encoded: string; challenge: string }> {
   return new Promise(resolve => {
     const cbName = '__impulseGotPayload_' + Math.random().toString(36).slice(2);
     let done = false;
@@ -224,7 +225,7 @@ function fetchEncodedResultById(id: string): Promise<string> {
       if (script.parentNode) script.parentNode.removeChild(script);
     };
  
-    (window as any)[cbName] = (payload: string) => {
+    (window as any)[cbName] = (payload: string | {r?: string; c?: string}) => {
       done = true;
       /* [SFIDA] il ponte puo' rispondere con una stringa (CRM v2.2)
          o con {r, c} (CRM v2.3+: payload + sfida dichiarata). */
@@ -234,7 +235,7 @@ function fetchEncodedResultById(id: string): Promise<string> {
         raw = payload.r ? String(payload.r) : '';
         challenge = payload.c ? String(payload.c) : '';
       } else {
-        raw = payload ? String(payload) : '';
+        raw = typeof payload === 'string' ? payload : '';
       }
       let decoded = '';
       try {
@@ -357,7 +358,6 @@ function buildEnrichedResult(baseResult: any, state: any, leadId?: string) {
     baseResult?.intent_level ??
     baseResult?.metadata?.intentLevel ??
     baseResult?.metadata?.intent_level ??
-    state?.intentInsight?.level ??
     null;
  
   const resolvedStagingScore =
@@ -478,38 +478,6 @@ function buildStrategicReviewUrl(result: any) {
   return `${base}${query}${hash}`;
 }
  
-function getReviewCta(result: any) {
-  const level = Number(result?.intentLevel);
- 
-  if (!Number.isNaN(level) && level >= 3) {
-    return {
-      kicker: 'Priorità adesso',
-      title: 'Hai una finestra di decisione aperta.',
-      body:
-        'Hai detto che c’è una decisione importante da prendere adesso. Nella Strategic Review trasformiamo questa diagnosi nel piano dei prossimi 30-60 giorni: cosa correggere prima e cosa non spingere ancora, sui tuoi numeri.',
-      button: 'Prenota ora la Strategic Review'
-    };
-  }
- 
-  if (!Number.isNaN(level) && level === 2) {
-    return {
-      kicker: 'Strategic Review',
-      title: 'Dalla diagnosi a un piano.',
-      body:
-        'Hai una decisione importante nei prossimi 6-12 mesi. L’ordine in cui intervieni decide con quanta forza ci arrivi. In una sessione sul tuo caso fissiamo priorità e sequenza.',
-      button: 'Prenota la Strategic Review'
-    };
-  }
- 
-  return {
-    kicker: 'Quando sarai pronto',
-    title: 'Il punto di partenza è già identificato.',
-    body:
-      'Questa diagnosi resta valida. Quando vorrai trasformarla in un piano, sul tuo caso, il passo successivo è la Strategic Review.',
-    button: 'Scopri la Strategic Review'
-  };
-}
- 
 export default function App() {
   const [step, setStep] = useState<
     'loading' | 'error' | 'info' | 'questions' | 'summary'
@@ -585,6 +553,7 @@ export default function App() {
             company: parsed.company || '',
             email: parsed.email || '',
             metadata: parsed.metadata || {},
+            answers: parsed.answers,
             overall: parsed.overall,
             dimensions: parsed.dimensions,
             stagingScore,
@@ -629,7 +598,7 @@ export default function App() {
     const shortId = urlParams.get('id');
  
     if (shortId) {
-      fetchEncodedResultById(shortId).then(({ encoded, challenge }: any) => {
+      fetchEncodedResultById(shortId).then(({ encoded, challenge }) => {
         if (encoded) {
           renderFromEncoded(encoded, challenge);
         } else {
@@ -691,7 +660,7 @@ export default function App() {
     );
     const state = (assembled && assembled.state) ? assembled.state : {};
  
-    const devLeadId = finalResult.leadId || makeDevLeadId();
+    const devLeadId = makeDevLeadId();
  
     const enrichedResult = buildEnrichedResult(
       {
@@ -739,7 +708,7 @@ export default function App() {
     );
     const state = (assembled && assembled.state) ? assembled.state : {};
  
-    const devLeadId = testResult.leadId || makeDevLeadId();
+    const devLeadId = makeDevLeadId();
  
     const enrichedTestResult = buildEnrichedResult(
       {
@@ -1145,26 +1114,10 @@ export default function App() {
               </div>
             ) : null}
 
-            {(result as any).assembled?.firstMove ? (
-              <div className="mb-10 pt-4 border-t border-[rgba(19,39,59,0.55)]">
-                <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#86651E] mb-2">
-                  La tua prima mossa, entro 48 ore
-                </p>
-                <p className="text-xl font-medium text-[#13273B] leading-relaxed">
-                  {(result as any).assembled.firstMove}
-                </p>
-                <p className="text-lg text-[#4B5866] mt-3 leading-relaxed">
-                  &Egrave; la prima di tre. Le altre due, e l&rsquo;ordine in cui farle, sono nel{' '}
-                  <a
-                    href={buildKitUrl(result, 'web')}
-                    onClick={() => track('click_kit', { from: 'report_first_move', vincolo: getBindingKey(result) })}
-                    className="italic text-[#86651E] underline underline-offset-4 decoration-1"
-                  >
-                    Priority Map Kit
-                  </a>.
-                </p>
-              </div>
-            ) : null}
+            <div className="mb-10 pt-4 border-t border-[rgba(19,39,59,0.16)]">
+              <h2 className="text-2xl text-[#13273B]">{decisions[getBindingKey(result) as ReportArea]?.question}</h2>
+              <p className="text-lg mt-2">{decisions[getBindingKey(result) as ReportArea]?.reason}</p>
+            </div>
 
             {(() => {
               const picks = ((result as any).assembled?.costlyAnswers) || [];
@@ -1178,7 +1131,6 @@ export default function App() {
                     <div key={pk.id} className="pb-5 mb-5 border-b border-[rgba(19,39,59,0.16)] last:border-b-0 last:mb-0">
                       <p className="text-xl font-semibold text-[#13273B] leading-snug">{pk.text}</p>
                       <p className="text-lg italic text-[#4B5866] mt-1">Hai risposto: &laquo;{pk.chosenText}&raquo;</p>
-                      <p className="text-lg text-[#22364A] mt-1 leading-relaxed">{pk.why}</p>
                     </div>
                   ))}
                 </div>
@@ -1226,36 +1178,20 @@ export default function App() {
             ) : null}
 
             {(() => {
-              const cta = getReviewCta(result);
-              const reviewUrl = buildStrategicReviewUrl(result);
+              const primary = reportOffer(result);
+              const offers = {
+                review: { name: 'Strategic Review · €350', href: buildStrategicReviewUrl(result), detail: 'In 45 minuti discutiamo il tuo caso. Entro 48 ore ricevi la Priority Map scritta.' },
+                kit: { name: 'Priority Map Kit · €47', href: buildKitUrl(result, 'web_cta'), detail: 'La guida per la tua area e il foglio per preparare il tuo piano di 90 giorni.' }
+              };
+              const alternative = primary === 'review' ? 'kit' : 'review';
               return (
                 <div className="bg-[#13273B] -mx-5 sm:mx-0 px-6 sm:px-8 py-8 mt-2">
-                  <p className="font-sans text-[10.5px] font-medium tracking-[0.26em] uppercase text-[#D9BE7E] mb-3">
-                    {cta.kicker}
-                  </p>
-                  <p className="text-3xl font-medium text-[#F5EDD8] mb-3 leading-tight">
-                    {cta.title}
-                  </p>
-                  <p className="text-lg text-[rgba(245,237,216,0.82)] leading-relaxed mb-6">
-                    {cta.body}
-                  </p>
-                  <a
-                    href={reviewUrl}
-                    onClick={() => track('click_review', { from: 'report', vincolo: getBindingKey(result) })}
-                    className="font-sans inline-block bg-[#F5EDD8] hover:bg-white text-[#13273B] text-xs font-medium tracking-[0.2em] uppercase py-4 px-6 transition"
-                  >
-                    {cta.button}
-                  </a>
-                  <p className="text-lg italic text-[rgba(245,237,216,0.82)] mt-5">
-                    Preferisci partire da solo?{' '}
-                    <a
-                      href={buildKitUrl(result, 'web_cta')}
-                      onClick={() => track('click_kit', { from: 'report_cta', vincolo: getBindingKey(result) })}
-                      className="text-[#D9BE7E] underline underline-offset-4 decoration-1"
-                    >
-                      Priority Map Kit, &euro;47
-                    </a>
-                  </p>
+                  <h2 className="text-3xl text-[#F5EDD8] mb-3">{offers[primary].name}</h2>
+                  <p className="text-lg text-[#F5EDD8] mb-5">{offers[primary].detail}</p>
+                  <a href={offers[primary].href} onClick={() => track('click_' + primary, {from:'report', vincolo:getBindingKey(result)})}
+                     className="inline-block bg-[#F5EDD8] text-[#13273B] py-3 px-5">{primary === 'kit' ? 'Scopri il Kit' : 'Scopri la Review'}</a>
+                  <p className="mt-4"><a href={offers[alternative].href} onClick={() => track('click_' + alternative, {from:'report_cta', vincolo:getBindingKey(result)})}
+                     className="text-[#D9BE7E] underline">{offers[alternative].name}</a></p>
                 </div>
               );
             })()}

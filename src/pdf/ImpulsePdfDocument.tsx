@@ -1,3 +1,4 @@
+import { decisions, reportOffer } from "../reportDecision";
 import React from "react";
 import {
   Document,
@@ -6,7 +7,7 @@ import {
   View,
   StyleSheet,
   Font,
-  Link
+  Link, Svg, Line, Polygon, Circle
 } from "@react-pdf/renderer";
 
 /* ============================================================
@@ -14,11 +15,7 @@ import {
    Rifatto da zero sulla grafica del sito (Design A): Cormorant per
    titoli e testi, Jost per le etichette, blu notte / oro / crema.
 
-   La sintesi apre con una prova da fare sul lavoro. Le sei aree sono
-   ordinate dalla priorità principale; entrambe le offerte restano accessibili.
-
-   LOGICA DATI: invariata. I testi arrivano dall'assembler (state +
-   assembled); qui si sceglie solo cosa mostrare e come.
+   La sintesi presenta la decisione suggerita dalle risposte.
 ============================================================ */
 
 const USE_CUSTOM_FONTS = true;
@@ -61,7 +58,6 @@ Font.registerHyphenationCallback((word) => [word]);
 const INK = "#13273B";
 const DEEP = "#0B1928";
 const PAPER = "#F8F5EE";
-const CREAM = "#F5EDD8";
 const BODY = "#22364A";
 const MUTED = "#4B5866";
 const SOFT = "#77828F";
@@ -142,89 +138,13 @@ const DIM_COPY: Record<string, string> = {
   readiness: "Quanto il business si capisce da fuori: numeri, ruoli, materiali."
 };
 
-const FIELDWORK: Record<DimensionKey, { task: string; evidence: string }> = {
-  clarity: {
-    task: "Confronta gli ultimi tre preventivi. Sottolinea il problema del cliente, il risultato proposto e come lo descrivi.",
-    evidence: "Hai scritto una frase che un cliente reale riconoscerebbe e hai individuato il preventivo in cui quella promessa è più chiara."
-  },
-  acquisition: {
-    task: "Riprendi le ultime dieci richieste commerciali. Per ciascuna segna da dove è arrivata e come è finita.",
-    evidence: "Puoi indicare quante richieste ha generato ogni fonte e quante sono diventate clienti. Segna i casi di origine sconosciuta."
-  },
-  operations: {
-    task: "Scegli una decisione ricorrente. Scrivi chi può prenderla e fino a quale limite.",
-    evidence: "La prossima volta il team decide entro il limite concordato e registra l’esito senza aspettare il tuo via libera."
-  },
-  margins: {
-    task: "Confronta le ultime tre commesse concluse. Annota ricavi, costi diretti e costo delle ore. Se il lavoro è già incluso nei costi diretti, contalo una sola volta.",
-    evidence: "Puoi indicare quale commessa ha lasciato meno margine e quale costo ha inciso di più. Segna le ore stimate per poterle verificare."
-  },
-  asset: {
-    task: "Scegli un metodo, un contratto o un archivio usato nel lavoro. Individua dove si trova, chi può usarlo e con quali diritti.",
-    evidence: "Una seconda persona riesce a trovare il materiale e a descrivere come usarlo. Annota il primo passaggio in cui si blocca."
-  },
-  readiness: {
-    task: "Riunisci i numeri dell’ultimo trimestre, i ruoli e i rischi principali in una pagina. Falla leggere a una persona autorizzata.",
-    evidence: "Il lettore sa spiegare come guadagna l’azienda e chi decide. Le domande rimaste aperte indicano cosa chiarire."
-  }
-};
-
-const ANSWER_CHECK: Record<string, string> = {
-  Q3: "Confronta gli ultimi tre preventivi e cerchia ciò che hai venduto in tutti e tre.",
-  Q4: "Prendi l’ultimo cliente profittevole e l’ultimo difficile da servire. Quale tratto potevi riconoscere prima?",
-  Q5: "Affianca la promessa sul sito alla tua ultima proposta. Sottolinea ciò che cambia.",
-  Q6: "Chiedi a una persona esterna di spiegare in una frase cosa vendi, dopo aver letto la tua pagina.",
-  Q7: "Recupera l’ultima decisione sul prezzo e il dato che l’ha motivata.",
-  Q8: "Confronta la previsione di nuovi clienti del mese scorso con il numero effettivo.",
-  Q9: "Segna l’origine degli ultimi dieci clienti e in quanti casi sei intervenuto personalmente.",
-  Q10: "Guarda gli ultimi cinque contatti. Quali segnali anticipavano il costo di servirli?",
-  Q11: "Ricostruisci i passaggi seguiti per le ultime tre richieste, fino all’esito.",
-  Q12: "Sulle ultime dieci vendite, calcola la quota di ricavi arrivata fuori dalla tua rete.",
-  Q13: "Ripensa all’ultima assenza. Qual è il primo lavoro rimasto fermo e per quanto tempo?",
-  Q14: "Chiedi a un collega di completare un’attività usando solo le istruzioni disponibili.",
-  Q15: "Confronta ritardi e rilavorazioni di una settimana normale con quelli dell’ultimo picco.",
-  Q16: "Conta le approvazioni che ti sono arrivate in cinque giorni. Quale richiesta si ripete?",
-  Q17: "Riprendi le ultime tre eccezioni e annota chi le ha chiuse e con quale regola.",
-  Q18: "Ricostruisci il margine di una commessa conclusa, includendo il costo delle ore.",
-  Q19: "Confronta incassi e uscite previsti un mese fa con i movimenti effettivi.",
-  Q20: "Trova la data dell’ultima revisione prezzi e confronta il margine prima e dopo.",
-  Q21: "Riprendi l’ultima decisione di spesa e verifica quali dati erano disponibili quel giorno.",
-  Q22: "Ordina tre clienti per fatturato, poi per margine. Chi cambia posizione?",
-  Q23: "Elenca cosa continuerebbe ad avere valore se per un mese non entrassero nuovi ordini.",
-  Q24: "Per un asset importante recupera una prova del suo valore e la data dell’ultimo aggiornamento.",
-  Q25: "Fai seguire a un collega le istruzioni d’uso di un asset e annota dove serve il tuo aiuto.",
-  Q26: "Nelle ultime trattative cerca un motivo preciso per cui un cliente ha scelto proprio voi.",
-  Q27: "Per una relazione chiave recupera l’accordo e controlla chi può rinnovarlo.",
-  Q28: "Cronometra quanto impieghi a ritrovare una sintesi aggiornata di numeri e responsabilità.",
-  Q29: "Scegli una decisione strategica recente. Chi aveva autorità per prenderla in tua assenza?",
-  Q30: "Fai presentare il business a un collega e annota le domande a cui deve rispondere il founder.",
-  Q31: "Scegli un rischio concreto. Recupera il piano scritto, il responsabile e la prima azione prevista.",
-  Q32: "Fai leggere la sintesi aziendale a una persona autorizzata e raccogli le domande rimaste aperte."
-};
-
-/* stesso testo della pagina risultato (result page v2.14) */
-const ANTI_ACTION: Record<string, string> = {
-  clarity: "Aumentare marketing, contenuti o automazioni. Prima va chiarito cosa vendi, a chi e a che prezzo.",
-  acquisition: "Aprire tre canali nuovi insieme. Prima trovane uno che funziona, misuralo e verifica che regga il margine.",
-  operations: "Assumere o comprare software per tappare processi che nessuno ha mai scritto. Prima metti nero su bianco come lavorate davvero.",
-  margins: "Spingere su volume o nuovi canali finché non sai quanto margine lascia ogni vendita.",
-  asset: "Cercare partner, capitale o acquirenti prima di poter mostrare cosa resta nel business quando tu non ci sei.",
-  readiness: "Presentarti a investitori o partner prima di aver messo in ordine numeri, ruoli e materiali."
-};
-
-const STAGE_IT: Record<string, string> = {
-  FOUNDATION: "Avvio",
-  TRACTION: "Crescita",
-  MARKET_TRACTION: "Crescita",
-  "MARKET TRACTION": "Crescita",
-  STABILIZATION: "Stabilità",
-  OPERATING_STABILITY: "Stabilità",
-  "OPERATING STABILITY": "Stabilità",
-  PRODUCTIZATION: "Offerta definita",
-  VALUE_ARCHITECTURE: "Offerta definita",
-  "VALUE ARCHITECTURE": "Offerta definita",
-  "SCALE READINESS": "Pronto a scalare",
-  SCALE_READINESS: "Pronto a scalare"
+const DIM_SHORT: Record<string, string> = {
+  clarity: "Chiarezza",
+  acquisition: "Clienti",
+  operations: "Operatività",
+  margins: "Margini",
+  asset: "Valore",
+  readiness: "Prontezza"
 };
 
 const STAGE_BANDS = [
@@ -234,15 +154,6 @@ const STAGE_BANDS = [
   { name: "Offerta definita", from: 75, to: 85 },
   { name: "Pronto a scalare", from: 85, to: 100 }
 ];
-
-/* stesso testo della pagina risultato */
-const STAGE_COPY: Record<string, string> = {
-  Avvio: "Prima servono basi più solide. Senza quelle, né la crescita né il capitale producono leva vera.",
-  Crescita: "Il business si muove, ma vendita e operatività non sono ancora prevedibili.",
-  "Stabilità": "Il business funziona. Adesso esecuzione, numeri e decisioni ricorrenti vanno messi in struttura.",
-  "Offerta definita": "C'è abbastanza trazione per trasformare il lavoro in un sistema e ridurre la dipendenza da te.",
-  "Pronto a scalare": "Sei vicino a poter scalare. Il lavoro adesso è tenere il business documentato e sotto controllo mentre cresce."
-};
 
 /* ---------------- Utilità ---------------- */
 function txt(value: any, fallback = "") {
@@ -257,11 +168,6 @@ function stageFromScore(score: number) {
     if (s < b.to || b.to === 100) return b.name;
   }
   return "Crescita";
-}
-
-function stageNameOf(result: PdfResult, score: number) {
-  const raw = txt(result.stageLabel || result.stage).toUpperCase();
-  return STAGE_IT[raw] || stageFromScore(score);
 }
 
 function dimName(key?: string) {
@@ -282,15 +188,6 @@ function reportDate() {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
   return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`;
-}
-
-/* Percorso: come la pagina risultato. Review solo con intento 3 e
-   fatturato da €500k in su; tutti gli altri Kit. */
-const REVENUE_REVIEW = ["€500k–€1M", "€1M–€3M", "€3M–€10M", "Oltre €10M"];
-function routeOf(result: PdfResult): "review" | "kit" {
-  const intent = Number(result.intentLevel ?? result.intentInsight?.level);
-  const rev = txt(result.metadata?.revenueRange);
-  return intent === 3 && REVENUE_REVIEW.indexOf(rev) >= 0 ? "review" : "kit";
 }
 
 /* ============================================================
@@ -325,6 +222,83 @@ function TickBar({ score, accent, h = 9 }: { score: number; accent?: boolean; h?
         );
       })}
     </View>
+  );
+}
+
+function polar(cx: number, cy: number, r: number, deg: number) {
+  const rad = (deg * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
+}
+
+function Radar({
+  dims,
+  binding
+}: {
+  dims: Record<DimensionKey, { score: number; yes: number }>;
+  binding?: string;
+}) {
+  const W = 220;
+  const H = 154;
+  const cx = W / 2;
+  const cy = H / 2 + 2;
+  const R = 54;
+  const ang = (i: number) => 90 - i * 60;
+  const ring = (r: number) =>
+    DIM_ORDER.map((_, i) => {
+      const p = polar(cx, cy, r, ang(i));
+      return `${p.x.toFixed(2)},${p.y.toFixed(2)}`;
+    }).join(" ");
+  const pts = DIM_ORDER.map((k, i) => {
+    const s = Math.max(0, Math.min(10, Number(dims?.[k]?.score || 0)));
+    const p = polar(cx, cy, (s / 10) * R, ang(i));
+    return { k, x: p.x, y: p.y };
+  });
+  return (
+    <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+      {[R * 0.4, R * 0.7].map((r, i) => (
+        <Polygon key={i} points={ring(r)} stroke="#D8D2C2" strokeWidth={0.7} fill="none" />
+      ))}
+      <Polygon points={ring(R)} stroke={INK} strokeWidth={1} fill="none" />
+      {DIM_ORDER.map((_, i) => {
+        const p = polar(cx, cy, R, ang(i));
+        return <Line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#D8D2C2" strokeWidth={0.7} />;
+      })}
+      <Polygon
+        points={pts.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ")}
+        fill={GOLD}
+        fillOpacity={0.2}
+        stroke={GOLD}
+        strokeWidth={1.4}
+      />
+      {pts.map((p) => (
+        <Circle
+          key={p.k}
+          cx={p.x}
+          cy={p.y}
+          r={p.k === binding ? 4 : 2.3}
+          fill={p.k === binding ? GOLD : PAPER}
+          stroke={GOLD}
+          strokeWidth={1.1}
+        />
+      ))}
+      {DIM_ORDER.map((k, i) => {
+        const deg = ang(i);
+        const p = polar(cx, cy, R + 12, deg);
+        const cos = Math.cos((deg * Math.PI) / 180);
+        const anchor = cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle";
+        return (
+          <Text
+            key={k}
+            x={p.x}
+            y={p.y + 2.5}
+            textAnchor={anchor as any}
+            style={{ fontFamily: F.sans, fontSize: 6.5, fill: k === binding ? GOLD_INK : INK }}
+          >
+            {DIM_SHORT[k].toUpperCase()}
+          </Text>
+        );
+      })}
+    </Svg>
   );
 }
 
@@ -461,15 +435,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   const dims = result.dimensions;
   const binding = DIM_ORDER.find((key) => key === result.bindingConstraint) ??
     [...DIM_ORDER].sort((a, b) => Number(dims[a]?.score || 0) - Number(dims[b]?.score || 0))[0];
-  const exercise = FIELDWORK[binding];
+  const decision = decisions[binding];
   const bindingName = dimName(binding);
 
-  const profile = result.profileData || {};
-  const profileTitle = txt(profile.title, `Il nodo: ${bindingName.toLowerCase()}`);
-  const profileBody = txt(profile.blocco);
-
-  const stageName = stageNameOf(result, score);
-  const stageInfo = result.roadmapInfo || result.stageInfo || {};
+  const stageName = stageFromScore(score);
 
   const ranked = [...DIM_ORDER].sort((a, b) => {
     if (a === binding) return -1;
@@ -478,16 +447,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
     return d !== 0 ? d : DIM_ORDER.indexOf(a) - DIM_ORDER.indexOf(b);
   });
 
-  const prioritiesRaw = (result.priorita || result.priorities || []).slice(0, 3);
-  const priorities =
-    prioritiesRaw.length > 0
-      ? prioritiesRaw
-      : ranked.slice(0, 3).map((k) => ({ key: k, score: dims[k]?.score, vincolo: DIM_COPY[k] }));
-
-  const costly: any[] = assembled.costlyAnswers || [];
-  const firstMove = txt(assembled.firstMove);
-  const pattern = result.diagnosticPattern || {};
-  const constraints = (result.functionConstraints || []).slice(0, 3);
+  const priorities = ranked.slice(0, 3);
+  const costly = assembled.costlyAnswers || [];
 
   /* link: stessi parametri della pagina risultato */
   const leadId = txt(result.leadId || result.metadata?.leadId);
@@ -513,7 +474,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
   if (isTest) kitParams.set("test", "1");
   const kitUrl = "https://davidedileo.it/kit?" + kitParams.toString();
 
-  const route = routeOf(result);
+  const route = reportOffer(result);
 
   return (
     <Document
@@ -537,7 +498,6 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Text style={s.coverTitle}>Cosa frena</Text>
           <Text style={[s.coverTitle, s.coverTitleGold]}>il tuo business.</Text>
           <View style={s.coverFor}>
-            <View style={s.coverForBar} />
             <Text style={s.coverForText}>
               Preparato per <Text style={s.coverForName}>{name || "te"}</Text>
               {company ? ` · ${company}` : ""}
@@ -551,8 +511,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <View style={s.coverBindCell}>
             <Text style={s.coverLabel}>IL TUO VINCOLO PRINCIPALE</Text>
             <Text style={s.coverBind}>{bindingName}</Text>
-            <Text style={s.coverProfile}>{profileTitle}</Text>
-            {profileBody ? <Text style={s.coverProfileBody}>{profileBody}</Text> : null}
+
+            <Text style={s.coverProfileBody}>{DIM_COPY[binding]}</Text>
           </View>
           <View style={s.coverScoreCell}>
             <Text style={s.coverLabel}>PUNTEGGIO IMPULSE</Text>
@@ -578,28 +538,20 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Head
           n="02"
           kicker="In sintesi"
-          title="Da dove partire questa settimana"
-          intro={`Dalle tue risposte emerge una priorità: ${bindingName.toLowerCase()}. Verificala sul lavoro prima di cambiare il modo in cui operi.`}
+          title="Quale decisione viene prima?"
+          intro={`Tra le sei aree valutate, dalle tue risposte emerge una priorità: ${bindingName.toLowerCase()}.`}
         />
-
-        <View style={s.moveBox} wrap={false}>
-          <Label>Una prova da avviare entro 48 ore</Label>
-          <Text style={s.moveText}>{exercise.task}</Text>
+        <View style={s.block}>
+          <Label>La decisione</Label>
+          <Text style={s.lead}>{decision.question}</Text>
         </View>
-        <View style={s.block} wrap={false}>
-          <Label>Come saprai se è servita?</Label>
-          <Text style={s.lead}>{exercise.evidence}</Text>
+        <View style={s.block}>
+          <Label>Perché conta</Label>
+          <Text style={s.body}>{decision.reason}</Text>
         </View>
-        {firstMove && (
-          <View style={s.block} wrap={false}>
-            <Label>La mossa suggerita dal tuo report</Label>
-            <Text style={s.body}>{firstMove}</Text>
-          </View>
-        )}
-
-        <View style={s.antiRow} wrap={false}>
-          <Label tone="alert">Cosa non fare adesso</Label>
-          <Text style={s.antiText}>{ANTI_ACTION[binding] || ""}</Text>
+        <View style={s.block}>
+          <Label>Le tre aree che pesano di più</Label>
+          {priorities.map(key => <Text key={key} style={s.body}>{dimName(key)} · {fmtScore(dims[key]?.score)} su 10</Text>)}
         </View>
 
         <View style={{ flexGrow: 1 }} />
@@ -608,10 +560,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           <Label tone="muted">Nelle prossime pagine</Label>
           <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
             {[
-              ["03", "Perché ti frena: le tue risposte"],
+              ["03", "Le tue risposte"],
               ["04", "La mappa delle sei aree"],
               ["05", "Cosa sistemare prima"],
-              ["06", "Dove il business perde forza"],
+              ["06", "Le conseguenze sul lavoro"],
               ["07", "La fase del business"],
               ["08", "Il prossimo passo"]
             ].map(([n, t]) => (
@@ -632,8 +584,8 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Head
           n="03"
           kicker="Perché ti frena"
-          title="Il tuo vincolo, in pratica."
-          intro="Riprendi questi episodi nella tua azienda. Per ogni risposta trovi un possibile effetto e una verifica pratica."
+          title="Le risposte che contano"
+          intro="Queste sono le risposte che hanno pesato sulla diagnosi."
         />
 
         {(result as any).challenge ? (
@@ -649,21 +601,18 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
               <Label>{`${String(i + 1).padStart(2, "0")} · ${dimName(ca.dimension)}`}</Label>
               <Text style={s.answerQ}>{txt(ca.text)}</Text>
               <Text style={s.answerChosen}>{`Hai risposto: «${txt(ca.chosenText)}»`}</Text>
-              {txt(ca.why) && <Text style={s.body}>{txt(ca.why)}</Text>}
-              <Text style={s.answerCheck}>
-                <Text style={{ fontWeight: 600 }}>Come verificarlo. </Text>
-                {ANSWER_CHECK[ca.id] || "Riprendi l’ultimo episodio che ti ha portato a scegliere questa risposta e annota cosa è successo."}
-              </Text>
             </View>
           ))
         ) : (
           <View style={s.block}>
-            <Text style={s.body}>Per questo report mancano le singole risposte. Puoi comunque verificare la priorità con la prova di pagina 2.</Text>
-            {txt(profile.manifesta) && <Text style={s.answerCheck}>{profile.manifesta}</Text>}
-            {txt(profile.rischio) && <Text style={s.answerCheck}>{profile.rischio}</Text>}
+            <Text style={s.body}>In questo report sono disponibili i punteggi per area. Il dettaglio delle singole risposte non è disponibile.</Text>
           </View>
         )}
 
+        <View style={s.block} wrap={false}>
+          <Label>Come leggere queste risposte</Label>
+          <Text style={s.body}>{binding === "margins" ? "Dal solo fatturato non puoi sapere quanto lascia una commessa. Per quella decisione servono anche i costi diretti e le ore di lavoro." : "Le risposte descrivono come vedi il lavoro oggi. Contratti, conti e prestazioni effettive richiedono una verifica separata."}</Text>
+        </View>
         <Footer />
       </Page>
 
@@ -674,9 +623,10 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           n="04"
           kicker="Le sei aree"
           title="Le sei aree, in ordine di priorità"
-          intro="La prima riga indica il vincolo emerso dalle risposte. Ogni barra mostra un punteggio su 10. A parità di punteggio il vincolo mantiene la precedenza."
+          intro="Il punto dorato indica la priorità. Le barre sotto il grafico riportano i punteggi su 10."
         />
 
+        <View style={{ alignItems: "center" }}><Radar dims={dims} binding={binding} /></View>
         {ranked.map((k) => {
           const sc = Number(dims[k]?.score || 0);
           const isB = k === binding;
@@ -702,7 +652,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <View style={s.block} wrap={false}>
           <Label>Come leggere i punteggi</Label>
-          <Text style={s.body}>Sotto 4 l’area è debole. Da 4 a meno di 7 è in sviluppo. Da 7 in su è un punto di forza. Il punteggio complessivo è una media pesata delle sei aree.</Text>
+          <Text style={s.body}>Sotto 4 l’area richiede attenzione. Da 4 a meno di 7 è in sviluppo. Da 7 in su è un punto di forza. Il punteggio complessivo è una media pesata delle sei aree.</Text>
         </View>
         <Footer />
       </Page>
@@ -714,48 +664,23 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
           n="05"
           kicker="Le priorità"
           title="Cosa sistemare prima."
-          intro="Le tre aree che oggi creano più attrito, in ordine. Il resto, per ora, può aspettare."
+          intro="Per ogni area trovi la decisione aperta e gli elementi utili per prenderla."
         />
 
-        {priorities.map((p: any, i: number) => (
-          <View key={p.key || i} style={s.prio} wrap={false}>
+        {priorities.map((key, i) => (
+          <View key={key} style={s.prio} wrap={false}>
             <View style={s.prioHead}>
               <Text style={s.prioNum}>{String(i + 1).padStart(2, "0")}</Text>
-              <Text style={s.prioName}>{dimName(p.key)}</Text>
-              <Text style={s.prioScore}>{`${fmtScore(dims[p.key as DimensionKey]?.score ?? p.score)} / 10`}</Text>
+              <Text style={s.prioName}>{dimName(key)}</Text>
+              <Text style={s.prioScore}>{fmtScore(dims[key]?.score)} / 10</Text>
             </View>
-            {txt(p.vincolo) ? <Text style={s.bodyMid}>{p.vincolo}</Text> : null}
-            <View style={s.twoColTight}>
-              <View style={s.col}>
-                <Label>Su cosa lavorare</Label>
-                <Text style={s.bodySmall}>{txt(p.lavoro, "Rendere quest'area chiara, misurabile e trasferibile.")}</Text>
-              </View>
-              <View style={s.col}>
-                <Label tone="alert">Da evitare</Label>
-                <Text style={s.bodySmall}>{txt(p.nonFare, "Aggiungere complessità prima di aver chiarito quest'area.")}</Text>
-              </View>
+            <Text style={s.lead}>{decisions[key].question}</Text>
+            <View style={{ marginTop: 8 }}>
+              <Label tone="muted">Cosa guardare</Label>
+              <Text style={s.body}>{decisions[key].evidence}</Text>
             </View>
           </View>
         ))}
-
-        {txt(pattern.topGapPairBody) ? (
-          <View style={s.pairBox} wrap={false}>
-            <Label tone="light">Come si legano le tue due aree più deboli</Label>
-            <Text style={s.pairTitle}>
-              {txt(pattern.topGapPairTitle).replace(/Clarity|Acquisition|Operations|Margins|Asset|Readiness/g, (m) =>
-                dimName(m.toLowerCase())
-              )}
-            </Text>
-            <Text style={s.pairBody}>{pattern.topGapPairBody}</Text>
-            {txt(pattern.recommendedFocus) ? (
-              <Text style={s.pairFocus}>
-                <Text style={{ color: GOLD_BRIGHT }}>Dove lavorare: </Text>
-                {pattern.recommendedFocus}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
-
         <Footer />
       </Page>
 
@@ -764,79 +689,35 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Header who={who} />
         <Head
           n="06"
-          kicker="I punti deboli del sistema"
-          title="Dove il business perde forza."
-          intro="I problemi concreti più probabili, dati la fase del business e le aree più deboli."
+          kicker="Le conseguenze"
+          title="Cosa può succedere nel lavoro"
+          intro="Tre possibili conseguenze delle aree evidenziate nelle risposte."
         />
-
-        {constraints.length > 0 ? (
-          constraints.map((c: any, i: number) => (
-            <View key={c.id || i} style={s.prio} wrap={false}>
-              <View style={s.prioHead}>
-                <Text style={s.prioNum}>{String(i + 1).padStart(2, "0")}</Text>
-                <Text style={s.prioName}>{txt(c.label)}</Text>
-              </View>
-              <Text style={s.bodyMid}>{txt(c.implication)}</Text>
-              <View style={s.twoColTight}>
-                <View style={s.col}>
-                  <Label>Come deve essere</Label>
-                  <Text style={s.bodySmall}>{txt(c.work)}</Text>
-                </View>
-                <View style={s.col}>
-                  <Label tone="alert">Da evitare</Label>
-                  <Text style={s.bodySmall}>{txt(c.avoid)}</Text>
-                </View>
-              </View>
-            </View>
-          ))
-        ) : (
-          <Text style={s.body}>Nessun punto debole specifico oltre a quelli già visti nelle sei aree.</Text>
-        )}
-
-
+        {priorities.map(key => (
+          <View key={key} style={s.block} wrap={false}>
+            <Label>{dimName(key)}</Label>
+            <Text style={s.lead}>{decisions[key].consequence}</Text>
+          </View>
+        ))}
         <Footer />
       </Page>
 
       {/* ===================== 07 LA FASE ===================== */}
       <Page size="A4" style={s.page}>
         <Header who={who} />
-        <Head n="07" kicker="La fase del business" title={`${stageName}.`} intro={txt(stageInfo.headline, STAGE_COPY[stageName])} />
-
-        <View style={s.stageScaleWrap}>
-          <StageScale score={score} labels />
+        <Head n="07" kicker="La fase del business" title={stageName}
+          intro={`Il tuo punteggio complessivo è ${score} su 100. Nell’assessment corrisponde alla fase «${stageName}».`} />
+        <View style={s.stageScaleWrap}><StageScale score={score} labels /></View>
+        <View style={s.block}><Label>Come leggere la fase</Label>
+          <Text style={s.body}>La fase riassume le risposte su tutte le aree. Anche un’azienda che vende da anni può ottenere un punteggio basso se la gestione dipende da poche persone o se i margini sono difficili da leggere.</Text>
         </View>
-
-        <View style={s.block}>
-          <Label>Il tuo ruolo in questa fase</Label>
-          <Text style={s.lead}>{txt(stageInfo.role, "Costruire il sistema")}</Text>
+        <View style={s.block}><Label>Nel tuo caso</Label>
+          <Text style={s.lead}>{dimName(binding)} · {fmtScore(dims[binding]?.score)} su 10</Text>
+          <Text style={s.body}>Il punteggio complessivo comprende anche le altre cinque aree. Per capire perché emerge questa priorità, puoi rileggere le tue risposte a pagina 3.</Text>
         </View>
-
-        {txt(stageInfo.bottomLineConstraint) ? (
-          <View style={s.block}>
-            <Label>Il limite tipico di questa fase</Label>
-            <Text style={s.bodyMid}>{stageInfo.bottomLineConstraint}</Text>
-          </View>
-        ) : null}
-
-        {txt(stageInfo.costOfInaction) ? (
-          <View style={s.block}>
-            <Label tone="alert">Quanto costa restare fermi</Label>
-            <Text style={s.bodyMid}>{stageInfo.costOfInaction}</Text>
-          </View>
-        ) : null}
-
-        {(stageInfo.graduationCriteria || []).length > 0 ? (
-          <View style={s.block}>
-            <Label>Sei pronto per la fase successiva quando</Label>
-            {(stageInfo.graduationCriteria || []).slice(0, 5).map((c: string, i: number) => (
-              <View key={i} style={s.checkRow}>
-                <View style={s.checkBox} />
-                <Text style={s.checkText}>{c}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
+        <View style={s.block}><Label>Le fasce di punteggio</Label>
+          {STAGE_BANDS.map(b => <Text key={b.name} style={s.body}>{b.from}–{b.to === 100 ? 100 : b.to - 1}   {b.name}</Text>)}
+        </View>
         <Footer />
       </Page>
 
@@ -845,33 +726,25 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
         <Header who={who} />
         <Head n="08" kicker="Il prossimo passo" title="Dalla diagnosi all'azione." />
 
-        {(txt(profile.decisione) || txt(assembled.nextProblem)) ? (
-          <View style={s.block}>
-            <Label>{txt(profile.decisione) ? "La decisione che viene prima" : "Il prossimo problema da considerare"}</Label>
-            <Text style={s.lead}>{txt(profile.decisione) || txt(assembled.nextProblem)}</Text>
-          </View>
-        ) : null}
-
-        <View style={s.block} wrap={false}>
-          <Label>Se prosegui in autonomia</Label>
-          <Text style={s.body}>Fai la prova di pagina 2. Tra sette giorni confronta il risultato con la tua risposta iniziale e scegli una cosa da cambiare.</Text>
+        <View style={s.block}>
+          <Label>La tua priorità · {bindingName}</Label>
+          <Text style={s.lead}>{decision.question}</Text>
         </View>
-
         <View style={{ flexGrow: 1 }} />
         <View style={s.cta} wrap={false}>
           <Text style={s.ctaKicker}>SE VUOI UN SUPPORTO</Text>
-          <Text style={s.ctaTitle}>Chi prepara il piano?</Text>
+          <Text style={s.ctaTitle}>{route === "review" ? "Discuti la decisione con Davide" : "Prepara il tuo piano con il Kit"}</Text>
           {(route === "review" ? ["review", "kit"] : ["kit", "review"]).map((option) => (
             <View key={option} style={{ marginTop: 12 }}>
               {option === "kit" ? (
                 <>
-                  <Text style={s.ctaBody}>Con il Kit scegli le tre mosse e compili tu il piano di 90 giorni. Se passi alla Review entro 30 giorni, i €47 vengono scalati dal prezzo.</Text>
-                  <Link src={kitUrl} style={s.ctaAlt}>{binding === "margins" ? "Lavora in autonomia sui tuoi margini · Kit €47" : "Voglio lavorarci in autonomia · Kit €47"}</Link>
+                  <Text style={s.ctaBody}>Apri la guida per la tua priorità. Nel foglio Google scegli tre interventi, assegni le scadenze e segui i progressi per 90 giorni. Se passi alla Review entro 30 giorni, i €47 vengono scalati dal prezzo.</Text>
+                  <Link src={kitUrl} style={route === "kit" ? s.ctaPrimary : s.ctaAlt}>{binding === "margins" ? "Lavora in autonomia sui tuoi margini · Kit €47" : "Voglio lavorarci in autonomia · Kit €47"}</Link>
                 </>
               ) : (
                 <>
                   <Text style={s.ctaBody}>Se devi prendere una decisione e vuoi un confronto, esaminiamo il tuo caso in 45 minuti. Entro 48 ore ti consegno la Priority Map scritta.</Text>
-                  <Link src={reviewUrl} style={s.ctaAlt}>Voglio discuterne con Davide · Review €350</Link>
+                  <Link src={reviewUrl} style={route === "review" ? s.ctaPrimary : s.ctaAlt}>Voglio discuterne con Davide · Review €350</Link>
                 </>
               )}
             </View>
@@ -880,7 +753,7 @@ export function ImpulsePdfDocument({ result }: { result: PdfResult }) {
 
         <View style={s.letter} wrap={false}>
           <Label tone="muted">Una nota personale</Label>
-          {txt(assembled.letter) ? <Text style={s.letterText}>{assembled.letter}</Text> : null}
+          <Text style={s.letterText}>Se decidi di ripetere l’assessment, conserva questo report: potrai confrontare le risposte e vedere quali priorità sono cambiate.</Text>
           <Text style={s.letterSign}>Davide</Text>
           <Text style={s.letterCred}>COO & co-founder di una fintech di tokenizzazione · IMPULSE è il mio criterio operativo, reso strumento e costruito con l'AI.</Text>
           {txt(assembled.retestDate) ? (
@@ -941,7 +814,7 @@ const s = StyleSheet.create({
   intro: { marginTop: 9, fontSize: 13.5, lineHeight: 1.4, color: MUTED, maxWidth: 440 },
 
   label: { fontFamily: F.sans, fontSize: 8.5, letterSpacing: 1.1, marginBottom: 5, textTransform: "uppercase" },
-  body: { fontSize: 12.6, lineHeight: 1.42, color: BODY },
+  body: { fontSize: 14, lineHeight: 1.42, color: BODY },
   bodyMid: { fontSize: 12.2, lineHeight: 1.38, color: BODY },
   bodySmall: { fontSize: 11.4, lineHeight: 1.36, color: BODY },
   small: { fontSize: 11, lineHeight: 1.35, color: MUTED },
@@ -968,7 +841,6 @@ const s = StyleSheet.create({
   coverTitle: { fontFamily: F.display, fontSize: 60, lineHeight: 1.02, color: IVORY, letterSpacing: -0.6 },
   coverTitleGold: { fontFamily: F.serif, fontStyle: "italic", color: GOLD_BRIGHT },
   coverFor: { flexDirection: "row", alignItems: "center", marginTop: 26 },
-  coverForBar: { width: 26, height: 1.2, backgroundColor: GOLD_BRIGHT, marginRight: 12 },
   coverForText: { fontSize: 14, color: IVORY_SOFT },
   coverForName: { color: IVORY, fontWeight: 600 },
   coverBand: { flexDirection: "row", borderTopWidth: 0.8, borderTopColor: DARK_RULE, borderBottomWidth: 0.8, borderBottomColor: DARK_RULE, paddingVertical: 22 },
@@ -985,9 +857,7 @@ const s = StyleSheet.create({
   coverNote: { marginTop: 14, fontSize: 9.5, lineHeight: 1.4, color: DARK_MUTED },
 
   /* ---- 02 sintesi ---- */
-  moveBox: { marginTop: 18, padding: 16, backgroundColor: CREAM, borderLeftWidth: 2.5, borderLeftColor: GOLD },
   moveText: { fontSize: 13.4, lineHeight: 1.42, color: INK },
-  antiRow: { marginTop: 14, paddingLeft: 16, borderLeftWidth: 2.5, borderLeftColor: ALERT },
   antiText: { fontSize: 12.6, lineHeight: 1.4, color: BODY, fontStyle: "italic" },
   toc: { paddingTop: 10, borderTopWidth: 0.6, borderTopColor: RULE },
   tocItem: { width: "50%", flexDirection: "row", alignItems: "baseline", marginTop: 4 },
@@ -1003,7 +873,7 @@ const s = StyleSheet.create({
   answerChosen: { fontStyle: "italic", fontSize: 12.6, color: GOLD_INK, marginBottom: 4 },
 
   /* ---- 04 mappa ---- */
-  areaRow: { flexDirection: "row", alignItems: "center", paddingVertical: 15, paddingHorizontal: 6, borderBottomWidth: 0.5, borderBottomColor: RULE },
+  areaRow: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 6, borderBottomWidth: 0.5, borderBottomColor: RULE },
   areaRowB: { backgroundColor: "#F3EBD6" },
   areaName: { width: 140, paddingRight: 8 },
   areaTitle: { fontFamily: F.display, fontSize: 17, color: INK },
@@ -1035,6 +905,7 @@ const s = StyleSheet.create({
   ctaKicker: { fontFamily: F.sans, fontSize: 7.2, letterSpacing: 2, color: GOLD_BRIGHT, marginBottom: 8 },
   ctaTitle: { fontFamily: F.display, fontSize: 24, lineHeight: 1.12, color: IVORY, marginBottom: 8 },
   ctaBody: { fontSize: 12.4, lineHeight: 1.42, color: IVORY_SOFT },
+  ctaPrimary: { fontFamily: F.sans, marginTop: 6, padding: 7, backgroundColor: IVORY, color: INK, fontSize: 13, textDecoration: "none" },
   ctaAlt: { fontFamily: F.sans, marginTop: 5, fontSize: 13, color: GOLD_BRIGHT, textDecoration: "underline" },
   letter: { marginTop: 18, paddingTop: 12, borderTopWidth: 0.6, borderTopColor: RULE },
   letterText: { fontSize: 12.4, lineHeight: 1.42, color: BODY },
